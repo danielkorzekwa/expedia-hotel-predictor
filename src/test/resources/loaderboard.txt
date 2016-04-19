@@ -1,0 +1,21 @@
+
+HotelPredictSimpleSumm: srch_destination_id
+16/04/2016 17:09:56 INFO  expedia.PredictApp$ - Loading data... 
+16/04/2016 17:09:59 INFO  expedia.PredictApp$ - Computing stats... 
+16/04/2016 17:09:59 INFO  expedia.PredictApp$ - Making predictions... 
+16/04/2016 17:15:04 INFO  expedia.PredictApp$ - Computing ranks 
+mapk=0.29902865820912955
+train/test size= 1024389 / 1976304
+analysis time=344239
+
+
+
+HotelPredictSimpleSumm: hotel_market
+16/04/2016 17:26:00 INFO  expedia.PredictApp$ - Loading data... 
+16/04/2016 17:26:03 INFO  expedia.PredictApp$ - Computing stats... 
+Categories=2068
+16/04/2016 17:26:03 INFO  expedia.PredictApp$ - Making predictions... 
+16/04/2016 17:32:38 INFO  expedia.PredictApp$ - Computing ranks 
+mapk=0.24976049568622397
+train/test size= 1024389 / 1976304
+analysis time=435438
