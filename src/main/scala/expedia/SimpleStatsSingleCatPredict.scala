@@ -8,39 +8,46 @@ import breeze.linalg._
 import breeze.stats._
 import scala.collection._
 import java.util.concurrent.atomic.AtomicInteger
+import expedia.similarity.calcCatStatsMap
+import expedia.similarity.calcCatStats
+import expedia.similarity.calcCatProbs
 
 /**
+ *
+ * @param priorCatStats [itemIt,count]
  * @param trainData [category,hotel_cluster]
  */
-case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double], catIndex: Int) {
+case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double]) {
 
   val probByCategoryAndClusterMap: Map[Double, Map[Double, Double]] = computedProbByCategoryAndCluster()
 
-  def predict(data: DenseMatrix[Double], hotelCluster: Double): DenseVector[Double] = {
+  /**
+   * @param data [category]
+   * @param hotelCluster
+   */
+  def predict(data: DenseVector[Double], hotelCluster: Double): DenseVector[Double] = {
 
-    data(*, ::).map { c =>
-     val catClusterProbs =  probByCategoryAndClusterMap.getOrElse(c(catIndex), Map())
-     catClusterProbs.getOrElse(hotelCluster,Double.NaN)
+    data.map { c =>
+      val catClusterProbs = probByCategoryAndClusterMap.getOrElse(c, Map())
+      val prob = catClusterProbs.getOrElse(hotelCluster, Double.NaN)
+      if(prob==0d) Double.NaN else prob
+   // prob
     }
 
   }
 
   private def computedProbByCategoryAndCluster(): Map[Double, Map[Double, Double]] = {
-    val bookedByCategoryAndClusterMap: mutable.Map[Double, mutable.Map[Double, AtomicInteger]] = mutable.Map()
 
-    (0 until trainData.rows).foreach { i =>
-      val row = trainData(i, ::)
-      val cluster = row(trainData.cols - 1)
-      val category = row(catIndex)
-
-      bookedByCategoryAndClusterMap.getOrElseUpdate(category, mutable.Map()).getOrElseUpdate(cluster, new AtomicInteger(0)).incrementAndGet()
-    }
+   val priorCatStats = calcCatStats(trainData(::,1))
+   var priorCatProbs = calcCatProbs(priorCatStats).map{case (cat,prob) => (cat,0d)}
+    
+    val bookedByCategoryAndClusterMap = calcCatStatsMap(trainData,priorCatProbs)
 
     val probByCategoryAndClusterMap = bookedByCategoryAndClusterMap.mapValues { probByCluster =>
-      val clusterBookingCount = probByCluster.values.map(v => v.get).sum
+      val clusterBookingCount = probByCluster.values.sum
       probByCluster.map {
         case (cluster, count) =>
-          (cluster, count.get.toDouble / clusterBookingCount)
+          (cluster, count.toDouble / clusterBookingCount)
       }.toMap
     }
 

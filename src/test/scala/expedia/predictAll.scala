@@ -7,6 +7,8 @@ import breeze.linalg.unique
 import breeze.linalg.DenseVector
 import dk.gp.util.averagePrecision
 import java.util.concurrent.atomic.AtomicInteger
+import breeze.linalg._
+import expedia.similarity.calcCatStats
 
 object predictAll extends LazyLogging {
 
@@ -18,9 +20,11 @@ object predictAll extends LazyLogging {
     val hotelClusters: DenseVector[Double] = unique(test(::, test.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
 
     logger.info("Computing stats...")
-    val simpleStatsAllPredict = SimpleStatAllPredict(train)
-    val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train, 0)
-    val svmFromCSVPredict = SVMFromCSVPredict()
+    val simpleStatsAllPredict = SimpleStatAllPredict(train(::,2))
+    
+    val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train(::,List(1,2)).toDenseMatrix)
+      val simpleStatsSrchDestIdPredict2 = SimpleStatsSingleCatPredict2(train,1)
+  //  val svmFromCSVPredict = SVMFromCSVPredict()
 
     logger.info("Making predictions...")
     var allCount = new AtomicInteger(0)
@@ -31,12 +35,13 @@ object predictAll extends LazyLogging {
 
       logger.info("predicting hotel cluster=" + i)
       val hotelCluster = hotelClusters(i)
-      val hotelData = getHotelClusterData(train, hotelCluster.toInt)(::, List(1, train.cols - 1)).toDenseMatrix
+     // val hotelData = getHotelClusterData(train, hotelCluster.toInt)(::, List(1, train.cols - 1)).toDenseMatrix
       // hotelPredict(hotelData, dataB, hotelCluster.toInt)
 
       val simpleStatsAll = simpleStatsAllPredict.predict(testDataX, hotelCluster)
-      val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(testDataX, hotelCluster)
-      val svmFromCSV = svmFromCSVPredict.predict(testDataX, hotelCluster)
+      val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(testDataX(::,1), hotelCluster)
+        val simpleStatsSrchDestId2 = simpleStatsSrchDestIdPredict2.predict(testDataX, hotelCluster)
+    //  val svmFromCSV = svmFromCSVPredict.predict(testDataX, hotelCluster)
 
       //  val gpPredicted = hotelPredictMtGpc(hotelData, testDataX(::,1 to 1), hotelCluster.toInt)
 
@@ -45,7 +50,7 @@ object predictAll extends LazyLogging {
 
         //   if (!gpPredicted(i).isNaN()) gpPredicted(i)
         if (!simpleStatsSrchDestId(i).isNaN()) simpleStatsSrchDestId(i)
-        else if (false &&  !svmFromCSV(i).isNaN()) svmFromCSV(i)
+      //  else if (false &&  !svmFromCSV(i).isNaN()) svmFromCSV(i)
         else { defModelCount.incrementAndGet(); simpleStatsAll(i) }
       }.toArray
 
