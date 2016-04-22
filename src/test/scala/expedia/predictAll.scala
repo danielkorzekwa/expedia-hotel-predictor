@@ -19,7 +19,7 @@ object predictAll extends LazyLogging {
 
     logger.info("Computing stats...")
     val simpleStatsAllPredict = SimpleStatAllPredict(train)
-    val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train, 1)
+    val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train, 0)
     val svmFromCSVPredict = SVMFromCSVPredict()
 
     logger.info("Making predictions...")
@@ -44,8 +44,8 @@ object predictAll extends LazyLogging {
         allCount.incrementAndGet()
 
         //   if (!gpPredicted(i).isNaN()) gpPredicted(i)
-        if ( false && !simpleStatsSrchDestId(i).isNaN()) simpleStatsSrchDestId(i)
-        else if (!svmFromCSV(i).isNaN()) svmFromCSV(i)
+        if (!simpleStatsSrchDestId(i).isNaN()) simpleStatsSrchDestId(i)
+        else if (false &&  !svmFromCSV(i).isNaN()) svmFromCSV(i)
         else { defModelCount.incrementAndGet(); simpleStatsAll(i) }
       }.toArray
 

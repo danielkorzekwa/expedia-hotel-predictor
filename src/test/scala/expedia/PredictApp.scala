@@ -15,12 +15,11 @@ object PredictApp extends LazyLogging {
 
     logger.info("Loading data...")
 
-    val dataA = csvread(new File("c:/perforce/daniel/expedia/train_booked_sample_a.csv"), skipLines = 1)//(0 to 10000, ::)
-    val dataB = csvread(new File("c:/perforce/daniel/expedia/train_booked_sample_b.csv"), skipLines = 1)//(0 to 10001, ::)
+    val dataA = csvread(new File("c:/perforce/daniel/ex/train_booked_sample_a.csv"), skipLines = 1)//(0 to 10000, ::)
+    val dataB = csvread(new File("c:/perforce/daniel/ex/train_booked_sample_b.csv"), skipLines = 1)//(0 to 10001, ::)
 
     val predictionData = predictAll(dataA, dataB)
-    val clusters = HashSet(15, 46, 91, 1, 2)
-    val idx = predictionData(::,4).findAll(p => true)
+       val idx = predictionData(::,4).findAll(p => true)
     val filteredPredictonData = predictionData(idx,::).toDenseMatrix
    
     println(filteredPredictonData.toString(20,320))

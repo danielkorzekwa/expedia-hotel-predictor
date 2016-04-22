@@ -20,8 +20,7 @@ case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double], catIndex:
 
     data(*, ::).map { c =>
      val catClusterProbs =  probByCategoryAndClusterMap.getOrElse(c(catIndex), Map())
-     if(catClusterProbs.size>=20000) catClusterProbs.getOrElse(hotelCluster,0d)
-     else Double.NaN//catClusterProbs.getOrElse(hotelCluster,Double.NaN)
+     catClusterProbs.getOrElse(hotelCluster,Double.NaN)
     }
 
   }
