@@ -12,10 +12,10 @@ case class SimpleStatAllPredict(trainData: DenseVector[Double]) {
 
   val probByClusterMap: Map[Double, Double] = computedProbByCluster()
 
-  def predict(data: DenseMatrix[Double], hotelCluster: Double): DenseVector[Double] = {
+  def predict(data: DenseVector[Double], hotelCluster: Double): DenseVector[Double] = {
 
 
-     data(*, ::).map { c => probByClusterMap.getOrElse(hotelCluster,Double.NaN) }
+     data.map { c => probByClusterMap.getOrElse(hotelCluster,Double.NaN) }
 
   }
 
