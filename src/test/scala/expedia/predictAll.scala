@@ -20,9 +20,9 @@ object predictAll extends LazyLogging {
     val hotelClusters: DenseVector[Double] = unique(test(::, test.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
 
     logger.info("Computing stats...")
-    val simpleStatsAllPredict = SimpleStatAllPredict(train(::, 2))
+ //   val simpleStatsAllPredict = SimpleStatAllPredict(train(::, 2))
 
-    val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train(::, List(1, 2)).toDenseMatrix)
+ //   val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train(::, List(1, 2)).toDenseMatrix)
     //  val svmFromCSVPredict = SVMFromCSVPredict()
 
     val userDestPredict = UserDestPredict(train)
@@ -41,7 +41,7 @@ object predictAll extends LazyLogging {
       // val hotelData = getHotelClusterData(train, hotelCluster.toInt)(::, List(1, train.cols - 1)).toDenseMatrix
       // hotelPredict(hotelData, dataB, hotelCluster.toInt)
 
-      val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(destTestDataX, hotelCluster)
+  //    val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(destTestDataX, hotelCluster)
      val userDestPredictionVec = userDestPredict.predict(userDestDataX, hotelCluster)
       //  val svmFromCSV = svmFromCSVPredict.predict(testDataX, hotelCluster)
 

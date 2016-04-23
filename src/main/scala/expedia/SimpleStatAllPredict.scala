@@ -10,7 +10,7 @@ import expedia.similarity.calcCatProbs
 
 case class SimpleStatAllPredict(trainData: DenseVector[Double]) {
 
-  val probByClusterMap: Map[Double, Double] = {
+  val probByClusterMap: DenseVector[Double] = {
      val bookedByClusterMap = calcCatStats(trainData)
      val probByClusterMap2 = calcCatProbs(bookedByClusterMap)
     probByClusterMap2
@@ -18,7 +18,7 @@ case class SimpleStatAllPredict(trainData: DenseVector[Double]) {
 
   def predict(data: DenseVector[Double], hotelCluster: Double): DenseVector[Double] = {
 
-     data.map { c => probByClusterMap.getOrElse(hotelCluster,Double.NaN) }
+     data.map { c => probByClusterMap(hotelCluster.toInt) }
 
   }
 

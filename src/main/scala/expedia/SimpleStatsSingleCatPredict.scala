@@ -21,10 +21,10 @@ import dk.gp.math.sqDist
 case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double]) {
 
   val clusterStatMap = calcCatStats(trainData(::, 1))
-  var clusterProbMap: Map[Double, Double] = calcCatProbs(clusterStatMap)
+  var clusterProbMap: DenseVector[Double] = calcCatProbs(clusterStatMap)
 
   val clusterStatByDestMap = calcCatStatsMap(trainData, destId => clusterProbMap)
-  val clusterProbByDestMap: Map[Double, Map[Double, Double]] = calcCatProbs(clusterStatByDestMap)
+  val clusterProbByDestMap: Map[Double, DenseVector[Double]] = calcCatProbs(clusterStatByDestMap)
 
   /**
    * @param data [category]
@@ -33,7 +33,7 @@ case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double]) {
   def predict(data: DenseVector[Double], hotelCluster: Double): DenseVector[Double] = {
 
     data.map { c =>
-      val catClusterProbs = clusterProbByDestMap.getOrElse(c, clusterProbMap)(hotelCluster)
+      val catClusterProbs = clusterProbByDestMap.getOrElse(c, clusterProbMap)(hotelCluster.toInt)
       catClusterProbs
     }
 

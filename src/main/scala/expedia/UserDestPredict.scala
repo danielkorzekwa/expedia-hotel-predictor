@@ -9,6 +9,11 @@ import expedia.similarity.calcCatStats
 import dk.gp.util.filterRows
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
+import expedia.similarity.CatStatsMap
+import scala.collection._
+import expedia.similarity.CatStatsMap
+import expedia.similarity.CatStatsMap2
+import expedia.similarity.CatStatsMap3
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -16,12 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger
 case class UserDestPredict(trainData: DenseMatrix[Double]) extends LazyLogging {
 
   val clusterStatMap = calcCatStats(trainData(::, 2))
-  var clusterProbMap: Map[Double, Double] = calcCatProbs(clusterStatMap)
+  var clusterProbMap: DenseVector[Double] = calcCatProbs(clusterStatMap)
 
   val clusterStatByDestMap = calcCatStatsMap(trainData(::, 1 to 2), destId => clusterProbMap)
-  val clusterProbByDestMap: Map[Double, Map[Double, Double]] = calcCatProbs(clusterStatByDestMap)
+  val clusterProbByDestMap: Map[Double, DenseVector[Double]] = calcCatProbs(clusterStatByDestMap)
 
-  val clusterProbsByUser: Map[Double, Map[Double, Map[Double, Double]]] = calcClusterProbsByUserMap()
+  val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap()
 
   /**
    * @param data [user_id,dest]
@@ -33,36 +38,29 @@ case class UserDestPredict(trainData: DenseMatrix[Double]) extends LazyLogging {
 
       val userId = row(0)
       val destId = row(1)
-      val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster)
+      val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
       prob
     }
 
   }
 
-  def calcClusterProbsByUserMap(): Map[Double, Map[Double, Map[Double, Double]]] = {
+  def calcClusterProbsByUserMap(): Map[Double, Map[Double, DenseVector[Double]]] = {
 
-    val userIds = unique(trainData(::, 0)).toArray
-    logger.info("all users:" + userIds.size)
+    val clusterStatsByUserMap2: mutable.Map[Double, CatStatsMap3] = mutable.Map()
+
     val i = new AtomicInteger(0)
-    val clusterProbsByUserMap = userIds.map { userId =>
-      logger.info("Processing user:" + i.getAndIncrement)
-      val userTrainData = filterRows(trainData, 0, uId => uId == userId)
+    def prior(destId: Double) = clusterProbByDestMap(destId)
 
-      val userClusterStats = calcCatStatsMap(userTrainData(::, 1 to 2), destId => clusterProbByDestMap(destId).map { case (dest, prob) => (dest, prob) })
-      val userClusterProbs = calcCatProbs(userClusterStats)
+    trainData(*, ::).foreach { row =>
+      if (i.getAndIncrement % 100 == 0) println(i.get)
+      val userId = row(0)
+      clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMap3(prior)).add(row(1 to 2).toDenseVector)
+    }
 
-      (userId, userClusterProbs)
-
-    }.toMap
+    val clusterProbsByUserMap = clusterStatsByUserMap2.map { case (userId, stats) => (userId, calcCatProbs(stats.toMap())) }
 
     println(clusterProbsByUserMap.size)
     clusterProbsByUserMap
 
-    //    val userTrainData = filterRows(trainData, 0, userId => userId == 195876d)
-    //
-    //    val userClusterStats = calcCatStatsMap(userTrainData(::, 1 to 2), destId => clusterProbByDestMap(destId).map{ case (dest,prob) => (dest,prob)})
-    //val userClusterProbs = calcCatProbs(userClusterStats)
-    //    Map(195876d -> userClusterProbs)
-    //  Map()
   }
 }

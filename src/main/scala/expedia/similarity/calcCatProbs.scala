@@ -26,6 +26,20 @@ object calcCatProbs extends UFunc {
       catProbsMap
     }
   }
+  
+  implicit object implVecMap extends Impl[Map[Double, DenseVector[Double]], Map[Double,DenseVector[Double]]] {
+    def apply(data: Map[Double, DenseVector[Double]]): Map[Double,DenseVector[Double]] = {
+
+      val catProbsMap = data.map {
+        case (cat, catStatsVec) =>
+
+          val catProbs = implVec(catStatsVec)
+          (cat, catProbs)
+      }
+
+      catProbsMap
+    }
+  }
 
   /**
    * Compute item probabilities
@@ -39,6 +53,15 @@ object calcCatProbs extends UFunc {
       val Z = data.values.sum
       val probsMap = data.map { case (itemId, count) => (itemId, count / Z) }.toMap
       probsMap
+    }
+  }
+
+  implicit object implVec extends Impl[DenseVector[Double], DenseVector[Double]] {
+    def apply(data: DenseVector[Double]): DenseVector[Double] = {
+
+      val Z = sum(data)
+      val probsVec = data / Z
+      probsVec
     }
   }
 
