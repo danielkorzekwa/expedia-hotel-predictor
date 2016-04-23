@@ -1,4 +1,10 @@
 
+hierarchical bayes: all/dest:
+mapk=0.29995, size=1976304
+train/test size= 1024389 / 1976304
+analysis time=86260
+
+
 HotelPredictSimpleSumm: srch_destination_id
 16/04/2016 17:09:56 INFO  expedia.PredictApp$ - Loading data... 
 16/04/2016 17:09:59 INFO  expedia.PredictApp$ - Computing stats... 

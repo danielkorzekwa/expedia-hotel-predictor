@@ -2,29 +2,29 @@ package expedia.similarity
 
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
+import breeze.linalg.sum
+import breeze.generic.UFunc
 
-object calcCatProbs {
+object calcCatProbs extends UFunc {
 
   /**
    * Compute item probabilities by category
    * @param data Map[categoryId,Map[itemId,count]]
    *
-   * @return Matrix[cat,item1,item2,itemn]
+   * @return Map[categoryId,Map[itemId,prob]]
    */
-  def apply(data: Map[Double, Map[Double, Int]]): DenseMatrix[Double] = {
+  implicit object implMapMap extends Impl[Map[Double, Map[Double, Double]], Map[Double, Map[Double, Double]]] {
+    def apply(data: Map[Double, Map[Double, Double]]): Map[Double, Map[Double, Double]] = {
 
-    val items = data.values.flatMap(catProbsMap => catProbsMap.keys.toList).toList.distinct.sorted
+      val catProbsMap = data.map {
+        case (cat, catStatsMap) =>
 
-    val catProbSeq = data.map {
-      case (cat, catProbsMap) =>
+          val catProbs = implMap(catStatsMap)
+          (cat, catProbs)
+      }
 
-        val Z = catProbsMap.values.sum
-        val catProbs = items.map(itemId => catProbsMap.getOrElse(itemId, 0).toDouble / Z).toArray
-        DenseVector(cat +: catProbs)
-    }.toList
-
-    val catProbsMat = DenseVector.horzcat(catProbSeq: _*).t
-    catProbsMat
+      catProbsMap
+    }
   }
 
   /**
@@ -33,11 +33,13 @@ object calcCatProbs {
    *
    * @return Map[itemId,prob]
    */
-  def apply(data: Map[Double, Double]): Map[Double, Double] = {
+  implicit object implMap extends Impl[Map[Double, Double], Map[Double, Double]] {
+    def apply(data: Map[Double, Double]): Map[Double, Double] = {
 
-    val Z = data.values.sum
-    val probsMap = data.map { case (itemId, count) => (itemId, count / Z) }.toMap
-    probsMap
+      val Z = data.values.sum
+      val probsMap = data.map { case (itemId, count) => (itemId, count / Z) }.toMap
+      probsMap
+    }
   }
 
 }

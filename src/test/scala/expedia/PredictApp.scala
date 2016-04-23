@@ -7,6 +7,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.stats._
 import dk.gp.util.csvwrite
 import scala.collection.immutable.HashSet
+import dk.gp.util.filterRows
 object PredictApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
@@ -18,7 +19,8 @@ object PredictApp extends LazyLogging {
     val dataA = csvread(new File("c:/perforce/daniel/ex/train_booked_sample_a.csv"), skipLines = 1)//(0 to 10000, ::)
     val dataB = csvread(new File("c:/perforce/daniel/ex/train_booked_sample_b.csv"), skipLines = 1)//(0 to 10001, ::)
 
-    val predictionData = predictAll(dataA, dataB)
+    val filteredDataB = dataB//filterRows(dataB,0, userId => userId == 195876)
+    val predictionData = predictAll(dataA, filteredDataB)
        val idx = predictionData(::,4).findAll(p => true)
     val filteredPredictonData = predictionData(idx,::).toDenseMatrix
    

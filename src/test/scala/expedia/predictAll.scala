@@ -25,11 +25,15 @@ object predictAll extends LazyLogging {
     val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train(::, List(1, 2)).toDenseMatrix)
     //  val svmFromCSVPredict = SVMFromCSVPredict()
 
+    val userDestPredict = UserDestPredict(train)
+    
     logger.info("Making predictions...")
     var allCount = new AtomicInteger(0)
     var defModelCount = new AtomicInteger(0)
 
-    val testDataX = test(::, 1)
+    val userDestDataX = test(::, 0 to 1)
+    val destTestDataX = test(::, 1)
+    
     val predictionSeq = (0 until hotelClusters.size).map { i =>
 
       logger.info("predicting hotel cluster=" + i)
@@ -37,22 +41,14 @@ object predictAll extends LazyLogging {
       // val hotelData = getHotelClusterData(train, hotelCluster.toInt)(::, List(1, train.cols - 1)).toDenseMatrix
       // hotelPredict(hotelData, dataB, hotelCluster.toInt)
 
-      val simpleStatsAll = simpleStatsAllPredict.predict(testDataX, hotelCluster)
-      val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(testDataX, hotelCluster)
+      val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(destTestDataX, hotelCluster)
+     val userDestPredictionVec = userDestPredict.predict(userDestDataX, hotelCluster)
       //  val svmFromCSV = svmFromCSVPredict.predict(testDataX, hotelCluster)
 
       //  val gpPredicted = hotelPredictMtGpc(hotelData, testDataX(::,1 to 1), hotelCluster.toInt)
 
-      val predictionSeq = (0 until testDataX.size).map { i =>
-        allCount.incrementAndGet()
 
-        //   if (!gpPredicted(i).isNaN()) gpPredicted(i)
-        if (!simpleStatsSrchDestId(i).isNaN()) simpleStatsSrchDestId(i)
-        //  else if (false &&  !svmFromCSV(i).isNaN()) svmFromCSV(i)
-        else { defModelCount.incrementAndGet(); simpleStatsAll(i) }
-      }.toArray
-
-      DenseVector(predictionSeq)
+      userDestPredictionVec
 
     }.toList
 

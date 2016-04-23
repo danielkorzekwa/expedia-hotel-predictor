@@ -11,21 +11,21 @@ object calcCatStatsMap {
    *
    * @param data Matrix[categoryId,itemId]
    *
-   * @param priorCatStats [itemIt,count]
+   * @param priorCatStats categoryId => [categoryId,count]
    * @return Map[categoryId,Map[itemId,count]]
    */
-  def apply(data: DenseMatrix[Double], priorCatStats: Map[Double, Double]): immutable.Map[Double, immutable.Map[Double, Double]] = {
+  def apply(data: DenseMatrix[Double], priorCatStats: Double => Map[Double, Double]): immutable.Map[Double, immutable.Map[Double, Double]] = {
 
     val catStatsMap: mutable.Map[Double, Map[Double, AtomicDouble]] = mutable.Map()
 
-    def createPriorCatStatsAtomic() = priorCatStats.map { case (item, count) => (item, new AtomicDouble(count)) }
+    def createPriorCatStatsAtomic(categoryId:Double) = priorCatStats(categoryId).map { case (item, count) => (item, new AtomicDouble(count)) }
 
     (0 until data.rows).foreach { i =>
       val row = data(i, ::)
       val category = row(0)
       val itemId = row(1)
 
-      catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic)(itemId).addAndGet(1)
+      catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId).addAndGet(1)
     }
 
     catStatsMap.map {

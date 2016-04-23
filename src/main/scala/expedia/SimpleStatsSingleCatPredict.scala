@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import expedia.similarity.calcCatStatsMap
 import expedia.similarity.calcCatStats
 import expedia.similarity.calcCatProbs
+import dk.gp.math.sqDist
 
 /**
  *
@@ -19,7 +20,11 @@ import expedia.similarity.calcCatProbs
  */
 case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double]) {
 
-  val probByCategoryAndClusterMap: Map[Double, Map[Double, Double]] = computedProbByCategoryAndCluster()
+  val clusterStatMap = calcCatStats(trainData(::, 1))
+  var clusterProbMap: Map[Double, Double] = calcCatProbs(clusterStatMap)
+
+  val clusterStatByDestMap = calcCatStatsMap(trainData, destId => clusterProbMap)
+  val clusterProbByDestMap: Map[Double, Map[Double, Double]] = calcCatProbs(clusterStatByDestMap)
 
   /**
    * @param data [category]
@@ -27,35 +32,11 @@ case class SimpleStatsSingleCatPredict(trainData: DenseMatrix[Double]) {
    */
   def predict(data: DenseVector[Double], hotelCluster: Double): DenseVector[Double] = {
 
-    val emptyMap = Map[Double,Double]()
-    
     data.map { c =>
-      val catClusterProbs = probByCategoryAndClusterMap.getOrElse(c, emptyMap)
-      val prob = catClusterProbs.getOrElse(hotelCluster, Double.NaN)
-    //  if(prob==0d) Double.NaN else prob
-    prob
+      val catClusterProbs = clusterProbByDestMap.getOrElse(c, clusterProbMap)(hotelCluster)
+      catClusterProbs
     }
 
-  }
-
-  private def computedProbByCategoryAndCluster(): Map[Double, Map[Double, Double]] = {
-
-   val priorCatStats = calcCatStats(trainData(::,1))
-   var priorCatProbs = calcCatProbs(priorCatStats)//.map{case (cat,prob) => (cat,0d)}
-    
-    val bookedByCategoryAndClusterMap = calcCatStatsMap(trainData,priorCatProbs)
-
-    val probByCategoryAndClusterMap = bookedByCategoryAndClusterMap.map { case (cat,probByCluster) =>
-      val clusterBookingCount = probByCluster.values.sum
-     val newProbByClusterMap = probByCluster.map {
-        case (cluster, count) =>
-          (cluster, count.toDouble / clusterBookingCount)
-      }.toMap
-      
-      (cat,newProbByClusterMap)
-    }
-
-    probByCategoryAndClusterMap
   }
 
 }
