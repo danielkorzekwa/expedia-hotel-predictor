@@ -15,28 +15,24 @@ ggplot() +stat_summary(fun.y=mean,geom='line',aes(x=as.Date(d$date_time),y=d$is_
 ggplot() +geom_smooth(aes(x=as.Date(d$srch_ci),y=d$is_booking)) + coord_cartesian(ylim=c(-0.1,1.1))
 
 sqldf('select srch_destination_id,count(*) as c from d1_a group by srch_destination_id order by c')
-sqldf('select hotel_cluster,count(*) as c from d1_a where srch_destination_id=11439 group by hotel_cluster order by c')
+sqldf('select hotel_cluster,count(*) as c from d1_a where srch_destination_id=8253 and orig_destination_distance<1000 group by hotel_cluster order by c limit 10')
 
 
 #Read predictions
-p3 <- read.csv('predictions.csv')
+p <- read.csv('predictions.csv')
 
 #analyze mapk
-a <- sqldf('select srch_destination_id,count(*) as c from d1_a  group by srch_destination_id order by c')
+a <- sqldf('select user_id,count(*) as c from d1_a  group by user_id order by c')
 
 b <- merge(d1_b,a,all.x=T)
 b$c[is.na(b$c)] <- 0
-b$mapk <- p$mapk
-b$mapk2 <- p2$mapk
-b$mapk3 <- p3$mapk
+b <- merge(d1_b,p,by='row.names')
 
-ggplot() + geom_smooth(aes(col='mapk',x=b$c,y=b$mapk)) + 
-  geom_smooth(aes(col='mapk2',x=b$c,y=b$mapk2)) + 
-  geom_smooth(aes(col='mapk3',x=b$c,y=b$mapk3)) + 
+subset(b,user_id==1156294 & srch_destination_id==8253)[,c(1:24,175:186)]
+
+ggplot() + geom_smooth(aes(col='mapk',x=b$c,y=b$mapk)) +
   coord_cartesian(ylim=c(-0.1,1.1),xlim=c(0,400))
 
-ggplot() + stat_summary(fun.y=mean,geom='point',aes(col='mapk',x=b$c,y=b$mapk)) + 
-  stat_summary(fun.y=mean,geom='point',aes(col='mapk2',x=b$c,y=b$mapk2)) + 
-  stat_summary(fun.y=mean,geom='point',aes(col='mapk3',x=b$c,y=b$mapk3)) + 
-  coord_cartesian(ylim=c(-0.1,1.1),xlim=c(-1,200))
+ggplot() + stat_summary(fun.y=mean,geom='point',aes(col='mapk',x=b$c,y=b$mapk)) +
+  coord_cartesian(ylim=c(-0.1,1.1),xlim=c(-1,100))
 

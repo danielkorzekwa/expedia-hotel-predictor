@@ -20,35 +20,24 @@ object predictAll extends LazyLogging {
     val hotelClusters: DenseVector[Double] = unique(test(::, test.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
 
     logger.info("Computing stats...")
- //   val simpleStatsAllPredict = SimpleStatAllPredict(train(::, 2))
 
- //   val simpleStatsSrchDestIdPredict = SimpleStatsSingleCatPredict(train(::, List(1, 2)).toDenseMatrix)
-    //  val svmFromCSVPredict = SVMFromCSVPredict()
+    val ensemblePredict = EnsemblePredict(train)
 
-    val userDestPredict = UserDestPredict(train)
-    
     logger.info("Making predictions...")
     var allCount = new AtomicInteger(0)
     var defModelCount = new AtomicInteger(0)
 
-    val userDestDataX = test(::, 0 to 1)
-    val destTestDataX = test(::, 1)
-    
+    val testData = test(::, List(0, 1, 2, 3, 4)).toDenseMatrix
+
     val predictionSeq = (0 until hotelClusters.size).map { i =>
 
       logger.info("predicting hotel cluster=" + i)
       val hotelCluster = hotelClusters(i)
-      // val hotelData = getHotelClusterData(train, hotelCluster.toInt)(::, List(1, train.cols - 1)).toDenseMatrix
-      // hotelPredict(hotelData, dataB, hotelCluster.toInt)
 
-  //    val simpleStatsSrchDestId = simpleStatsSrchDestIdPredict.predict(destTestDataX, hotelCluster)
-     val userDestPredictionVec = userDestPredict.predict(userDestDataX, hotelCluster)
       //  val svmFromCSV = svmFromCSVPredict.predict(testDataX, hotelCluster)
-
-      //  val gpPredicted = hotelPredictMtGpc(hotelData, testDataX(::,1 to 1), hotelCluster.toInt)
-
-
-      userDestPredictionVec
+      //    val predicted = userLocMarketDistClusterMap.predict(testData, hotelCluster)
+      val predicted = ensemblePredict.predict(testData, hotelCluster)
+      predicted
 
     }.toList
 

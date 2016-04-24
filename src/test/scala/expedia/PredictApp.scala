@@ -21,7 +21,7 @@ object PredictApp extends LazyLogging {
 
     val filteredDataB = dataB//filterRows(dataB,0, userId => userId == 195876)
     val predictionData = predictAll(dataA, filteredDataB)
-       val idx = predictionData(::,4).findAll(p => true)
+       val idx = predictionData(::,0).findAll(p => true)
     val filteredPredictonData = predictionData(idx,::).toDenseMatrix
    
     println(filteredPredictonData.toString(20,320))

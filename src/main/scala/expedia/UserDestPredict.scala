@@ -9,10 +9,7 @@ import expedia.similarity.calcCatStats
 import dk.gp.util.filterRows
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
-import expedia.similarity.CatStatsMap
 import scala.collection._
-import expedia.similarity.CatStatsMap
-import expedia.similarity.CatStatsMap2
 import expedia.similarity.CatStatsMap3
 
 /**
@@ -36,11 +33,22 @@ case class UserDestPredict(trainData: DenseMatrix[Double]) extends LazyLogging {
 
     data(*, ::).map { row =>
 
-      val userId = row(0)
-      val destId = row(1)
-      val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
-      prob
+      predict(row, hotelCluster)
+
     }
+
+  }
+
+  /**
+   * @param data [user_id,dest]
+   * @param hotelCluster
+   */
+  def predict(row: DenseVector[Double], hotelCluster: Double): Double = {
+
+    val userId = row(0)
+    val destId = row(1)
+    val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
+    prob
 
   }
 
@@ -52,14 +60,13 @@ case class UserDestPredict(trainData: DenseMatrix[Double]) extends LazyLogging {
     def prior(destId: Double) = clusterProbByDestMap(destId)
 
     trainData(*, ::).foreach { row =>
-      if (i.getAndIncrement % 100 == 0) println(i.get)
+      if (i.getAndIncrement % 1000 == 0) println("UserDestPredict building=" + i.get)
       val userId = row(0)
       clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMap3(prior)).add(row(1 to 2).toDenseVector)
     }
 
     val clusterProbsByUserMap = clusterStatsByUserMap2.map { case (userId, stats) => (userId, calcCatProbs(stats.toMap())) }
 
-    println(clusterProbsByUserMap.size)
     clusterProbsByUserMap
 
   }

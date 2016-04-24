@@ -1,3 +1,9 @@
+heierarchical bayes: all/fest/userId + dataleak(src_dest_distance)
+... (1966377 total)
+mapk=0.36748, size=1966377
+train/test size= 1021800 / 1966377
+analysis time=241060
+
 hierarchical bayes: all/dest/userId
 ... (1976304 total)
 mapk=0.30939, size=1976304
