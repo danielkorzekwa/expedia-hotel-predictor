@@ -17,7 +17,7 @@ object predictAll extends LazyLogging {
    */
   def apply(train: DenseMatrix[Double], test: DenseMatrix[Double]): DenseMatrix[Double] = {
 
-    val hotelClusters: DenseVector[Double] = unique(test(::, test.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
+    val hotelClusters: DenseVector[Double] = unique(train(::, train.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
 
     logger.info("Computing stats...")
 

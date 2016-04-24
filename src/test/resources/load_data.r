@@ -29,3 +29,14 @@ rownames(d1_b) <- seq(length=nrow(d1_b))
 category <- c('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
 write.csv(d1_a[category],'train_booked_sample_a.csv',row.names=FALSE)
 write.csv(d1_b[category],'train_booked_sample_b.csv',row.names=FALSE)
+write.csv(d1[category],'train_booked_sample_b.csv',row.names=FALSE)
+
+# Test data
+
+
+t<- read.csv('orig_data/test.csv')
+
+t$orig_destination_distance[is.na(t$orig_destination_distance)] <- -1
+
+testCat <- c('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market')
+write.csv(t[testCat],'test_all.csv',row.names=FALSE)

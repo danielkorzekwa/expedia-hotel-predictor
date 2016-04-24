@@ -26,7 +26,8 @@ a <- sqldf('select user_id,count(*) as c from d1_a  group by user_id order by c'
 
 b <- merge(d1_b,a,all.x=T)
 b$c[is.na(b$c)] <- 0
-b <- merge(d1_b,p,by='row.names')
+b$mapk <- p$mapk
+#b <- merge(d1_b,p,by='row.names')
 
 subset(b,user_id==1156294 & srch_destination_id==8253)[,c(1:24,175:186)]
 

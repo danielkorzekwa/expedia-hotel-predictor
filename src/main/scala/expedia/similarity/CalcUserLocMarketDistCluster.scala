@@ -64,7 +64,7 @@ object CalcUserLocMarketDistCluster {
 
       val datetime = df.parse(lArray(0).drop(1).dropRight(1))
 
-      if ( datetime.getTime < testSetStart) {
+      if (true ||  datetime.getTime < testSetStart) {
         val userLoc = lArray(5).toDouble
         val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
         val market = lArray(22).toDouble

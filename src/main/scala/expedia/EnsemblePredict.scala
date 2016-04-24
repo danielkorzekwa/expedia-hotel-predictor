@@ -18,8 +18,8 @@ case class EnsemblePredict(trainData: DenseMatrix[Double]) {
 
       val leakProb = leakPredict.predict(row(List(0, 1, 4)).toDenseVector, hotelCluster)
 
-      //if (leakProb.isNaN()) userDestPredict.predict(row(2 to 3), hotelCluster) else leakProb
-      if (leakProb.isNaN()) 0d else leakProb
+      if (leakProb.isNaN()) userDestPredict.predict(row(2 to 3), hotelCluster) else leakProb
+   //   if (leakProb.isNaN()) 0d else leakProb
     }
   }
 }
