@@ -18,6 +18,6 @@ model <- svm(hotel_cluster ~ ., data = svmData_a,probability=T)
 svmProbs <- predict(model,svmData_b,probability=T)
 svmProbs <- attr(svmProbs, "probabilities")
 svmProbs <- svmProbs[, order(as.integer(colnames(svmProbs)))]
-write.csv(svmProbs,'data_booked/svm_predictions_sample_b.csv',row.names=F)
+write.csv(svmProbs2,'data_booked/svm_predictions_sample_b.csv',row.names=F)
 
 tuneResults <- tune.svm(hotel_cluster~., data = svmData_a, gamma = seq(.5, .9, by = .1), cost = seq(1,1000, by = 200))

@@ -12,7 +12,7 @@ object libSvmPredict {
     val predictionMatrix = z(*, ::).map { z =>
 
       val nodes = toSvmNodes(z)
-      val probsArray =  Array[Double]()
+      val probsArray =  Array.fill(model.svm_model.label.size)(0d)
       val predicted = svm.svm_predict_probability(model.svm_model, nodes, probsArray)
       DenseVector(probsArray)
     }

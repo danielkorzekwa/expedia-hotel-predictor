@@ -25,7 +25,7 @@ object PredictApp extends LazyLogging {
     val svmPredictionsData =  csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_sample_b.csv"), skipLines = 1)
     
     val destMatrix = csvread(new File("c:/perforce/daniel/ex/orig_data/destinations.csv"), skipLines = 1)
-    val svmPredictionModel = SVMPredictionModel(destMatrix,dataA)
+    val svmPredictionModel = SVMPredictionModel(destMatrix,dataA(::,List(3,5)).toDenseMatrix)
     
     val filteredDataB = dataB //filterRows(dataB,0, userId => userId == 195876)
     val predictionData = predictAll(dataA, expediaTrainFile, svmPredictionsData,svmPredictionModel,filteredDataB)

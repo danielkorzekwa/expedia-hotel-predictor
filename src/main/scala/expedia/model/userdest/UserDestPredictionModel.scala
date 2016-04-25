@@ -59,8 +59,15 @@ case class UserDestPredictionModel(trainData: DenseMatrix[Double], svmPrediction
     val clusterStatsByUserMap2: mutable.Map[Double, CatStatsMap3] = mutable.Map()
 
     val i = new AtomicInteger(0)
-    def prior(destId: Double) = {
-      svmPredictionModel.predict(destId) //clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap(destId))
+    def prior(destId: Double):DenseVector[Double] = {
+      val svmDestClusterProbs = svmPredictionModel.predict(destId) 
+     
+     val probs = svmDestClusterProbs match {
+        case Some(svmDestClusterProbs) => svmDestClusterProbs
+        case None => clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap(destId))
+      }
+      
+       probs
     }
 
     trainData(*, ::).foreach { row =>

@@ -38,7 +38,7 @@ object libSvmTrain {
     param.eps = 1e-3;
     param.p = 0.1;
     param.shrinking = 1;
-    param.probability = 0;
+    param.probability = 1;
     param.nr_weight = 0;
     param.weight_label = Array(0);
     param.weight = Array(0);

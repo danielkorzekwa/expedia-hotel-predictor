@@ -17,7 +17,7 @@ object SubmissionApp extends LazyLogging {
     val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_sample_b.csv"), skipLines = 1)
 
     val destMatrix = csvread(new File("c:/perforce/daniel/ex/orig_data/destinations.csv"), skipLines = 1)
-    val svmPredictionModel = SVMPredictionModel(destMatrix,dataA)
+    val svmPredictionModel = SVMPredictionModel(destMatrix,dataA(::,List(3,5)).toDenseMatrix)
 
     logger.info("Loading test data...")
     val test = csvread(new File("c:/perforce/daniel/ex/test_all.csv"), skipLines = 1) //(0 to 1000, ::)

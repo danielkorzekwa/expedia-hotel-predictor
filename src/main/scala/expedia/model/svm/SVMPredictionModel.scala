@@ -22,19 +22,24 @@ case class SVMPredictionModel(destMatrix: DenseMatrix[Double], trainData: DenseM
    *
    * @param [cluster0 prob, cluster 1 prob,...,cluster99 prob]
    */
-  def predict(destId: Double): DenseVector[Double] = {
-println(destId)
-    val d149Vec = d149ByDestMap(destId)
-    
-    val probs = libSvmPredict(d149Vec.toDenseMatrix.t,svmModel)
-    probs(0,::).t
+  def predict(destId: Double): Option[DenseVector[Double]] = {
+
+    val d149Vec = d149ByDestMap.get(destId)
+    d149Vec match {
+      case Some(d149Vec) => {
+        val probs = libSvmPredict(d149Vec.toDenseMatrix, svmModel)
+        Some(probs(0, ::).t)
+      }
+      case None => None
+    }
+
   }
 
   private def trainSVM(): LibSvmModel = {
 
     val trainDataSeq: ListBuffer[DenseVector[Double]] = ListBuffer()
 
-    (0 until 100).foreach {
+    (0 until 4000).foreach {
       case i =>
 
         val row = trainData(i, ::)
@@ -49,10 +54,11 @@ println(destId)
 
     }
 
-    val svmTrainData = DenseVector.horzcat(trainDataSeq :_*).t
-    val svmTrainDataX = svmTrainData(::,0 until svmTrainData.cols-1)
-     val svmTrainDataY = svmTrainData(::,svmTrainData.cols-1)
-   val svmModel = libSvmTrain(svmTrainDataX,svmTrainDataY)
-   svmModel
+    val svmTrainData = DenseVector.horzcat(trainDataSeq: _*).t
+    
+    val svmTrainDataX = svmTrainData(::, 0 until svmTrainData.cols - 1)
+    val svmTrainDataY = svmTrainData(::, svmTrainData.cols - 1)
+    val svmModel = libSvmTrain(svmTrainDataX, svmTrainDataY)
+    svmModel
   }
 }
