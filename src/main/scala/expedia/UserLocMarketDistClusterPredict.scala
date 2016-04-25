@@ -16,12 +16,9 @@ case class UserLocMarketDistClusterPredict(trainData: DenseMatrix[Double]) exten
   // val clustMap = CalcUserLocMarketDistCluster(trainData).toMap
 
   logger.info("Loading distClusterMap...")
-  //  val fileIn = new FileInputStream("target/distClusterMap_all.obj")
-  //  val objectInt = new ObjectInputStream(fileIn)
-  //  val clustMap = objectInt.readObject().asInstanceOf[Map[Tuple3[Double, Double, Double], Double]]
 
-  val dataFile = "c:/perforce/daniel/ex/orig_data/train.csv"
-  // val dataFile = "c:/perforce/daniel/ex/train_small.csv"
+ // val dataFile = "c:/perforce/daniel/ex/orig_data/train.csv"
+   val dataFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
   val clustMap = CalcUserLocMarketDistCluster(dataFile).toMap
 
   logger.info("Loading distClusterMap...done")
