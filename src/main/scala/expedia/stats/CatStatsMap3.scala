@@ -23,6 +23,7 @@ case class CatStatsMap3(priorCatStats: Double =>DenseVector[Double]) {
 
   def toMap(): immutable.Map[Double, DenseVector[Double]] = catStatsMap.toMap
 
-  // private def createPriorCatStatsAtomic(categoryId: Double) = priorCatStats(categoryId).map { case (item, count) => (item, new AtomicDouble(count)) }
-  private def createPriorCatStatsAtomic(categoryId: Double): DenseVector[Double] =  priorCatStats(categoryId.toInt).copy
+  private def createPriorCatStatsAtomic(categoryId: Double): DenseVector[Double] =  {
+    priorCatStats(categoryId.toInt).copy
+  }
 }

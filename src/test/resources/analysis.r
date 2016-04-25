@@ -18,8 +18,9 @@ sqldf('select srch_destination_id,count(*) as c from d1_a group by srch_destinat
 sqldf('select hotel_cluster,count(*) as c from d1_a where srch_destination_id=8253 and orig_destination_distance<1000 group by hotel_cluster order by c limit 10')
 
 
-#Read predictions
-p <- read.csv('predictions.csv')
+#Predictions analysis
+p <- read.csv('data_booked/predictions_sample_b.csv')
+d <- 
 
 #analyze mapk
 a <- sqldf('select user_id,count(*) as c from d1_a  group by user_id order by c')

@@ -9,9 +9,9 @@ import expedia.model.clusterdist.ClusterDistPredictionModel
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
  */
-case class EnsemblePredictionModel(trainBookedData: DenseMatrix[Double], expediaTrainFile: String) {
+case class EnsemblePredictionModel(trainBookedData: DenseMatrix[Double], expediaTrainFile: String,svmPredictionsData:DenseMatrix[Double]) {
 
-  val userDestPredict = UserDestPredictionModel(trainBookedData(::, List(2, 3, 5)).toDenseMatrix)
+  val userDestPredict = UserDestPredictionModel(trainBookedData(::, List(2, 3, 5)).toDenseMatrix,svmPredictionsData)
   val clusterDistPredict = ClusterDistPredictionModel(expediaTrainFile)
 
   def predict(data: DenseMatrix[Double], hotelCluster: Double): DenseVector[Double] = {
