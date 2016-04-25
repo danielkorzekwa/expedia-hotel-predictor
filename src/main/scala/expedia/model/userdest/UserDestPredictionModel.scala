@@ -3,13 +3,13 @@ package expedia.model.userdest
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
-import expedia.similarity.calcCatProbs
-import expedia.similarity.calcCatStatsMap
-import expedia.similarity.calcCatStats
+import expedia.stats.calcCatProbs
+import expedia.stats.calcCatStatsMap
+import expedia.stats.calcCatStats
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
-import expedia.similarity.CatStatsMap3
+import expedia.stats.CatStatsMap3
 
 /**
  * @param trainData mat[userId,dest,cluster]

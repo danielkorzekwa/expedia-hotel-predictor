@@ -3,8 +3,8 @@ package expedia.model.simple
 import scala.collection._
 import breeze.linalg._
 import breeze.linalg.DenseVector
-import expedia.similarity.calcCatStats
-import expedia.similarity.calcCatProbs
+import expedia.stats.calcCatStats
+import expedia.stats.calcCatProbs
 
 case class SimpleStatAllPredict(trainData: DenseVector[Double]) {
 

@@ -1,4 +1,4 @@
-package expedia.similarity
+package expedia.stats
 
 import breeze.linalg.DenseVector
 import scala.collection._

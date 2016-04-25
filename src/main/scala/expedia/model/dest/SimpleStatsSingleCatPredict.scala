@@ -7,9 +7,9 @@ import breeze.linalg.DenseMatrix
 import breeze.linalg._
 import breeze.stats._
 import scala.collection._
-import expedia.similarity.calcCatStatsMap
-import expedia.similarity.calcCatStats
-import expedia.similarity.calcCatProbs
+import expedia.stats.calcCatStatsMap
+import expedia.stats.calcCatStats
+import expedia.stats.calcCatProbs
 
 /**
  *

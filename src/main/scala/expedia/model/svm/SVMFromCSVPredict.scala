@@ -1,4 +1,4 @@
-package expedia
+package expedia.model.svm
 
 import breeze.linalg._
 import java.io.File
