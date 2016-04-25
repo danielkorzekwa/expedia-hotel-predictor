@@ -1,17 +1,15 @@
 
 
-package expedia
+package expedia.model.dest
 
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
 import breeze.stats._
 import scala.collection._
-import java.util.concurrent.atomic.AtomicInteger
 import expedia.similarity.calcCatStatsMap
 import expedia.similarity.calcCatStats
 import expedia.similarity.calcCatProbs
-import dk.gp.math.sqDist
 
 /**
  *

@@ -1,6 +1,6 @@
 
 
-package expedia
+package expedia.model.gpc
 
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
@@ -12,7 +12,6 @@ import breeze.numerics._
 import dk.gp.mtgpc.mtgpcTrain
 import dk.gp.mtgpc.mtgpcPredict
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import dk.gp.gpc.gpcTrain
 
 object hotelPredictMtGpc extends LazyLogging {
 

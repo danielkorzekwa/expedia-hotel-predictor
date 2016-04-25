@@ -1,4 +1,4 @@
-package expedia
+package expedia.model.gpc
 
 import breeze.linalg.DenseMatrix
 import breeze.linalg._

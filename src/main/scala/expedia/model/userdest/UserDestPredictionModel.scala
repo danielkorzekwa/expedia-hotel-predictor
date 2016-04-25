@@ -1,4 +1,4 @@
-package expedia
+package expedia.model.userdest
 
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
@@ -6,7 +6,6 @@ import breeze.linalg._
 import expedia.similarity.calcCatProbs
 import expedia.similarity.calcCatStatsMap
 import expedia.similarity.calcCatStats
-import dk.gp.util.filterRows
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
@@ -15,7 +14,7 @@ import expedia.similarity.CatStatsMap3
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class UserDestPredict(trainData: DenseMatrix[Double]) extends LazyLogging {
+case class UserDestPredictionModel(trainData: DenseMatrix[Double]) extends LazyLogging {
 
   val clusterStatMap = calcCatStats(trainData(::, 2))
   var clusterProbMap: DenseVector[Double] = calcCatProbs(clusterStatMap)
