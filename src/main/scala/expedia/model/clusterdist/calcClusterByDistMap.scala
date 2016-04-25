@@ -9,11 +9,11 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 object calcClusterByDistMap extends LazyLogging {
 
   /**
-   * @returns Map[(user_location_city,orig_destination_distance,hotel_market),hotel_cluster]
+   * @returns Map[(user_location_city,orig_destination_distance,hotel_market,hotel_cluster),count]
    */
-  def apply(expediaFile: String): Map[Tuple3[Double, Double, Double], Double] = {
+  def apply(expediaFile: String): Map[Tuple4[Double, Double, Double, Double], Double] = {
 
-    val clusterMap: mutable.Map[Tuple3[Double, Double, Double], Double] = mutable.Map()
+    val clusterMap: mutable.Map[Tuple4[Double, Double, Double, Double], Double] = mutable.Map()
 
     var all = 0
 
@@ -35,17 +35,13 @@ object calcClusterByDistMap extends LazyLogging {
     clusterMap.toMap
   }
 
-  private def addToMap(clusterMap: mutable.Map[Tuple3[Double, Double, Double], Double], row: DenseVector[Double]) = {
+  private def addToMap(clusterMap: mutable.Map[Tuple4[Double, Double, Double, Double], Double], row: DenseVector[Double]) = {
 
-    val key = (row(0), row(1), row(2))
+    val key = (row(0), row(1), row(2), row(3))
 
     if (row(1) != -1) {
-      val cluster = clusterMap.get(key)
-      cluster match {
-        case None          => clusterMap.update(key, row(3))
-        case Some(cluster) => //if (cluster != row(3)) println("error: %s %.2f %.2f".format(key, cluster, row(3)))
-
-      }
+      val currVal = clusterMap.getOrElseUpdate(key, 0d)
+      clusterMap.update(key, currVal + 1)
 
     }
 

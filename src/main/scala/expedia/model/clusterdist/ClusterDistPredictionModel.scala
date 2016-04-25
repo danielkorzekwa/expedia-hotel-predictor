@@ -2,7 +2,6 @@ package expedia.model.clusterdist
 
 import breeze.linalg.DenseVector
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import expedia.model.clusterdist.calcClusterByDistMap
 
 case class ClusterDistPredictionModel(expediaTrainFile: String) extends LazyLogging {
 
@@ -15,10 +14,10 @@ case class ClusterDistPredictionModel(expediaTrainFile: String) extends LazyLogg
    */
   def predict(row: DenseVector[Double], hotelCluster: Double): Double = {
 
-    val key = (row(0), row(1), row(2))
-    val cluster = clustMap.getOrElse(key, -1d)
+    val key = (row(0), row(1), row(2),hotelCluster)
+    val prob = if(clustMap.contains(key)) 1d else Double.NaN
 
-    if (cluster == hotelCluster) 1d else Double.NaN
+    prob
 
   }
 }
