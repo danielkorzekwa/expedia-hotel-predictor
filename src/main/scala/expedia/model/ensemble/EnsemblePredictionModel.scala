@@ -5,6 +5,7 @@ import expedia.model.clusterdist.ClusterDistPredictionModel
 import breeze.linalg.DenseVector
 import breeze.linalg._
 import expedia.model.userdest.UserDestPredictionModel
+import expedia.model.clusterdist.ClusterDistPredictionModel2
 
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
@@ -12,7 +13,7 @@ import expedia.model.userdest.UserDestPredictionModel
 case class EnsemblePredictionModel(trainBookedData: DenseMatrix[Double], expediaTrainFile: String) {
 
   val userDestPredict = UserDestPredictionModel(trainBookedData(::, List(2, 3, 5)).toDenseMatrix)
-  val clusterDistPredict = ClusterDistPredictionModel(expediaTrainFile)
+  val clusterDistPredict = ClusterDistPredictionModel2(expediaTrainFile)
 
   def predict(data: DenseMatrix[Double], hotelCluster: Double): DenseVector[Double] = {
 
