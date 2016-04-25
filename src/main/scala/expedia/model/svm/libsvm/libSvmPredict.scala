@@ -7,15 +7,16 @@ import libsvm.svm
 
 object libSvmPredict {
 
-  def apply(z: DenseMatrix[Double], model: LibSvmModel): DenseVector[Double] = {
+  def apply(z: DenseMatrix[Double], model: LibSvmModel): DenseMatrix[Double] = {
 
-    val predictionVector = z(*, ::).map { z =>
+    val predictionMatrix = z(*, ::).map { z =>
 
       val nodes = toSvmNodes(z)
-      val predicted = svm.svm_predict(model.svm_model, nodes)
-      predicted
+      val probsArray =  Array[Double]()
+      val predicted = svm.svm_predict_probability(model.svm_model, nodes, probsArray)
+      DenseVector(probsArray)
     }
 
-    predictionVector
+   predictionMatrix
   }
 }

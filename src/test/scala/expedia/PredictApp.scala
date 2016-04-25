@@ -8,6 +8,7 @@ import breeze.stats._
 import dk.gp.util.csvwrite
 import scala.collection.immutable.HashSet
 import dk.gp.util.filterRows
+import expedia.model.svm.SVMPredictionModel
 object PredictApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
@@ -23,8 +24,11 @@ object PredictApp extends LazyLogging {
 
     val svmPredictionsData =  csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_sample_b.csv"), skipLines = 1)
     
+    val destMatrix = csvread(new File("c:/perforce/daniel/ex/orig_data/destinations.csv"), skipLines = 1)
+    val svmPredictionModel = SVMPredictionModel(destMatrix,dataA)
+    
     val filteredDataB = dataB //filterRows(dataB,0, userId => userId == 195876)
-    val predictionData = predictAll(dataA, expediaTrainFile, svmPredictionsData,filteredDataB)
+    val predictionData = predictAll(dataA, expediaTrainFile, svmPredictionsData,svmPredictionModel,filteredDataB)
     val idx = predictionData(::, 0).findAll(p => true)
     val filteredPredictonData = predictionData(idx, ::).toDenseMatrix
 
