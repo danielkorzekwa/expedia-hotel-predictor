@@ -36,10 +36,14 @@ object calcClusterByDistMap extends LazyLogging {
   }
 
   private def addToMap(clusterMap: mutable.Map[Tuple4[Double, Double, Double, Double], Double], row: DenseVector[Double]) = {
-
+     
     val key = (row(0), row(1), row(2), row(3))
 
-    if (row(1) != -1) {
+   
+    if (row(1)!= -1) {
+      
+   
+      
       val currVal = clusterMap.getOrElseUpdate(key, 0d)
       clusterMap.update(key, currVal + 1)
 
