@@ -18,12 +18,16 @@ import expedia.model.svm.SVMPredictionModel
  */
 case class UserDestPredictionModel(trainData: DenseMatrix[Double], svmPredictionsData: DenseMatrix[Double], svmPredictionModel: SVMPredictionModel) extends LazyLogging {
 
+   val clusterProbByDestMapSVM: Map[Double, DenseVector[Double]] = loadClusterProbsByDestMap(svmPredictionsData)
+  
   val clusterStatMap = calcCatStats(trainData(::, 2))
   var clusterProbMap: DenseVector[Double] = calcCatProbs(clusterStatMap)
 
-  val clusterStatByDestMap = calcCatStatsMap(trainData(::, 1 to 2), destId => clusterProbMap)
+ // val clusterStatByDestMap = calcCatStatsMap(trainData(::, 1 to 2), destId => clusterProbMap)
+  val clusterStatByDestMap = calcCatStatsMap(trainData(::, 1 to 2), destId => clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap))
+ 
   val clusterProbByDestMap: Map[Double, DenseVector[Double]] = calcCatProbs(clusterStatByDestMap)
-  val clusterProbByDestMapSVM: Map[Double, DenseVector[Double]] = loadClusterProbsByDestMap(svmPredictionsData)
+ 
 
   val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap()
 
@@ -52,12 +56,14 @@ case class UserDestPredictionModel(trainData: DenseMatrix[Double], svmPrediction
     //   val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMapSVM).getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap.getOrElse(destId,clusterProbMap)))(hotelCluster.toInt)
 
     //best submission
-  //    val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
-//
+   //   val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
+
     val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
     val userCluster = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap)))
     val prob = userCluster(hotelCluster.toInt)
 
+    //simplest
+   // val prob = clusterProbByDestMap.getOrElse(destId, clusterProbMap)(hotelCluster.toInt)
     prob
 
   }

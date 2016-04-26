@@ -1,10 +1,10 @@
 rm(list=ls())
 
 #Predictions analysis
-p <- read.csv('data_booked/predictions_sample_b.csv')
-p_svm <- read.csv('data_booked/predictions_sample_b_svm.csv')
-train <- read.csv('data_booked/train_booked_sample_a.csv')
-test <- read.csv('data_booked/train_booked_sample_b.csv')
+p <- read.csv('data_booked/predictions_sample_all_b_best.csv')
+p_svm <- read.csv('data_booked/predictions_sample_all_b_svm.csv')
+train <- read.csv('data_booked/train_booked_sample_all_a.csv')
+test <- read.csv('data_booked/train_booked_sample_all_b.csv')
 
 #analyze mapk
 stat <- sqldf('select srch_destination_id,count(*) as c from train  group by srch_destination_id order by c')
