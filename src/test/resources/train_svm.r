@@ -15,9 +15,11 @@ svmData_b <- test[,6:155]
 svmData_b$hotel_cluster <- as.factor(svmData_b$hotel_cluster)
 
 model <- svm(hotel_cluster ~ ., data = svmData_a,probability=T)
-svmProbs <- predict(model,svmData_b,probability=T)
+svmProbs <- predict(model,dest,probability=T)
 svmProbs <- attr(svmProbs, "probabilities")
 svmProbs <- svmProbs[, order(as.integer(colnames(svmProbs)))]
-write.csv(svmProbs2,'data_booked/svm_predictions_sample_b.csv',row.names=F)
+svmProbs <- data.frame(svmProbs)
+svmProbs$srch_destination_id <- dest$srch_destination_id
+write.csv(svmProbs,'data_booked/svm_predictions_dest.csv',row.names=F)
 
 tuneResults <- tune.svm(hotel_cluster~., data = svmData_a, gamma = seq(.5, .9, by = .1), cost = seq(1,1000, by = 200))

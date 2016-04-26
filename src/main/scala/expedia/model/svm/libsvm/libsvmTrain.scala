@@ -15,6 +15,7 @@ object libSvmTrain {
     problem.l = x.rows
     problem.x = x(*, ::).map(xVal => toSvmNodes(xVal)).toArray
     problem.y = y.toArray
+    
 
     val param = getSvnParameter(problem.x(0).size)
 
@@ -25,7 +26,7 @@ object libSvmTrain {
   private def getSvnParameter(featuresNum: Int): svm_parameter = {
     val param = new svm_parameter();
 
-    param.svm_type = svm_parameter.NU_SVC
+    param.svm_type = svm_parameter.C_SVC
 
     // default values
     param.kernel_type = svm_parameter.RBF;

@@ -30,7 +30,7 @@ object predictAll extends LazyLogging {
 
     val testData = test(::, List(0, 1, 2, 3, 4)).toDenseMatrix
 
-    val predictionSeq = (0 until hotelClusters.size).map { i =>
+    val predictionSeq = (0 until hotelClusters.size).par.map { i =>
 
       logger.info("predicting hotel cluster=" + i)
       val hotelCluster = hotelClusters(i)

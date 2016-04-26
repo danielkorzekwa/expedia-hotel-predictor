@@ -12,11 +12,10 @@ import expedia.model.svm.libsvm.libSvmPredict
  * @param destMatrix [destId,d1,d2,...d149]
  * @trainData [dest,cluster]
  */
-case class SVMPredictionModel(destMatrix: DenseMatrix[Double], trainData: DenseMatrix[Double]) {
+case class SVMPredictionModel(destMatrix: DenseMatrix[Double], d149SvmModel: LibSvmModel) {
 
   private val d149ByDestMap = calcD149ByDestMap(destMatrix)
 
-  private val svmModel = trainSVM()
   /**
    * @param row [destId]
    *
@@ -27,38 +26,11 @@ case class SVMPredictionModel(destMatrix: DenseMatrix[Double], trainData: DenseM
     val d149Vec = d149ByDestMap.get(destId)
     d149Vec match {
       case Some(d149Vec) => {
-        val probs = libSvmPredict(d149Vec.toDenseMatrix, svmModel)
+        val probs = libSvmPredict(d149Vec.toDenseMatrix, d149SvmModel)
         Some(probs(0, ::).t)
       }
       case None => None
     }
 
-  }
-
-  private def trainSVM(): LibSvmModel = {
-
-    val trainDataSeq: ListBuffer[DenseVector[Double]] = ListBuffer()
-
-    (0 until 4000).foreach {
-      case i =>
-
-        val row = trainData(i, ::)
-        val destId = row(0)
-        val cluster = row(1)
-
-        d149ByDestMap.get(destId) match {
-          case Some(d149Vec) =>
-            trainDataSeq += DenseVector(d149Vec.toArray :+ cluster)
-          case _ => //no d149 for destId found
-        }
-
-    }
-
-    val svmTrainData = DenseVector.horzcat(trainDataSeq: _*).t
-    
-    val svmTrainDataX = svmTrainData(::, 0 until svmTrainData.cols - 1)
-    val svmTrainDataY = svmTrainData(::, svmTrainData.cols - 1)
-    val svmModel = libSvmTrain(svmTrainDataX, svmTrainDataY)
-    svmModel
   }
 }

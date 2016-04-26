@@ -9,6 +9,7 @@ import dk.gp.util.csvwrite
 import scala.collection.immutable.HashSet
 import dk.gp.util.filterRows
 import expedia.model.svm.SVMPredictionModel
+import expedia.model.svm.libsvm.LibSvmModel
 object PredictApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
@@ -17,15 +18,16 @@ object PredictApp extends LazyLogging {
 
     logger.info("Loading data...")
 
-    val dataA = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_a.csv"), skipLines = 1) //(0 to 10000, ::)
-    val dataB = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_b.csv"), skipLines = 1) //(0 to 10001, ::)
+    val dataA = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_all_a.csv"), skipLines = 1) //(0 to 10000, ::)
+    val dataB = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_all_b.csv"), skipLines = 1) //(0 to 10001, ::)
 
     val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
 
-    val svmPredictionsData =  csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_sample_b.csv"), skipLines = 1)
+    val svmPredictionsData =  csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_dest.csv"), skipLines = 1)
     
     val destMatrix = csvread(new File("c:/perforce/daniel/ex/orig_data/destinations.csv"), skipLines = 1)
-    val svmPredictionModel = SVMPredictionModel(destMatrix,dataA(::,List(3,5)).toDenseMatrix)
+    val d149SvmModel = LibSvmModel.loadFromFile("target/svm_model.libsvm")
+    val svmPredictionModel = SVMPredictionModel(destMatrix,d149SvmModel)
     
     val filteredDataB = dataB //filterRows(dataB,0, userId => userId == 195876)
     val predictionData = predictAll(dataA, expediaTrainFile, svmPredictionsData,svmPredictionModel,filteredDataB)

@@ -49,7 +49,15 @@ case class UserDestPredictionModel(trainData: DenseMatrix[Double], svmPrediction
 
     val userId = row(0)
     val destId = row(1)
-    val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMapSVM).getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
+    //   val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMapSVM).getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap.getOrElse(destId,clusterProbMap)))(hotelCluster.toInt)
+
+    //best submission
+  //    val prob = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap).getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbMap))(hotelCluster.toInt)
+//
+    val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
+    val userCluster = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap)))
+    val prob = userCluster(hotelCluster.toInt)
+
     prob
 
   }
@@ -59,16 +67,19 @@ case class UserDestPredictionModel(trainData: DenseMatrix[Double], svmPrediction
     val clusterStatsByUserMap2: mutable.Map[Double, CatStatsMap3] = mutable.Map()
 
     val i = new AtomicInteger(0)
-    def prior(destId: Double):DenseVector[Double] = {
-      val svmDestClusterProbs = svmPredictionModel.predict(destId) 
-     
-     val probs = svmDestClusterProbs match {
-        case Some(svmDestClusterProbs) => svmDestClusterProbs
-        case None => clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap(destId))
-      }
-      
-       probs
-    }
+    //    def prior(destId: Double): DenseVector[Double] = {
+    //      val svmDestClusterProbs = svmPredictionModel.predict(destId)
+    //
+    //      val probs = svmDestClusterProbs match {
+    //        case Some(svmDestClusterProbs) => svmDestClusterProbs
+    //        case None                      => clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap(destId))
+    //      }
+    //
+    //      probs
+    //    }
+
+    // def prior(destId: Double):DenseVector[Double] = clusterProbByDestMapSVM.getOrElse(destId, clusterProbByDestMap(destId))
+    def prior(destId: Double) = clusterProbByDestMap(destId)
 
     trainData(*, ::).foreach { row =>
       if (i.getAndIncrement % 1000 == 0) println("UserDestPredict building=" + i.get)
