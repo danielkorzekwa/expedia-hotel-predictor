@@ -12,9 +12,7 @@ case class CatStatsMap(priorCatStats: Double =>DenseVector[Double]) {
    * @param x Vec[categoryId,itemId]
    *
    */
-  def add(x: DenseVector[Double]): Unit = {
-    val category = x(0)
-    val itemId = x(1)
+  def add(category:Double,itemId:Double): Unit = {
 
     val currVal = catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId.toInt)
     catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId.toInt) = currVal + 1

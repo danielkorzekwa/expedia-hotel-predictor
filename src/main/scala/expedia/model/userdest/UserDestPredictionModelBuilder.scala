@@ -15,6 +15,7 @@ import expedia.stats.CatStatsMapNoPrior
 import expedia.stats.CatStatsMap
 import expedia.stats.calcVectorProbs
 import expedia.stats.calcVectorMapProbs
+import expedia.stats.UserDestStatsMap
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -23,23 +24,37 @@ case class UserDestPredictionModelBuilder(trainData: DenseMatrix[Double], svmPre
 
   val clusterStatMap = CatStats()
   val clusterStatByDestMapNoPrior = CatStatsMapNoPrior()
+  val userDestStatsMap = UserDestStatsMap()
+
   val clusterProbByDestMapSVM: Map[Double, DenseVector[Double]] = loadClusterProbsByDestMap(svmPredictionsData)
 
-  def processCluster(destId: Double, cluster: Double) = {
+  def processCluster(userId: Double, destId: Double, cluster: Double) = {
     clusterStatMap.add(cluster)
 
     clusterStatByDestMapNoPrior.add(destId, cluster)
+
+    userDestStatsMap.add(userId, destId, cluster)
   }
 
   def toUserDestPredictionModel(): UserDestPredictionModel = {
     val clusterProbMap: DenseVector[Double] = calcVectorProbs(clusterStatMap.getItemVec)
 
     val clusterStatByDestMapWithPrior = clusterStatByDestMapNoPrior.toMap().map { case (destId, clusterCounts) => (destId, clusterCounts + clusterProbMap) }
-
-    //  val clusterStatByDestMap = calcCatStatsMap(trainData(::, 1 to 2), destId => clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap))
     val clusterProbByDestMap: Map[Double, DenseVector[Double]] = calcVectorMapProbs(clusterStatByDestMapWithPrior)
 
-    val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
+    logger.info("Calc clusterProbsByUser stats...")
+    val userDestStatsMapWithPrior = userDestStatsMap.toMap().map {
+      case (userId, clusterByDestMapNoPrior) =>
+
+        val clusterByDestMapWithPrior = clusterByDestMapNoPrior.toMap().map { case (destId, clusterCounts) => (destId, clusterCounts + clusterProbByDestMap(destId)) }
+        (userId, clusterByDestMapWithPrior)
+    }
+    logger.info("Calc clusterProbsByUser stats...done")
+
+    logger.info("Calc clusterProbsByUser probs...")
+    val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = userDestStatsMapWithPrior.map { case (userId, stats) => (userId, calcVectorMapProbs(stats)) }
+    logger.info("Calc clusterProbsByUser probs...done")
+    // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
 
     UserDestPredictionModel(clusterProbsByUser, clusterProbByDestMap, clusterProbByDestMapSVM, clusterProbMap)
   }
@@ -55,7 +70,9 @@ case class UserDestPredictionModelBuilder(trainData: DenseMatrix[Double], svmPre
     trainData(*, ::).foreach { row =>
       if (i.getAndIncrement % 1000 == 0) logger.info("UserDestPredict building=" + i.get)
       val userId = row(0)
-      clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMap(prior)).add(row(1 to 2).toDenseVector)
+      val destId = row(1)
+      val cluster = row(2)
+      clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMap(prior)).add(destId, cluster)
     }
 
     logger.info("Transforming user stats to user probs...")
