@@ -17,10 +17,10 @@ import expedia.model.userdest.UserDestPredictionModelBuilder
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
  */
 object EnsemblePredictionModel extends LazyLogging {
-  def apply(trainBookedData: DenseMatrix[Double], expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], svmPredictionModel: SVMPredictionModel): EnsemblePredictionModel = {
+  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], svmPredictionModel: SVMPredictionModel): EnsemblePredictionModel = {
 
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
-    val userDestPredictBuilder = UserDestPredictionModelBuilder(trainBookedData(::, List(2, 3, 5)).toDenseMatrix, svmPredictionsData, svmPredictionModel)
+    val userDestPredictBuilder = UserDestPredictionModelBuilder( svmPredictionsData, svmPredictionModel)
 
     processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder)
 

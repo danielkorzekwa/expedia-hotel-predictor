@@ -5,7 +5,7 @@ import scala.collection._
 import java.util.concurrent.atomic.AtomicInteger
 case class CatStats() {
 
-  private val itemVec = DenseVector.fill(100)(0d)
+  private val itemVec = DenseVector.fill(100)(0f)
 
   def add(item: Double) = {
 
@@ -13,6 +13,6 @@ case class CatStats() {
     itemVec(item.toInt) = currVal + 1
   }
 
-  def getItemVec(): DenseVector[Double] = itemVec.copy
+  def getItemVec(): DenseVector[Float] = itemVec.copy
 
 }

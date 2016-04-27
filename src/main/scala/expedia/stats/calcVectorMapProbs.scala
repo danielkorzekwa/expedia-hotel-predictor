@@ -10,7 +10,7 @@ object calcVectorMapProbs {
    *
    * @return Map[categoryId,Vector[items probs]]
    */
-   def apply(data: Map[Double, DenseVector[Double]]): Map[Double, DenseVector[Double]] = {
+   def apply(data: Map[Double, DenseVector[Float]]): Map[Double, DenseVector[Float]] = {
 
       val catProbsMap = data.map {
         case (cat, catStatsVec) =>

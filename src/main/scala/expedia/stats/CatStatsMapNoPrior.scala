@@ -6,7 +6,7 @@ import com.google.common.util.concurrent.AtomicDouble
 
 case class CatStatsMapNoPrior() {
 
-  private val catStatsMap: mutable.Map[Double, DenseVector[Double]] = mutable.Map()
+  private val catStatsMap: mutable.Map[Double, DenseVector[Float]] = mutable.Map()
 
   /**
    * @param x Vec[categoryId,itemId]
@@ -19,7 +19,7 @@ case class CatStatsMapNoPrior() {
 
   }
 
-  def toMap(): immutable.Map[Double, DenseVector[Double]] = catStatsMap.toMap
+  def toMap(): immutable.Map[Double, DenseVector[Float]] = catStatsMap.toMap
 
-  private def createPriorCatStatsAtomic(categoryId: Double): DenseVector[Double] =  DenseVector.fill(100)(0d)
+  private def createPriorCatStatsAtomic(categoryId: Double): DenseVector[Float] =  DenseVector.fill(100)(0f)
 }

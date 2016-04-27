@@ -11,10 +11,10 @@ import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
 
-case class UserDestPredictionModel(clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]],
-                                   clusterProbByDestMap: Map[Double, DenseVector[Double]],
-                                   clusterProbByDestMapSVM: Map[Double, DenseVector[Double]],
-                                   clusterProbMap: DenseVector[Double]) extends LazyLogging {
+case class UserDestPredictionModel(clusterProbsByUser: Map[Double, Map[Double, DenseVector[Float]]],
+                                   clusterProbByDestMap: Map[Double, DenseVector[Float]],
+                                   clusterProbByDestMapSVM: Map[Double, DenseVector[Float]],
+                                   clusterProbMap: DenseVector[Float]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]

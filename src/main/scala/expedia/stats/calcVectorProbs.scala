@@ -11,7 +11,7 @@ object calcVectorProbs {
    *
    * @return Vector[items probs]
    */
-   def apply(data: DenseVector[Double]): DenseVector[Double] = {
+   def apply(data: DenseVector[Float]): DenseVector[Float] = {
 
       val Z = sum(data)
       val probsVec = data / Z
