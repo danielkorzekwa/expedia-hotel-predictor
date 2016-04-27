@@ -3,13 +3,11 @@ package expedia.model.userdest
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
-import expedia.stats.calcCatProbs
 import expedia.stats.calcCatStatsMap
 import expedia.stats.calcCatStats
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
-import expedia.stats.CatStatsMap3
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
 

@@ -4,7 +4,7 @@ import breeze.linalg.DenseVector
 import scala.collection._
 import com.google.common.util.concurrent.AtomicDouble
 
-case class CatStatsMap3(priorCatStats: Double =>DenseVector[Double]) {
+case class CatStatsMapNoPrior() {
 
   private val catStatsMap: mutable.Map[Double, DenseVector[Double]] = mutable.Map()
 
@@ -12,9 +12,7 @@ case class CatStatsMap3(priorCatStats: Double =>DenseVector[Double]) {
    * @param x Vec[categoryId,itemId]
    *
    */
-  def add(x: DenseVector[Double]): Unit = {
-    val category = x(0)
-    val itemId = x(1)
+  def add(category:Double,itemId:Double): Unit = {
 
     val currVal = catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId.toInt)
     catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId.toInt) = currVal + 1
@@ -23,7 +21,5 @@ case class CatStatsMap3(priorCatStats: Double =>DenseVector[Double]) {
 
   def toMap(): immutable.Map[Double, DenseVector[Double]] = catStatsMap.toMap
 
-  private def createPriorCatStatsAtomic(categoryId: Double): DenseVector[Double] =  {
-    priorCatStats(categoryId.toInt).copy
-  }
+  private def createPriorCatStatsAtomic(categoryId: Double): DenseVector[Double] =  DenseVector.fill(100)(0d)
 }

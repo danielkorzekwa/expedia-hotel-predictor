@@ -40,13 +40,14 @@ object EnsemblePredictionModel extends LazyLogging {
 
       val userLoc = lArray(5).toDouble
       val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
+      val destId = lArray(16).toDouble
       val market = lArray(22).toDouble
       val cluster = lArray(23).toDouble
 
       val key = (userLoc, dist, market)
 
       clusterDistPredictBuilder.processCluster(userLoc, dist, market, cluster)
-      //  userDestPredictBuilder.processCluster()
+        userDestPredictBuilder.processCluster(destId,cluster)
 
       i += 1
       if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
