@@ -20,7 +20,7 @@ import expedia.stats.UserDestStatsMap
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class UserDestPredictionModelBuilder( svmPredictionsData: DenseMatrix[Double], svmPredictionModel: SVMPredictionModel) extends LazyLogging {
+case class UserDestPredictionModelBuilder( svmPredictionsData: DenseMatrix[Double], userIds:Set[Int]) extends LazyLogging {
 
   val clusterStatMap = CatStats()
   val clusterStatByDestMapNoPrior = CatStatsMapNoPrior()
@@ -33,7 +33,7 @@ case class UserDestPredictionModelBuilder( svmPredictionsData: DenseMatrix[Doubl
 
     clusterStatByDestMapNoPrior.add(destId, cluster)
 
-    userDestStatsMap.add(userId, destId, cluster)
+   if(userIds.contains(userId.toInt)) userDestStatsMap.add(userId, destId, cluster)
   }
 
   def toUserDestPredictionModel(): UserDestPredictionModel = {

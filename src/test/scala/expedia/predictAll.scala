@@ -16,13 +16,15 @@ object predictAll extends LazyLogging {
   /**
    * @return p1..p5,r1..r5,actual,mapk
    */
-  def apply(expediaTrainFile: String, svmPredictionsData:DenseMatrix[Double],svmPredictionModel:SVMPredictionModel,test: DenseMatrix[Double]): DenseMatrix[Double] = {
+  def apply(expediaTrainFile: String, svmPredictionsData:DenseMatrix[Double],test: DenseMatrix[Double]): DenseMatrix[Double] = {
 
+    val userIds = test(::,2).toArray.distinct.map(_.toInt).toSet
+    
     val hotelClusters: DenseVector[Double] =DenseVector.rangeD(0, 100, 1)// unique(train(::, train.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
 
     logger.info("Computing stats...")
 
-    val ensemblePredict = EnsemblePredictionModel(expediaTrainFile,svmPredictionsData,svmPredictionModel)
+    val ensemblePredict = EnsemblePredictionModel(expediaTrainFile,svmPredictionsData,userIds)
 
     logger.info("Making predictions...")
     var allCount = new AtomicInteger(0)
