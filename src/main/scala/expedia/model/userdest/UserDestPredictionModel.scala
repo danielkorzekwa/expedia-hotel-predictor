@@ -11,9 +11,9 @@ import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
 
-case class UserDestPredictionModel(clusterProbsByUser: Map[Double, Map[Double, DenseVector[Float]]],
-                                   clusterProbByDestMap: Map[Double, DenseVector[Float]],
-                                   clusterProbByDestMapSVM: Map[Double, DenseVector[Float]],
+case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVector[Float]]],
+                                   clusterProbByDestMap: Map[Int, DenseVector[Float]],
+                                   clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
                                    clusterProbMap: DenseVector[Float]) extends LazyLogging {
 
   /**
@@ -22,8 +22,8 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Double, Map[Double, D
    */
   def predict(row: DenseVector[Double], hotelCluster: Double): Double = {
 
-    val userId = row(0)
-    val destId = row(1)
+    val userId = row(0).toInt
+    val destId = row(1).toInt
 
     val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
     val userCluster = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap)))

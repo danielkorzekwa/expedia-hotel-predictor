@@ -6,12 +6,12 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 
 case class UserDestStatsMap() {
   
-   private val clusterStatsByUserMap2: mutable.Map[Double, CatStatsMapNoPrior] = mutable.Map()
+   private val clusterStatsByUserMap2: mutable.Map[Int, CatStatsMapNoPrior] = mutable.Map()
   
-  def add(userId:Double, destId:Double,cluster:Double): Unit = {
+  def add(userId:Int, destId:Int,cluster:Int): Unit = {
     
       clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMapNoPrior()).add(destId,cluster)
   }
    
-    def toMap(): immutable.Map[Double, CatStatsMapNoPrior] = clusterStatsByUserMap2.toMap
+    def toMap(): immutable.Map[Int, CatStatsMapNoPrior] = clusterStatsByUserMap2.toMap
 }

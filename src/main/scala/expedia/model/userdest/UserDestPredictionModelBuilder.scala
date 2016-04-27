@@ -26,9 +26,9 @@ case class UserDestPredictionModelBuilder( svmPredictionsData: DenseMatrix[Doubl
   val clusterStatByDestMapNoPrior = CatStatsMapNoPrior()
   val userDestStatsMap = UserDestStatsMap()
 
-  val clusterProbByDestMapSVM: Map[Double, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
+  val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
-  def processCluster(userId: Double, destId: Double, cluster: Double) = {
+  def processCluster(userId: Int, destId: Int, cluster: Int) = {
     clusterStatMap.add(cluster)
 
     clusterStatByDestMapNoPrior.add(destId, cluster)
@@ -40,7 +40,7 @@ case class UserDestPredictionModelBuilder( svmPredictionsData: DenseMatrix[Doubl
     val clusterProbMap: DenseVector[Float] = calcVectorProbs(clusterStatMap.getItemVec)
 
     val clusterStatByDestMapWithPrior = clusterStatByDestMapNoPrior.toMap().map { case (destId, clusterCounts) => (destId, clusterCounts + clusterProbMap) }
-    val clusterProbByDestMap: Map[Double, DenseVector[Float]] = calcVectorMapProbs(clusterStatByDestMapWithPrior)
+    val clusterProbByDestMap: Map[Int, DenseVector[Float]] = calcVectorMapProbs(clusterStatByDestMapWithPrior)
 
     logger.info("Calc clusterProbsByUser stats...")
     val userDestStatsMapWithPrior = userDestStatsMap.toMap().map {
@@ -52,7 +52,7 @@ case class UserDestPredictionModelBuilder( svmPredictionsData: DenseMatrix[Doubl
     logger.info("Calc clusterProbsByUser stats...done")
 
     logger.info("Calc clusterProbsByUser probs...")
-    val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Float]]] = userDestStatsMapWithPrior.map { case (userId, stats) => (userId, calcVectorMapProbs(stats)) }
+    val clusterProbsByUser: Map[Int, Map[Int, DenseVector[Float]]] = userDestStatsMapWithPrior.map { case (userId, stats) => (userId, calcVectorMapProbs(stats)) }
     logger.info("Calc clusterProbsByUser probs...done")
     // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
 

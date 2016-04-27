@@ -39,10 +39,10 @@ object EnsemblePredictionModel extends LazyLogging {
 
       val userLoc = lArray(5).toDouble
       val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
-      val userId = lArray(7).toDouble
-      val destId = lArray(16).toDouble
+      val userId = lArray(7).toInt
+      val destId = lArray(16).toInt
       val market = lArray(22).toDouble
-      val cluster = lArray(23).toDouble
+      val cluster = lArray(23).toInt
 
       val key = (userLoc, dist, market)
 
