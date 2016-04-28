@@ -13,6 +13,6 @@ case class CatStats() {
     itemVec(item.toInt) = currVal + 1
   }
 
-  def getItemVec(): DenseVector[Float] = itemVec.copy
+  def getItemVec(): DenseVector[Float] = itemVec
 
 }

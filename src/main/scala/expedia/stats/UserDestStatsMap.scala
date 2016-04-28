@@ -13,5 +13,5 @@ case class UserDestStatsMap() {
       clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMapNoPrior()).add(destId,cluster)
   }
    
-    def toMap(): immutable.Map[Int, CatStatsMapNoPrior] = clusterStatsByUserMap2.toMap
+    def getMap(): mutable.Map[Int, CatStatsMapNoPrior] = clusterStatsByUserMap2
 }

@@ -13,21 +13,21 @@ import expedia.model.svm.libsvm.LibSvmModel
 object PredictApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
-
+    
     val now = System.currentTimeMillis()
 
     logger.info("Loading data...")
 
-   // val dataA = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_all_a.csv"), skipLines = 1) //(0 to 10000, ::)
+    // val dataA = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_all_a.csv"), skipLines = 1) //(0 to 10000, ::)
     val dataB = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_sample_all_b.csv"), skipLines = 1) //(0 to 10001, ::)
 
     val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
     //val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
 
-    val svmPredictionsData =  csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_dest_20K.csv"), skipLines = 1)
-        
+    val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_dest_20K.csv"), skipLines = 1)
+
     val filteredDataB = dataB //filterRows(dataB,0, userId => userId == 195876)
-    val predictionData = predictAll( expediaTrainFile, svmPredictionsData,filteredDataB)
+    val predictionData = predictAll(expediaTrainFile, svmPredictionsData, filteredDataB)
     val idx = predictionData(::, 0).findAll(p => true)
     val filteredPredictonData = predictionData(idx, ::).toDenseMatrix
 

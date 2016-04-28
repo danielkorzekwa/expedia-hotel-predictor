@@ -19,7 +19,7 @@ case class CatStatsMapNoPrior() {
 
   }
 
-  def toMap(): immutable.Map[Int, DenseVector[Float]] = catStatsMap.toMap
+  def getMap(): Map[Int, DenseVector[Float]] = catStatsMap
 
   private def createPriorCatStatsAtomic(categoryId: Int): DenseVector[Float] =  DenseVector.fill(100)(0f)
 }
