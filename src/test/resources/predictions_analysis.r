@@ -2,12 +2,10 @@ rm(list=ls())
 
 #Predictions analysis
 p <- read.csv('data_booked/predictions_sample_all_b_best.csv')
-p_svm <- read.csv('data_booked/predictions_sample_all_b_svm2.csv')
 train <- read.csv('data_booked/train_booked_sample_all_a.csv')
 test <- read.csv('data_booked/train_booked_sample_all_b.csv')
 
 p <- read.csv('data_booked/predictions_sample_b.csv')
-p_svm <- read.csv('data_booked/predictions_sample_b_svm.csv')
 train <- read.csv('data_booked/train_booked_sample_a.csv')
 test <- read.csv('data_booked/train_booked_sample_b.csv')
 
@@ -26,12 +24,12 @@ test$r1_svm <- p_svm$r1
 test <- merge(test,stat,all.x=T)
 
 test$c[is.na(test$c)] <- 0
-test  <- subset(test,p1 !=1 & p1_svm !=1)
+test  <- subset(test,p1 !=1 )
 
 ggplot() + geom_smooth(aes(col='mapk',x=b$c,y=b$mapk)) +
   coord_cartesian(ylim=c(-0.1,1.1),xlim=c(0,400))
 
 ggplot() + stat_summary(fun.y=mean,geom='point',aes(col='mapk',x=test$c,y=test$mapk)) +
-   stat_summary(fun.y=mean,geom='point',aes(col='mapk_svm',x=test$c,y=test$mapk_svm)) +
-  coord_cartesian(ylim=c(-0.1,1.1),xlim=c(-1,100))
+ #  stat_summary(fun.y=mean,geom='point',aes(col='mapk_svm',x=test$c,y=test$mapk_svm)) +
+  coord_cartesian(ylim=c(-0.1,1.1),xlim=c(-1,200))
 

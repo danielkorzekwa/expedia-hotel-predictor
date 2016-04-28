@@ -19,7 +19,7 @@ object predictAll extends LazyLogging {
   def apply(expediaTrainFile: String, svmPredictionsData:DenseMatrix[Double],test: DenseMatrix[Double]): DenseMatrix[Double] = {
 
     val userIds = test(::,2).toArray.distinct.map(_.toInt).toSet
-    
+      
     val hotelClusters: DenseVector[Double] =DenseVector.rangeD(0, 100, 1)// unique(train(::, train.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
 
     logger.info("Computing stats...")

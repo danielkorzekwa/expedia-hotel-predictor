@@ -26,33 +26,42 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
   val clusterStatMap = CatStats()
 
+  val clusterStatByContinentMapNoPrior = CatStatsMapNoPrior()
+
   val clusterStatByDestMapNoPrior = CatStatsMapNoPrior()
 
   val userDestStatsMap = UserDestStatsMap()
 
   val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
-  def processCluster(userId: Int, destId: Int, isBooking: Int, cluster: Int) = {
+  val continentByDest: mutable.Map[Int, Int] = mutable.Map()
+
+  def processCluster(userId: Int, destId: Int, isBooking: Int, hotelContinent: Int, cluster: Int) = {
     clusterStatMap.add(cluster)
 
-  clusterStatByDestMapNoPrior.add(destId, cluster)
- 
+    clusterStatByContinentMapNoPrior.add(hotelContinent, cluster)
+
+    clusterStatByDestMapNoPrior.add(destId, cluster)
+
     if (userIds.contains(userId.toInt)) {
-    userDestStatsMap.add(userId, destId, cluster)
+      userDestStatsMap.add(userId, destId, cluster)
     }
+
+    continentByDest += destId -> hotelContinent
   }
 
   def toUserDestPredictionModel(): UserDestPredictionModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
 
+    calcVectorMapProbsMutable(clusterStatByContinentMapNoPrior.getMap().toMap)
 
-     clusterStatByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterStatMap.getItemVec) }
+    clusterStatByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getMap.getOrElse(continentByDest(destId),clusterStatMap.getItemVec)) }
     calcVectorMapProbsMutable(clusterStatByDestMapNoPrior.getMap().toMap)
 
     logger.info("Calc clusterProbsByUser stats...")
     userDestStatsMap.getMap().foreach {
       case (userId, clusterByDestMapNoPrior) =>
-        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+=10f*clusterStatByDestMapNoPrior.getMap()(destId) }
+        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 10f * clusterStatByDestMapNoPrior.getMap()(destId) }
     }
     logger.info("Calc clusterProbsByUser stats...done")
 
@@ -63,29 +72,8 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
     logger.info("Calc clusterProbsByUser probs...done")
     // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
 
-    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec)
+    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec,clusterStatByContinentMapNoPrior.getMap(),continentByDest)
   }
 
-  //  def calcClusterProbsByUserMap(clusterProbByDestMap: Map[Double, DenseVector[Double]]): Map[Double, Map[Double, DenseVector[Double]]] = {
-  //
-  //    val clusterStatsByUserMap2: mutable.Map[Double, CatStatsMap] = mutable.Map()
-  //
-  //    val i = new AtomicInteger(0)
-  //
-  //    def prior(destId: Double) = clusterProbByDestMap(destId)
-  //
-  //    trainData(*, ::).foreach { row =>
-  //      if (i.getAndIncrement % 1000 == 0) logger.info("UserDestPredict building=" + i.get)
-  //      val userId = row(0)
-  //      val destId = row(1)
-  //      val cluster = row(2)
-  //      clusterStatsByUserMap2.getOrElseUpdate(userId, CatStatsMap(prior)).add(destId, cluster)
-  //    }
-  //
-  //    logger.info("Transforming user stats to user probs...")
-  //    val clusterProbsByUserMap = clusterStatsByUserMap2.map { case (userId, stats) => (userId, calcVectorMapProbs(stats.toMap())) }
-  //    logger.info("Transforming user stats to user probs...done")
-  //    clusterProbsByUserMap
-  //
-  //  }
+ 
 }

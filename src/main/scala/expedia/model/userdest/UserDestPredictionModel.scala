@@ -14,7 +14,9 @@ import expedia.model.svm.SVMPredictionModel
 case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVector[Float]]],
                                    clusterProbByDestMap: Map[Int, DenseVector[Float]],
                                    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
-                                   clusterProbMap: DenseVector[Float]) extends LazyLogging {
+                                   clusterProbMap: DenseVector[Float],
+                                   clusterStatByContinentMapNoPrior: Map[Int, DenseVector[Float]],
+                                   continentByDest:Map[Int,Int]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
@@ -26,7 +28,19 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVe
     val destId = row(1).toInt
 
     val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
-    val userCluster = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap)))
+
+    val continent = continentByDest.get(destId)
+    val userCluster = continent match {
+      case Some(continent) => {
+       
+        userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent,clusterProbMap)) ))
+      }
+      case None =>  {
+       
+        userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap)))
+      }
+   
+    }
     val prob = userCluster(hotelCluster.toInt)
 
     prob
