@@ -13,6 +13,7 @@ case class ClusterDistPredictionModel(clusterByDistMap: Map[Tuple3[Double, Doubl
 
   def predict(userLoc: Double, dist: Double, market: Double, hotelCluster: Double): Double = {
 
+    
     val key = (userLoc, dist, market)
     val clusterVec = clusterByDistMap.get(key)
     val prob2 = clusterVec match {

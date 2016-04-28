@@ -47,7 +47,7 @@ object predictAll extends LazyLogging {
     println("all count = %d, def model count = %d".format(allCount.get, defModelCount.get))
 
     logger.info("Computing output matrix")
-    val predictionRanksSeq = (0 until test.rows).map { predRecId =>
+    val predictionRanksSeq = (0 until test.rows).par.map { predRecId =>
 
       //seq[(prob,cluster)]
       val predictedProbTuples = (0 until hotelClusters.size).map { hotelCluster => (predictionSeq(hotelCluster)(predRecId), hotelClusters(hotelCluster)) }
@@ -59,7 +59,7 @@ object predictAll extends LazyLogging {
       val apk = averagePrecision(predictionRanks, Array(actual), 5)
 
       DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks), DenseVector(actual, apk))
-    }
+    }.toList
 
     DenseVector.horzcat(predictionRanksSeq: _*).t
   }

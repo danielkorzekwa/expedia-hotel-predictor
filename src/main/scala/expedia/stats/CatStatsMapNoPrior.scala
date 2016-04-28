@@ -12,10 +12,10 @@ case class CatStatsMapNoPrior() {
    * @param x Vec[categoryId,itemId]
    *
    */
-  def add(category:Int,itemId:Int): Unit = {
+  def add(category:Int,itemId:Int,value:Float=1f): Unit = {
 
     val currVal = catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId)
-    catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId.toInt) = currVal + 1
+    catStatsMap.getOrElseUpdate(category, createPriorCatStatsAtomic(category))(itemId.toInt) = currVal + value
 
   }
 

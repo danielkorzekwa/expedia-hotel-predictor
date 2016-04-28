@@ -12,16 +12,20 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
+import expedia.model.clusterdist.ClusterDistPredictionModelBuilder2
+import expedia.model.clusterdist.ClusterDistPredictionModelBuilder2
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
  */
 object EnsemblePredictionModel extends LazyLogging {
-  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds:Set[Int]): EnsemblePredictionModel = {
+  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]): EnsemblePredictionModel = {
 
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
-    val userDestPredictBuilder = UserDestPredictionModelBuilder( svmPredictionsData,userIds)
+    val userDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, userIds)
 
-    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder)
+      val clusterDistPredictBuilder2 = ClusterDistPredictionModelBuilder2()
+    
+    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder,clusterDistPredictBuilder2)
 
     val clusterDistPredict = clusterDistPredictBuilder.toClusterDistPredictionModel()
     val userDestPredict = userDestPredictBuilder.toUserDestPredictionModel()
@@ -31,7 +35,7 @@ object EnsemblePredictionModel extends LazyLogging {
   }
 
   private def processExpediaTrainFile(expediaTrainFile: String, clusterDistPredictBuilder: ClusterDistPredictionModelBuilder,
-                                      userDestPredictBuilder: UserDestPredictionModelBuilder) = {
+                                      userDestPredictBuilder: UserDestPredictionModelBuilder,clusterDistPredictBuilder2:ClusterDistPredictionModelBuilder2) = {
 
     var i = 0
     Source.fromFile(new File(expediaTrainFile)).getLines().drop(1).foreach { l =>
@@ -41,14 +45,15 @@ object EnsemblePredictionModel extends LazyLogging {
       val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
       val userId = lArray(7).toInt
       val destId = lArray(16).toInt
+      val isBooking = lArray(18).toInt
       val market = lArray(22).toDouble
       val cluster = lArray(23).toInt
 
       val key = (userLoc, dist, market)
 
       clusterDistPredictBuilder.processCluster(userLoc, dist, market, cluster)
-        userDestPredictBuilder.processCluster(userId,destId,cluster)
-
+      userDestPredictBuilder.processCluster(userId, destId, isBooking,cluster)
+ //clusterDistPredictBuilder2.processCluster(userLoc, dist, market, cluster)
       i += 1
       if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }
