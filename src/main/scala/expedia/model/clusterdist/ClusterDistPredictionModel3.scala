@@ -23,10 +23,21 @@ case class ClusterDistPredictionModel3(clusterByDistMap: Map[Tuple3[Double, Doub
         val clusterIndex = clusterVec.toArray.toList.indexOf(hotelCluster)
         val prob = if (clusterIndex == -1d) {
           
-          if( clusterVec.size==1) {
+          if( clusterVec.size<=2) {
             if (hotelCluster==similarClustersMatrix(clusterVec(0).toInt,1)) {
               0.99
-              } else Double.NaN
+              } 
+            else if (hotelCluster==similarClustersMatrix(clusterVec(0).toInt,2)) {
+              0.99-0.0001
+              }
+              else if (hotelCluster==similarClustersMatrix(clusterVec(0).toInt,3)) {
+              0.99-0.0002
+              }
+              else if (hotelCluster==similarClustersMatrix(clusterVec(0).toInt,4)) {
+              0.99-0.0003
+              }
+            
+            else Double.NaN
           }
           else Double.NaN
         }
