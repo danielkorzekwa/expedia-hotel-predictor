@@ -43,7 +43,7 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
       clusterStatByDestMapNoPrior.add(destId, cluster)
 
-      if (userIds.contains(userId.toInt)) {
+      if (userIds.isEmpty || userIds.contains(userId.toInt)) {
            userDestStatsMap.add(userId, destId, cluster)
       }
 
@@ -73,7 +73,7 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
     logger.info("Calc clusterProbsByUser probs...done")
     // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
 
-    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterStatByContinentMapNoPrior.getMap(), continentByDest)
+    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterStatByContinentMapNoPrior.getMap())
   }
 
 }

@@ -15,33 +15,18 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVe
                                    clusterProbByDestMap: Map[Int, DenseVector[Float]],
                                    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
                                    clusterProbMap: DenseVector[Float],
-                                   clusterStatByContinentMapNoPrior: Map[Int, DenseVector[Float]],
-                                   continentByDest:Map[Int,Int]) extends LazyLogging {
+                                   clusterStatByContinentMapNoPrior: Map[Int, DenseVector[Float]]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(row: DenseVector[Double], hotelCluster: Double): Double = {
-
-    val userId = row(0).toInt
-    val destId = row(1).toInt
+  def predict(userId: Int, destId: Int, continent: Int, hotelCluster: Double): Double = {
 
     val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
 
-    val continent = continentByDest.get(destId)
-    val userCluster = continent match {
-      case Some(continent) => {
-       
-        userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent,clusterProbMap)) ))
-      }
-      case None =>  {
-       
-        userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterProbMap)))
-      }
-   
-    }
-    
+    val userCluster = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
+
     val prob = userCluster(hotelCluster.toInt)
 
     prob

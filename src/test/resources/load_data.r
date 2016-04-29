@@ -34,8 +34,10 @@ write.csv(d1_ab[category],'train_booked_all_ab.csv',row.names=FALSE)
 
 
 t<- read.csv('orig_data/test.csv')
+t <- t[-c(1)]
+t$is_booking <- ''
+t$cnt <- ''
+t <- t[ , c(1:18,22,23,19,20,21)]
 
-t$orig_destination_distance[is.na(t$orig_destination_distance)] <- -1
 
-testCat <- c('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market')
-write.csv(t[testCat],'test_all.csv',row.names=FALSE)
+write.csv(t,'test_all.csv',row.names=FALSE,quote=FALSE)
