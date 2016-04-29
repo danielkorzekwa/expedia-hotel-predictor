@@ -23,7 +23,7 @@ case class ClusterDistPredictionModelBuilder() {
 
   }
 
-  def toClusterDistPredictionModel(): ClusterDistPredictionModel = {
+  def toClusterDistPredictionModel(): ClusterDistPredictionModel3 = {
     
     //Map[(userLoc,dist,market),[sorted clusters vector by cluster counts]]
     val sortedClusterMap: Map[Tuple3[Double, Double, Double], DenseVector[Double]] = clusterMap.toMap.map {
@@ -33,6 +33,6 @@ case class ClusterDistPredictionModelBuilder() {
         (key, DenseVector(clusterVec))
     }
 
-    ClusterDistPredictionModel(sortedClusterMap)
+    ClusterDistPredictionModel3(sortedClusterMap)
   }
 }

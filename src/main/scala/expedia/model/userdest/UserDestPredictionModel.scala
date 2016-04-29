@@ -41,6 +41,7 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVe
       }
    
     }
+    
     val prob = userCluster(hotelCluster.toInt)
 
     prob

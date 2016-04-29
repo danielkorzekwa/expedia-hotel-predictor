@@ -37,17 +37,17 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
   val continentByDest: mutable.Map[Int, Int] = mutable.Map()
 
   def processCluster(userId: Int, destId: Int, isBooking: Int, hotelContinent: Int, cluster: Int) = {
-    clusterStatMap.add(cluster)
+      clusterStatMap.add(cluster)
 
-    clusterStatByContinentMapNoPrior.add(hotelContinent, cluster)
+      clusterStatByContinentMapNoPrior.add(hotelContinent, cluster)
 
-    clusterStatByDestMapNoPrior.add(destId, cluster)
+      clusterStatByDestMapNoPrior.add(destId, cluster)
 
-    if (userIds.contains(userId.toInt)) {
-      userDestStatsMap.add(userId, destId, cluster)
-    }
+      if (userIds.contains(userId.toInt)) {
+           userDestStatsMap.add(userId, destId, cluster)
+      }
 
-    continentByDest += destId -> hotelContinent
+      continentByDest += destId -> hotelContinent
   }
 
   def toUserDestPredictionModel(): UserDestPredictionModel = {
@@ -55,7 +55,8 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
     calcVectorMapProbsMutable(clusterStatByContinentMapNoPrior.getMap().toMap)
 
-    clusterStatByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getMap.getOrElse(continentByDest(destId),clusterStatMap.getItemVec)) }
+    clusterStatByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
+  
     calcVectorMapProbsMutable(clusterStatByDestMapNoPrior.getMap().toMap)
 
     logger.info("Calc clusterProbsByUser stats...")
@@ -72,8 +73,7 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
     logger.info("Calc clusterProbsByUser probs...done")
     // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
 
-    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec,clusterStatByContinentMapNoPrior.getMap(),continentByDest)
+    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterStatByContinentMapNoPrior.getMap(), continentByDest)
   }
 
- 
 }

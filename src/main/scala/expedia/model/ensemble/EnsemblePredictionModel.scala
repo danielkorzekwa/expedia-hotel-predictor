@@ -14,6 +14,7 @@ import expedia.model.userdest.UserDestPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder2
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder2
+import expedia.model.clusterdist.ClusterDistPredictionModel3
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
  */
@@ -62,7 +63,7 @@ object EnsemblePredictionModel extends LazyLogging {
   }
 }
 
-case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel, userDestPredict: UserDestPredictionModel)
+case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel3, userDestPredict: UserDestPredictionModel)
     extends LazyLogging {
 
   /**
