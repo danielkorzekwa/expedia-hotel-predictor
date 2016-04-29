@@ -24,9 +24,9 @@ object EnsemblePredictionModel extends LazyLogging {
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
     val userDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, userIds)
 
-      val clusterDistPredictBuilder2 = ClusterDistPredictionModelBuilder2()
-    
-    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder,clusterDistPredictBuilder2)
+    val clusterDistPredictBuilder2 = ClusterDistPredictionModelBuilder2()
+
+    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder, clusterDistPredictBuilder2)
 
     val clusterDistPredict = clusterDistPredictBuilder.toClusterDistPredictionModel()
     val userDestPredict = userDestPredictBuilder.toUserDestPredictionModel()
@@ -36,7 +36,7 @@ object EnsemblePredictionModel extends LazyLogging {
   }
 
   private def processExpediaTrainFile(expediaTrainFile: String, clusterDistPredictBuilder: ClusterDistPredictionModelBuilder,
-                                      userDestPredictBuilder: UserDestPredictionModelBuilder,clusterDistPredictBuilder2:ClusterDistPredictionModelBuilder2) = {
+                                      userDestPredictBuilder: UserDestPredictionModelBuilder, clusterDistPredictBuilder2: ClusterDistPredictionModelBuilder2) = {
 
     var i = 0
     Source.fromFile(new File(expediaTrainFile)).getLines().drop(1).foreach { l =>
@@ -54,8 +54,8 @@ object EnsemblePredictionModel extends LazyLogging {
       val key = (userLoc, dist, market)
 
       clusterDistPredictBuilder.processCluster(userLoc, dist, market, cluster)
-      userDestPredictBuilder.processCluster(userId, destId, isBooking,hotelContinent,cluster)
- //clusterDistPredictBuilder2.processCluster(userLoc, dist, market, cluster)
+      userDestPredictBuilder.processCluster(userId, destId, isBooking, hotelContinent, cluster)
+      //clusterDistPredictBuilder2.processCluster(userLoc, dist, market, cluster)
       i += 1
       if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }
@@ -81,6 +81,25 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 
       if (leakProb.isNaN()) userDestPredict.predict(row(2 to 3), hotelCluster) else leakProb
     }
+  }
+
+  /**
+   * @param data ['user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market']
+   */
+  def predict(row: DenseVector[Double]): DenseVector[Double] = {
+
+    val userLoc = row(0)
+    val distId = row(1)
+    val market = row(4)
+
+    val clustersProbVector = DenseVector.fill(100)(0d)
+    (0 until 100).foreach { hotelCluster =>
+      val leakProb = clusterDistPredict.predict(userLoc, distId, market, hotelCluster)
+
+     val prob = if (leakProb.isNaN()) userDestPredict.predict(row(2 to 3), hotelCluster) else leakProb
+     clustersProbVector(hotelCluster)=prob
+    }
+    clustersProbVector
   }
 
 }
