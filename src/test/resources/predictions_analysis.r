@@ -20,11 +20,13 @@ test$r1 <- p$r1
 test$r2 <- p$r2
 test$mapk <- p$mapk
 
-
-
-test$mapk2 <- p2$mapk
 test$p1_2 <- p2$p1
+test$p2_2 <- p2$p2
 test$r1_2 <- p2$r1
+test$r2_2 <- p2$r2
+test$mapk2 <- p2$mapk
+
+
 
 test <- merge(test,stat,all.x=T)
 test$c[is.na(test$c)] <- 0

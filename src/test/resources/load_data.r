@@ -25,7 +25,7 @@ rownames(d1_b) <- seq(length=nrow(d1_b))
 
 category <- c('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
 write.csv(d1_a[category],'train_booked_2013.csv',row.names=FALSE)
-write.csv(d1_b[category],'train_booked_2014.csv',row.names=FALSE)
+write.csv(d1_b,'train_booked_2014_all_cols.csv',row.names=FALSE)
 
 write.csv(d1_ab[category],'train_booked_all_ab.csv',row.names=FALSE)
 
