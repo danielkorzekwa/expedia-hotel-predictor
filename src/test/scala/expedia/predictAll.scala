@@ -25,49 +25,13 @@ object predictAll extends LazyLogging {
     
     val userIds = test(::, 2).toArray.distinct.map(_.toInt).toSet
 
-    val hotelClusters: DenseVector[Double] = DenseVector.rangeD(0, 100, 1) // unique(train(::, train.cols - 1)) //DenseVector(15, 46, 91, 1, 2) //
-
     logger.info("Computing stats...")
 
     val ensemblePredict = EnsemblePredictionModel(expediaTrainFile, svmPredictionsData, userIds)
 
     logger.info("Making predictions...")
-    var allCount = new AtomicInteger(0)
-    var defModelCount = new AtomicInteger(0)
-
-    val testData = test(::, List(0, 1, 2, 3, 4, 5)).toDenseMatrix
-    //
-    //    val predictionSeq = (0 until hotelClusters.size).par.map { i =>
-    //
-    //      logger.info("predicting hotel cluster=" + i)
-    //      val hotelCluster = hotelClusters(i)
-    //
-    //      //  val svmFromCSV = svmFromCSVPredict.predict(testDataX, hotelCluster)
-    //      //    val predicted = userLocMarketDistClusterMap.predict(testData, hotelCluster)
-    //      val predicted = ensemblePredict.predict(testData, hotelCluster)
-    //      predicted
-    //
-    //    }.toList
-    //
-    //    println("all count = %d, def model count = %d".format(allCount.get, defModelCount.get))
-    //
-    //    logger.info("Computing output matrix")
-    //    val predictionRanksSeq = (0 until test.rows).par.map { predRecId =>
-    //
-    //      //seq[(prob,cluster)]
-    //      val predictedProbTuples = (0 until hotelClusters.size).map { hotelCluster => (predictionSeq(hotelCluster)(predRecId), hotelClusters(hotelCluster)) }
-    //        .toArray.sortWith((a, b) => a._1 > b._1).take(5)
-    //
-    //      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
-    //      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-    //      val actual = test(predRecId, test.cols - 1)
-    //      val apk = averagePrecision(predictionRanks, Array(actual), 5)
-    //
-    //      DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks), DenseVector(actual, apk))
-    //    }.toList
 
     var c = new AtomicInteger(0)
-
     val predictionRecords = Source.fromFile(new File(expediaTestFile)).getLines().drop(1).toSeq.par.map { l =>
       val lArray = l.split(",")
 
@@ -89,8 +53,6 @@ object predictAll extends LazyLogging {
 
       val predictionProbs = predictedProbTuples.map(_._1.toDouble)
       val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-     // val actual = row(test.cols - 1)
-    //  val apk = averagePrecision(predictionRanks, Array(actual), 5)
 
       if (c.incrementAndGet() % 100000 == 0) logger.info("Processed test rows: %d".format(c.get))
 
@@ -98,24 +60,6 @@ object predictAll extends LazyLogging {
       record
     }.toList
 
-    //    val predictionRecords = (0 until testData.rows).par.map { i =>
-    //
-    //      val row = testData(i, ::).t
-    //
-    //      val predicted = ensemblePredict.predict(row)
-    //
-    //      val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
-    //
-    //      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
-    //      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-    //      val actual = row(test.cols - 1)
-    //      val apk = averagePrecision(predictionRanks, Array(actual), 5)
-    //
-    //      if (c.incrementAndGet() % 100000 == 0) logger.info("Processed test rows: %d".format(c.get))
-    //
-    //      val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks), DenseVector(actual, apk))
-    //      record
-    //    }.toList
     val predictionMatrix = DenseVector.horzcat(predictionRecords: _*).t
     predictionMatrix
     //  DenseVector.horzcat(predictionRanksSeq: _*).t
