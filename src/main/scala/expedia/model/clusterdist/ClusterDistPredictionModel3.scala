@@ -11,7 +11,7 @@ case class ClusterDistPredictionModel3(clusterByDistMap: Map[Tuple3[Double, Doub
 
   logger.info("DistClusterMap size=%d".format(clusterByDistMap.size))
 
-   private val similarClustersMatrix = calcSimilarClustersMap(clusterByDistMap)
+   val similarClustersMatrix = calcSimilarClustersMap(clusterByDistMap)
   
   def predict(userLoc: Double, dist: Double, market: Double, hotelCluster: Double): Double = {
 
@@ -23,7 +23,7 @@ case class ClusterDistPredictionModel3(clusterByDistMap: Map[Tuple3[Double, Doub
         val clusterIndex = clusterVec.toArray.toList.indexOf(hotelCluster)
         val prob = if (clusterIndex == -1d) {
           
-          if( clusterVec.size<=2) {
+          if(clusterVec.size<=2) {
             if (hotelCluster==similarClustersMatrix(clusterVec(0).toInt,1)) {
               0.99
               } 

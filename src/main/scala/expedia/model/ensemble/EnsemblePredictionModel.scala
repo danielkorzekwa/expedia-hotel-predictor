@@ -4,7 +4,6 @@ import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import breeze.linalg._
 import expedia.model.userdest.UserDestPredictionModel
-import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.model.svm.SVMPredictionModel
 import scala.io.Source
 import java.io.File
@@ -12,8 +11,6 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
-import expedia.model.clusterdist.ClusterDistPredictionModelBuilder2
-import expedia.model.clusterdist.ClusterDistPredictionModelBuilder2
 import expedia.model.clusterdist.ClusterDistPredictionModel3
 import expedia.model.singlecatmodel.SingleCatPredictionModel
 import expedia.model.singlecatmodel.SingleCatPredictionModelBuilder
@@ -21,6 +18,8 @@ import expedia.model.singlecatmodel.SingleCatPredictionModel
 import expedia.model.singlecatmodel.SingleCatPredictionModel
 import expedia.model.userdest.UserDestPredictionModel
 import scala.collection._
+import expedia.model.marketdest.MarketDestPredictionModelBuilder
+import expedia.model.marketdest.MarketDestPredictionModel
 
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
@@ -30,28 +29,27 @@ object EnsemblePredictionModel extends LazyLogging {
 
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
     val userDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, userIds)
-    val marketDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, Set())
+    val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set())
 
     val singleCatPredictBuilder = SingleCatPredictionModelBuilder()
 
-    val clusterDistPredictBuilder2 = ClusterDistPredictionModelBuilder2()
 
     val countsByDestMarketMap:mutable.Map[Tuple2[Int,Int],Int] = mutable.Map()
     
-    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder, clusterDistPredictBuilder2, singleCatPredictBuilder, marketDestPredictBuilder,
+    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder,  singleCatPredictBuilder, marketDestPredictBuilder,
         countsByDestMarketMap)
 
     val clusterDistPredict = clusterDistPredictBuilder.toClusterDistPredictionModel()
     val userDestPredict = userDestPredictBuilder.toUserDestPredictionModel()
-    val marketDestPredict = marketDestPredictBuilder.toUserDestPredictionModel()
+    val marketDestPredict = marketDestPredictBuilder.toMarketDestPredictionModel()
     val singleCatPredict = singleCatPredictBuilder.toSingleCatPredictionModel()
     new EnsemblePredictionModel(clusterDistPredict, userDestPredict, singleCatPredict, marketDestPredict,countsByDestMarketMap)
 
   }
 
   private def processExpediaTrainFile(expediaTrainFile: String, clusterDistPredictBuilder: ClusterDistPredictionModelBuilder,
-                                      userDestPredictBuilder: UserDestPredictionModelBuilder, clusterDistPredictBuilder2: ClusterDistPredictionModelBuilder2,
-                                      singleCatPredictBuilder: SingleCatPredictionModelBuilder, marketDestPredictBuilder: UserDestPredictionModelBuilder,
+                                      userDestPredictBuilder: UserDestPredictionModelBuilder, 
+                                      singleCatPredictBuilder: SingleCatPredictionModelBuilder, marketDestPredictBuilder: MarketDestPredictionModelBuilder,
                                       countsByDestMarketMap:mutable.Map[Tuple2[Int,Int],Int]) = {
 
     var i = 0
@@ -68,7 +66,6 @@ object EnsemblePredictionModel extends LazyLogging {
       val cluster = lArray(23).toInt
 
       val key = (userLoc, dist, market)
-
       clusterDistPredictBuilder.processCluster(userLoc, dist, market, cluster)
       userDestPredictBuilder.processCluster(userId.toInt, destId, isBooking, hotelContinent, cluster)
       marketDestPredictBuilder.processCluster(market.toInt, destId, isBooking, hotelContinent, cluster)
@@ -87,7 +84,7 @@ object EnsemblePredictionModel extends LazyLogging {
 }
 
 case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel3, userDestPredict: UserDestPredictionModel, singleCatPredictionModel: SingleCatPredictionModel,
-                                   marketDestPredict: UserDestPredictionModel,countsByDestMarketMap:mutable.Map[Tuple2[Int,Int],Int])
+                                   marketDestPredict: MarketDestPredictionModel,countsByDestMarketMap:mutable.Map[Tuple2[Int,Int],Int])
     extends LazyLogging {
 
   /**
@@ -101,10 +98,10 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
       val leakProb = clusterDistPredict.predict(userLoc, dist, market, hotelCluster)
 
       val prob = if (leakProb.isNaN()) {
-        val distMarketCounts = countsByDestMarketMap.getOrElse((destId,market),0)
+        val destMarketCounts = countsByDestMarketMap.getOrElse((destId,market),0)
         
         
-        if(distMarketCounts<150) marketDestPredict.predict(market,destId, hotelContinent,hotelCluster)
+        if(destMarketCounts<150) marketDestPredict.predict(market,destId, hotelContinent,hotelCluster)
         else userDestPredict.predict(userId, destId, hotelContinent,hotelCluster)
       } else leakProb
       // val prob =   if (leakProb.isNaN()) singleCatPredictionModel.predict(market.toInt, hotelCluster.toInt) else leakProb

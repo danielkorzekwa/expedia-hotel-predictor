@@ -13,9 +13,6 @@ d1_a$orig_destination_distance[is.na(d1_a$orig_destination_distance)] <- -1
 d1_b$orig_destination_distance[is.na(d1_b$orig_destination_distance)] <- -1
 d1_ab$orig_destination_distance[is.na(d1_ab$orig_destination_distance)] <- -1
 
-#d1_a <- subset(d1_a,srch_destination_id==8250)
-#d1_b <- subset(d1_b,srch_destination_id==8250)
-
 dest <- read.csv('destinations.csv')
 d1_a <- merge(d1_a,dest)[, union(names(d1_a), names(dest))]
 d1_b <- merge(d1_b,dest)[, union(names(d1_b), names(dest))]
