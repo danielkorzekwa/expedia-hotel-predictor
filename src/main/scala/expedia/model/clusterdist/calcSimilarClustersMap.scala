@@ -29,9 +29,6 @@ object calcSimilarClustersMap {
       DenseVector(row.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).map(_._2.toDouble).toArray)
     }
     
-    println(sortedClusterSimMatrix(12,::))
-     println(sortedClusterSimMatrix(7,::))
-      println(sortedClusterSimMatrix(42,::))
     sortedClusterSimMatrix
   }
 }

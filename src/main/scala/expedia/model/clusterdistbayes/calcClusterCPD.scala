@@ -19,11 +19,15 @@ object calcClusterCPD {
       case (key, clusters) =>
 
         clusters.foreach { cluster =>
+          
+       //   if(cluster==70) println(clusters)
           clusters.foreach { otherCluster => clusterSimMatrix(cluster.toInt, otherCluster.toInt) += 1d }
         }
 
     }
 
+   // println("33: " + clusterSimMatrix(33,::))
+   //   println("70: " + clusterSimMatrix(70,::))
     val clusterCPD = clusterSimMatrix(*, ::) map { row =>
       
       val Z = sum(row)

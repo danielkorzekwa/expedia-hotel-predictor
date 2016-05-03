@@ -20,9 +20,8 @@ import expedia.model.userdest.UserDestPredictionModel
 import scala.collection._
 import expedia.model.marketdest.MarketDestPredictionModelBuilder
 import expedia.model.marketdest.MarketDestPredictionModel
-import expedia.model.clusterdist.ClusterDistBayesPredictionModelBuilder
-import expedia.model.clusterdist.ClusterDistBayesPredictionModelBuilder
 import expedia.model.clusterdistbayes.ClusterDistBayesPredictionModel
+import expedia.model.clusterdistbayes.ClusterDistBayesPredictionModelBuilder
 
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
