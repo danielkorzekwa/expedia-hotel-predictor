@@ -18,7 +18,7 @@ object GpTestApp {
     
     val covFunc = GpTestCovFunc()
     val covFuncParams = DenseVector[Double]()
-    val noiseLogStdDev = log(1d)
+    val noiseLogStdDev = log(0.5d)
     val mean = 0.33
     val gprModel = GprModel(dataX,dataY,covFunc,covFuncParams,noiseLogStdDev,mean)
     

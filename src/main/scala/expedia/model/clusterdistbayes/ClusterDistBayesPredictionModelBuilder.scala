@@ -14,6 +14,11 @@ import expedia.stats.calcVectorProbsMutable
 import breeze.numerics._
 import dk.gp.gpr.GprModel
 import dk.gp.gpr.predict
+import expedia.model.clusterdist.calcClusterSimMatrix
+import expedia.model.clusterdist.calcJacardSimMatrix
+import expedia.model.clusterdistbayes.gprfast.GprFastModel
+import expedia.model.clusterdistbayes.gprfast.GprFastModel
+import expedia.model.clusterdistbayes.gprfast.gprFastPredict
 
 case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
 
@@ -46,50 +51,82 @@ case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
     val catStats = CatStats()
     allClusters.foreach(cluster => catStats.add(cluster))
     calcVectorProbsMutable(catStats.getItemVec())
-    val priorProbs = catStats.getItemVec().toArray.map(_.toDouble)
+    val priorProbs = DenseVector(catStats.getItemVec().toArray.map(_.toDouble))
     println("prior: " + catStats.getItemVec())
 
     /**
-     * Compute cluster CPD
+     * Compute cluster similarities
      */
-    val clusterCPD = calcClusterCPD(clusterByDistMap)
+    val clusterCoExistMat = calcClusterSimMatrix(clusterByDistMap)
+    val jacardSimMatrix = calcJacardSimMatrix(clusterCoExistMat)
+    println(clusterCoExistMat.map(x => "%.2f".format(x)).toString(10, 1000))
+    println("---------")
+    println(jacardSimMatrix.map(x => "%.2f".format(x)).toString(10, 1000))
 
     var i = new AtomicInteger(0)
     //Map[(userLoc,dist,market),[sorted clusters vector by cluster counts]]
+
+    // val predictedByClustersList: mutable.Map[List[Int], DenseVector[Double]] = mutable.Map()
+
+    val gprFastModelsByClustersSize: mutable.Map[Int, GprFastModel] = mutable.Map()
+    clusterMap.toList.foreach {
+      case (key, clusters) =>
+        if (clusters.size < 10) gprFastModelsByClustersSize.getOrElseUpdate(clusters.size, createGPFastModel(clusters, jacardSimMatrix))
+    }
+
     val sortedClusterMap: Map[Tuple3[Double, Double, Double], DenseVector[Double]] = clusterMap.toList.par.map {
       case (key, clusters) =>
 
-        if (key._2 == 98.8687) {
+        if (clusters.size < 10 && (true || key._2 == 98.8687)) {
+
+          val gprFastModel = gprFastModelsByClustersSize.getOrElseUpdate(clusters.size, createGPFastModel(clusters, jacardSimMatrix))
 
           val gpData = getDataForGP(DenseVector(clusters.toArray.map(_.toDouble)), clustersSize = 100)
-
-          val dataX = gpData(::, 0 to 0)
           val dataY = gpData(::, 1)
 
-          val covFunc = GpTestCovFunc()
-          val covFuncParams = DenseVector[Double]()
-          val noiseLogStdDev = log(1d)
-          val mean = 0.33
-          val gprModel = GprModel(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev, mean)
-
-          val predictionDataX = DenseVector.rangeD(0.0,100,1).toDenseMatrix.t
-          val posterior = predict(predictionDataX, gprModel)(::,0).toArray
-         // val posterior = DenseVector.fill(100)(1d / 100).toArray
+          val posterior = gprFastPredict(dataY, gprFastModel).toArray
+          //val posterior = predictedByClustersList.getOrElse(clusters.toList.sorted, gpPredict(clusters, jacardSimMatrix, priorProbs)).toArray
 
           val sortedClusters = posterior.zipWithIndex.sortWith((a, b) => a._1 > b._1).map(_._2.toDouble).toArray
 
-//          if(clusters.toList.distinct.size>1) {
-//           println("post: " + posterior.toList)
-//           println("cluster: " + clusters)
-//            println("sortedClusters: " + sortedClusters.toList)
-//            println("--------------------------")
-//          }
+          //          if(clusters.toList.distinct.size>1) {
+          //           println("post: " + posterior.toList)
+          //           println("cluster: " + clusters)
+          //            println("sortedClusters: " + sortedClusters.toList)
+          //            println("--------------------------")
+          //          }
           if (i.incrementAndGet() % 1000 == 0) logger.info("Processed rows: %d".format(i.get))
 
-          key -> DenseVector(sortedClusters)
-        } else key -> DenseVector(0d)
+          key -> DenseVector(posterior)
+        } else key -> DenseVector.fill(100)(Double.NaN)
     }.toList.toMap
     logger.info("Predicting cluser dist bayes...done=" + sortedClusterMap.size)
     ClusterDistBayesPredictionModel(sortedClusterMap)
   }
+
+  private def createGPFastModel(clusters: Seq[Int], jacardSimMatrix: DenseMatrix[Double]): GprFastModel = {
+
+    println(clusters.size)
+    val gpData = getDataForGP(DenseVector(clusters.toArray.map(_.toDouble)), clustersSize = 100)
+
+    val dataX = gpData(::, 0 to 0)
+    val predictionDataX = DenseVector.rangeD(0.0, 100, 1).toDenseMatrix.t
+    val gprFastModel = createGPModelFast(dataX, jacardSimMatrix)
+    gprFastModel
+  }
+
+  private def gpPredict(clusters: Seq[Int], jacardSimMatrix: DenseMatrix[Double], clustersPriorProb: DenseVector[Double]): DenseVector[Double] = {
+    val gpData = getDataForGP(DenseVector(clusters.toArray.map(_.toDouble)), clustersSize = 100)
+
+    val dataX = gpData(::, 0 to 0)
+    val dataY = gpData(::, 1)
+
+    val gprModel = createGPModel(dataX, dataY, jacardSimMatrix, clustersPriorProb)
+    val predictionDataX = DenseVector.rangeD(0.0, 100, 1).toDenseMatrix.t
+
+    val posterior = predict(predictionDataX, gprModel)(::, 0)
+
+    posterior
+  }
+
 }

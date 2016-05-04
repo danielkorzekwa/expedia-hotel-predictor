@@ -18,15 +18,7 @@ case class ClusterDistBayesPredictionModel(clusterByDistMap: Map[Tuple3[Double, 
     val key = (userLoc, dist, market)
     val clusterVec = clusterByDistMap.get(key)
     val prob2 = clusterVec match {
-      case Some(clusterVec) => {
-        val clusterIndex = clusterVec.toArray.toList.indexOf(hotelCluster)
-        val prob = if (clusterIndex == -1d) {
-          
-        Double.NaN
-        }
-        else 1d - 0.0001 * clusterIndex
-        prob
-      }
+      case Some(clusterVec) => clusterVec(hotelCluster.toInt)
       case None => Double.NaN
     }
     

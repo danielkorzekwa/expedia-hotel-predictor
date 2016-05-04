@@ -18,8 +18,12 @@ object calcClusterSimMatrix {
     clusterByDistMap.foreach {
       case (key, clusters) =>
 
-        clusters.foreach { cluster =>
-          clusters.foreach { otherCluster => clusterSimMatrix(cluster.toInt, otherCluster.toInt) += 1d }
+        val clustersList = clusters.toArray.toList
+        
+       clustersList.zipWithIndex.foreach { case (cluster,index) =>
+          clustersList.zipWithIndex.foreach { case (otherCluster,otherIndex) => 
+            clusterSimMatrix(cluster.toInt, otherCluster.toInt) += 1d 
+            }
         }
 
     }

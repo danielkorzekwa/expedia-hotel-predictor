@@ -2,7 +2,7 @@ package expedia.model.clusterdist
 
 import scala.collection._
 import breeze.linalg.DenseVector
-
+import breeze.linalg._
 case class ClusterDistPredictionModelBuilder() {
 
   //Map[(userLoc,dist,market),Map[cluster,count]]
@@ -24,13 +24,14 @@ case class ClusterDistPredictionModelBuilder() {
   }
 
   def toClusterDistPredictionModel(): ClusterDistPredictionModel3 = {
-    
+
     //Map[(userLoc,dist,market),[sorted clusters vector by cluster counts]]
     val sortedClusterMap: Map[Tuple3[Double, Double, Double], DenseVector[Double]] = clusterMap.toMap.map {
       case (key, countByClusterMap) =>
-
-        val clusterVec = countByClusterMap.toList.sortWith((a, b) => a._2 > b._2).map(_._1).toArray
-        (key, DenseVector(clusterVec))
+        if (countByClusterMap.map(_._2).sum<10) {
+          val clusterVec = countByClusterMap.toList.sortWith((a, b) => a._2 > b._2).map(_._1).toArray
+          (key, DenseVector(clusterVec))
+        } else (key, DenseVector[Double]())
     }
 
     ClusterDistPredictionModel3(sortedClusterMap)

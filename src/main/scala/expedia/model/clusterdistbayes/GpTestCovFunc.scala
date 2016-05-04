@@ -4,7 +4,7 @@ import dk.gp.cov.CovFunc
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 
-case class GpTestCovFunc() extends CovFunc {
+case class GpTestCovFunc(jacardSimMatrix:DenseMatrix[Double]) extends CovFunc {
 
   private val simMatrix = DenseMatrix.eye[Double](100)
 
@@ -18,7 +18,7 @@ case class GpTestCovFunc() extends CovFunc {
         val x1Val = x1ClusterVec(i).toInt
         val x2Val = x2ClusterVec(j).toInt
 
-        simMatrix(x1Val, x2Val)
+        jacardSimMatrix(x1Val, x2Val)
     }
 
     covMat
