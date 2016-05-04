@@ -59,7 +59,7 @@ case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
     val sortedClusterMap: Map[Tuple3[Double, Double, Double], DenseVector[Double]] = clusterMap.toList.par.map {
       case (key, clusters) =>
 
-        if (true || key._2 == 98.8687) {
+        if (key._2 == 98.8687) {
 
           val gpData = getDataForGP(DenseVector(clusters.toArray.map(_.toDouble)), clustersSize = 100)
 

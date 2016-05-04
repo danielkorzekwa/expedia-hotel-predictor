@@ -10,9 +10,17 @@ import scala.collection._
 case class ClusterDistPredictionModel3(clusterByDistMap: Map[Tuple3[Double, Double, Double], DenseVector[Double]]) extends LazyLogging {
 
   logger.info("DistClusterMap size=%d".format(clusterByDistMap.size))
-
-   val similarClustersMatrix = calcSimilarClustersMap(clusterByDistMap)
   
+  val clusterCoExistMat = calcClusterSimMatrix(clusterByDistMap)
+ // val jacardSimMatrix = calcJacardSimMatrix(clusterCoExistMat)
+   val similarClustersMatrix = calcSimilarClustersMap(clusterCoExistMat)
+  
+ 
+   
+//   println(similarClustersMatrix.map(x => "%.2f".format(x)).toString(10,1000))
+//   println("------")
+//   println(calcSimilarClustersMap(jacardSimMatrix).map(x => "%.2f".format(x)).toString(10,1000))
+//   println("------")
   def predict(userLoc: Double, dist: Double, market: Double, hotelCluster: Double): Double = {
 
     
