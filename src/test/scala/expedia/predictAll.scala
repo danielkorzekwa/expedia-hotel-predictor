@@ -14,6 +14,7 @@ import scala.io.Source
 import java.io.File
 import expedia.data.loadTestData
 import expedia.model.ensemble.EnsemblePredictionModelTest
+import expedia.model.ensemble.EnsemblePredictionModelUserDestSimTesting
 
 object predictAll extends LazyLogging {
 
@@ -28,7 +29,7 @@ object predictAll extends LazyLogging {
 
     logger.info("Computing stats...")
 
-    val ensemblePredict = EnsemblePredictionModelTest(expediaTrainFile, svmPredictionsData, userIds)
+    val ensemblePredict = EnsemblePredictionModelUserDestSimTesting(expediaTrainFile, svmPredictionsData, userIds)
 
     logger.info("Making predictions...")
 
