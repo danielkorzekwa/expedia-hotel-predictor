@@ -21,8 +21,8 @@ object PredictApp extends LazyLogging {
 
     val dataB = csvread(new File("c:/perforce/daniel/ex/data_booked/train_booked_2014.csv"), skipLines = 1) //(0 to 10001, ::)
 
-   //   val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
-    val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
+      val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
+   // val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
 

@@ -20,17 +20,7 @@ case class ClusterDistPredictionModel3(clustersByDistMap: Map[Tuple3[Double, Dou
   }
 
   val distClutersSeq = topClusterByDistMap.map { case (key, clusters) => clusters }.toList
-
   val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
-
-  val similarClustersMatrixByCluster: Map[Double, DenseMatrix[Double]] = (0 until 100).map { cluster =>
-
-    val distClutersSeqForCluster = distClutersSeq.filter { clusters => clusters.contains(cluster) }
-
-    cluster.toDouble -> calcSimilarClustersMap(calcClusterCoExistMatrix(distClutersSeqForCluster))
-
-  }.toMap
-
   val similarClustersMatrix = calcSimilarClustersMap(clusterCoExistMat)
 
   def predict(userLoc: Double, dist: Double, market: Double, hotelCluster: Double): Double = {
@@ -45,13 +35,13 @@ case class ClusterDistPredictionModel3(clustersByDistMap: Map[Tuple3[Double, Dou
           if (clusterVec.size > 0 && clusterVec.size <= 2) {
             val topCluster = clusterVec(0)
 
-            if (hotelCluster == similarClustersMatrixByCluster(topCluster)(topCluster.toInt, 1)) {
+            if (hotelCluster == similarClustersMatrix(topCluster.toInt, 1)) {
               0.99
-            } else if (hotelCluster == similarClustersMatrixByCluster(topCluster)(topCluster.toInt, 2)) {
+            } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 2)) {
               0.99 - 0.0001
-            } else if (hotelCluster == similarClustersMatrixByCluster(topCluster)(topCluster.toInt, 3)) {
+            } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 3)) {
               0.99 - 0.0002
-            } else if (hotelCluster == similarClustersMatrixByCluster(topCluster)(topCluster.toInt, 4)) {
+            } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 4)) {
               0.99 - 0.0003
             } else Double.NaN
           } else Double.NaN

@@ -22,6 +22,9 @@ import expedia.model.marketdest.MarketDestPredictionModelBuilder
 import expedia.model.marketdest.MarketDestPredictionModel
 import expedia.model.clusterdistbayes.ClusterDistBayesPredictionModel
 import expedia.model.clusterdistbayes.ClusterDistBayesPredictionModelBuilder
+import expedia.model.userdestsim.UserDestSimPredictionModelBuilder
+import expedia.model.userdestsim.UserDestSimPredictionModelBuilder
+import expedia.model.userdestsim.UserDestSimPredictionModel
 
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
@@ -30,15 +33,17 @@ object EnsemblePredictionModelUserDestSimTesting extends LazyLogging {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]): EnsemblePredictionModelUserDestSimTesting = {
 
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
-
-    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder)
+    val userDestSimModelBuilder = UserDestSimPredictionModelBuilder()
+    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder,userDestSimModelBuilder)
 
     val clusterDistPredict = clusterDistPredictBuilder.toClusterDistPredictionModel()
-    new EnsemblePredictionModelUserDestSimTesting(clusterDistPredict)
+    val userDestSimModel = userDestSimModelBuilder.toClusterDistPredictionModel()
+    new EnsemblePredictionModelUserDestSimTesting(clusterDistPredict,userDestSimModel)
 
   }
 
-  private def processExpediaTrainFile(expediaTrainFile: String, clusterDistPredictBuilder: ClusterDistPredictionModelBuilder) = {
+  private def processExpediaTrainFile(expediaTrainFile: String, clusterDistPredictBuilder: ClusterDistPredictionModelBuilder,
+      userDestSimModelBuilder:UserDestSimPredictionModelBuilder) = {
 
     var i = 0
     Source.fromFile(new File(expediaTrainFile)).getLines().drop(1).foreach { l =>
@@ -57,6 +62,7 @@ object EnsemblePredictionModelUserDestSimTesting extends LazyLogging {
 
       val key = (userLoc, dist, market)
       clusterDistPredictBuilder.processCluster(userLoc, dist, market, cluster)
+      userDestSimModelBuilder.processCluster(userId, destId, cluster)
       i += 1
       if (i % 1000000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }
@@ -64,7 +70,8 @@ object EnsemblePredictionModelUserDestSimTesting extends LazyLogging {
   }
 }
 
-case class EnsemblePredictionModelUserDestSimTesting(clusterDistPredict: ClusterDistPredictionModel3)
+case class EnsemblePredictionModelUserDestSimTesting(clusterDistPredict: ClusterDistPredictionModel3,
+    userDestSimModel:UserDestSimPredictionModel)
     extends LazyLogging {
 
   /**
@@ -78,7 +85,8 @@ case class EnsemblePredictionModelUserDestSimTesting(clusterDistPredict: Cluster
 
       val prob = if (leakProb.isNaN()) {
 
-        0d
+        val userDestSimProb = userDestSimModel.predict(userId, destId, hotelCluster)
+        if(!userDestSimProb.isNaN()) userDestSimProb else 0
       } else leakProb
       clustersProbVector(hotelCluster) = prob
     }
