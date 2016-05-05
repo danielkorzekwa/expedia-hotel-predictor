@@ -14,7 +14,9 @@ object calcJacardSimMatrix {
 
     m.foreachKey {
       case (i, j) =>
-      jacardSimMatrix(i,j) =  m(i, j) / (m(i, i) + m(j, j) - m(i, j))
+
+        val nom = m(i, j)
+        jacardSimMatrix(i, j) = if (nom == 0) 0 else nom / (m(i, i) + m(j, j) - m(i, j))
     }
     jacardSimMatrix
   }

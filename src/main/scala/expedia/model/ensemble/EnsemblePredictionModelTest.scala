@@ -35,7 +35,7 @@ object EnsemblePredictionModelTest extends LazyLogging {
     processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, clusterDistBayesPredictBuilder)
 
     val clusterDistPredict = clusterDistPredictBuilder.toClusterDistPredictionModel()
-    val clusterDistBayesPredict = clusterDistBayesPredictBuilder.toClusterDistPredictionModel(clusterDistPredict.clusterByDistMap)
+    val clusterDistBayesPredict = clusterDistBayesPredictBuilder.toClusterDistPredictionModel(clusterDistPredict.topClusterByDistMap)
     new EnsemblePredictionModelTest(clusterDistPredict,clusterDistBayesPredict)
 
   }
@@ -47,6 +47,8 @@ object EnsemblePredictionModelTest extends LazyLogging {
     Source.fromFile(new File(expediaTrainFile)).getLines().drop(1).foreach { l =>
       val lArray = l.split(",")
 
+      
+      
       val userLoc = lArray(5).toDouble
       val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
       val userId = lArray(7).toInt
@@ -56,11 +58,13 @@ object EnsemblePredictionModelTest extends LazyLogging {
       val market = lArray(22).toDouble
       val cluster = lArray(23).toInt
 
+      if(dist== 9734.0267) println(l)
+      
       val key = (userLoc, dist, market)
       clusterDistPredictBuilder.processCluster(userLoc, dist, market, cluster)
       clusterDistBayesPredictBuilder.processCluster(userLoc, dist, market, cluster)
       i += 1
-      if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
+      if (i % 1000000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }
 
   }
