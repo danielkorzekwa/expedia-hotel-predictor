@@ -28,9 +28,7 @@ case class MarketDestPredictionModel(
     def userProbDefault(destId: Int): DenseVector[Float] = {
       clusterProbByDestMap.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
     }
-
     
-  //  val userProb = clusterProbsByDestMarket.getOrElse((destId, marketIdId), userProbDefault(destId))
      val userProb = clusterHistByDestMarketUser.getOrElse((destId, marketId,userId), clusterProbsByDestMarket.getOrElse((destId, marketId), userProbDefault(destId)))
     userProb
 
