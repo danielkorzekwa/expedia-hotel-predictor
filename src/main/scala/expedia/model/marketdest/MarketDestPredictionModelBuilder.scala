@@ -15,9 +15,10 @@ import expedia.stats.CatStatsMapNoPrior
 import expedia.stats.CatStatsMap
 import expedia.stats.calcVectorProbs
 import expedia.stats.calcVectorMapProbs
-import expedia.stats.UserDestStatsMap
 import expedia.stats.calcVectorProbsMutable
 import expedia.stats.calcVectorMapProbsMutable
+import expedia.stats.UserDestStatsMap
+import expedia.stats.MulticlassHistByKey
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -26,11 +27,11 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
   val clusterStatMap = CatStats()
 
-  val clusterStatByContinentMapNoPrior = CatStatsMapNoPrior()
+  val clusterHistByContinent = MulticlassHistByKey[Int](100)
+  
+  val clusterHistByDest = MulticlassHistByKey[Int](100)
 
-  val clusterStatByDestMapNoPrior = CatStatsMapNoPrior()
-
-  val userDestStatsMap = UserDestStatsMap()
+    val clusterHistByUserDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
 
   val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
@@ -39,16 +40,14 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
   def processCluster(userId: Int, destId: Int, isBooking: Int, hotelContinent: Int, cluster: Int) = {
       clusterStatMap.add(cluster)
 
-      clusterStatByContinentMapNoPrior.add(hotelContinent, cluster)
+      clusterHistByContinent.add(hotelContinent, cluster)
 
       
-        clusterStatByDestMapNoPrior.add(destId, cluster)
+         clusterHistByDest.add(destId, cluster)
       
-//      clusterStatByDestMapNoPrior.add(destId, cluster)
 
       if (userIds.isEmpty || userIds.contains(userId.toInt)) {
-        //   userDestStatsMap.add(userId, destId, cluster)
-        userDestStatsMap.add(userId, destId, cluster)
+       clusterHistByUserDest.add((destId, userId), cluster)
       }
 
       continentByDest += destId -> hotelContinent
@@ -57,27 +56,28 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
   def toMarketDestPredictionModel(): MarketDestPredictionModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
 
-    calcVectorMapProbsMutable(clusterStatByContinentMapNoPrior.getMap().toMap)
+    calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)
 
-    clusterStatByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
+    clusterHistByDest.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
   
-    calcVectorMapProbsMutable(clusterStatByDestMapNoPrior.getMap().toMap)
+    calcVectorMapProbsMutable(clusterHistByDest.getMap().toMap)
 
     logger.info("Calc clusterProbsByUser stats...")
-    userDestStatsMap.getMap().foreach {
-      case (userId, clusterByDestMapNoPrior) =>
-        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 1f * clusterStatByDestMapNoPrior.getMap()(destId) }
+    clusterHistByUserDest.getMap().foreach {
+      case ((destId, userId), clusterProbs) =>
+        clusterProbs :+= 1f * clusterHistByDest.getMap()(destId)
+
     }
     logger.info("Calc clusterProbsByUser stats...done")
 
     logger.info("Calc clusterProbsByUser probs...")
-    userDestStatsMap.getMap.foreach { case (userId, stats) => calcVectorMapProbsMutable(stats.getMap.toMap) }
-    val clusterProbsByUser: Map[Int, Map[Int, DenseVector[Float]]] = userDestStatsMap.getMap.map { case (userId, stats) => (userId, stats.getMap) }
+    clusterHistByUserDest.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+
 
     logger.info("Calc clusterProbsByUser probs...done")
     // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
 
-    MarketDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterStatByContinentMapNoPrior.getMap())
+    MarketDestPredictionModel(clusterHistByUserDest.getMap(), clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
   }
 
 }

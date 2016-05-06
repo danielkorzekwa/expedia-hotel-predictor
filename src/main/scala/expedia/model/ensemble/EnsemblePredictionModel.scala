@@ -76,7 +76,7 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 
     val clustDistProbs = clusterDistPredict.predict(userLoc, dist, market)
     val userDestProbs = userDestPredict.predict(userId, destId, hotelContinent)
-
+    val marketDestProbs = marketDestPredict.predict(market, destId, hotelContinent)
     val clustersProbVector = DenseVector.fill(100)(0d)
     (0 until 100).foreach { hotelCluster =>
       val leakProb = clustDistProbs(hotelCluster)
@@ -85,15 +85,13 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, market), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
         if (destMarketCounts < 150) {
-     //   logger.info("dm=%d, d=%d".format(destMarketCounts, destCounts))
-          marketDestPredict.predict(market, destId, hotelContinent, hotelCluster)
-        } 
-        else if (destCounts/destMarketCounts>1.5 ) {
-        //  logger.info("..")
-           marketDestPredict.predict(market, destId, hotelContinent, hotelCluster)
-       
-        }
-           else userDestProbs(hotelCluster)
+          //   logger.info("dm=%d, d=%d".format(destMarketCounts, destCounts))
+          marketDestProbs(hotelCluster)
+        } else if (destCounts / destMarketCounts > 1.5f) {
+          //  logger.info("..")
+          marketDestProbs(hotelCluster)
+
+        } else userDestProbs(hotelCluster)
       } else leakProb
       clustersProbVector(hotelCluster) = prob
     }

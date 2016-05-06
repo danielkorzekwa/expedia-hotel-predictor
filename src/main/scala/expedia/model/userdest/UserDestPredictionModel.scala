@@ -11,7 +11,7 @@ import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
 
-case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVector[Float]]],
+case class UserDestPredictionModel(clusterProbsByUser: Map[Tuple2[Int, Int], DenseVector[Float]],
                                    clusterProbByDestMap: Map[Int, DenseVector[Float]],
                                    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
                                    clusterProbMap: DenseVector[Float],
@@ -21,14 +21,14 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVe
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(userId: Int, destId: Int, continent: Int ): DenseVector[Float] = {
+  def predict(userId: Int, destId: Int, continent: Int): DenseVector[Float] = {
 
-    val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
+    def userProbDefault(destId: Int): DenseVector[Float] = {
+      clusterProbByDestMap.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
+    }
 
-    val userClusterProbs = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
- //val userClusterProbs = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, 0f*clusterProbMap))
-
-  userClusterProbs
+    val userProb = clusterProbsByUser.getOrElse((destId, userId), userProbDefault(destId))
+    userProb
 
   }
 

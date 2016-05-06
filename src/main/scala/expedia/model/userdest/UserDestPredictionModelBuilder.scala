@@ -15,9 +15,9 @@ import expedia.stats.CatStatsMapNoPrior
 import expedia.stats.CatStatsMap
 import expedia.stats.calcVectorProbs
 import expedia.stats.calcVectorMapProbs
-import expedia.stats.UserDestStatsMap
 import expedia.stats.calcVectorProbsMutable
 import expedia.stats.calcVectorMapProbsMutable
+import expedia.stats.MulticlassHistByKey
 import expedia.stats.MulticlassHistByKey
 
 /**
@@ -31,7 +31,8 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
   val clusterHistByDest = MulticlassHistByKey[Int](100)
 
-  val userDestStatsMap = UserDestStatsMap()
+  //key - (destId,userId)
+  val clusterHistByUserDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
 
   val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
@@ -45,11 +46,9 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
     if (isBooking == 1) clusterHistByDest.add(destId, cluster)
     else clusterHistByDest.add(destId, cluster, value = 0.05f)
 
-    //clusterStatByDestMapNoPrior.add(destId, cluster)
-
     if (userIds.isEmpty || userIds.contains(userId.toInt)) {
-      if (isBooking == 1) userDestStatsMap.add(userId, destId, cluster)
-      else userDestStatsMap.add(userId, destId, cluster, value = 0.7f)
+      if (isBooking == 1) clusterHistByUserDest.add((destId, userId), cluster)
+      else clusterHistByUserDest.add((destId, userId), cluster, value = 0.7f)
     }
 
     continentByDest += destId -> hotelContinent
@@ -65,19 +64,20 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
     calcVectorMapProbsMutable(clusterHistByDest.getMap().toMap)
 
     logger.info("Calc clusterProbsByUser stats...")
-    userDestStatsMap.getMap().foreach {
-      case (userId, clusterByDestMapNoPrior) =>
-        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 10f * clusterHistByDest.getMap()(destId) }
+
+    clusterHistByUserDest.getMap().foreach {
+      case ((destId, userId), clusterProbs) =>
+        clusterProbs :+= 10f * clusterHistByDest.getMap()(destId)
+
     }
     logger.info("Calc clusterProbsByUser stats...done")
 
     logger.info("Calc clusterProbsByUser probs...")
-    userDestStatsMap.getMap.foreach { case (userId, stats) => calcVectorMapProbsMutable(stats.getMap.toMap) }
-    val clusterProbsByUser: Map[Int, Map[Int, DenseVector[Float]]] = userDestStatsMap.getMap.map { case (userId, stats) => (userId, stats.getMap) }
+    clusterHistByUserDest.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
 
     logger.info("Calc clusterProbsByUser probs...done")
 
-    UserDestPredictionModel(clusterProbsByUser, clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
+    UserDestPredictionModel(clusterHistByUserDest.getMap(), clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
   }
 
 }
