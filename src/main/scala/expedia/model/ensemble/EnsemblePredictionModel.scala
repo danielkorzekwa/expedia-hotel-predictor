@@ -22,6 +22,7 @@ import expedia.model.marketdest.MarketDestPredictionModel
 import expedia.data.ExDataSource
 import expedia.data.Click
 import expedia.model.clusterdist.ClusterDistPredictionModel
+import expedia.stats.CounterMap
 
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
@@ -35,23 +36,9 @@ object EnsemblePredictionModel extends LazyLogging {
 
     val singleCatPredictBuilder = SingleCatPredictionModelBuilder()
 
-    val countsByDestMarketMap: mutable.Map[Tuple2[Int, Int], Int] = mutable.Map()
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
 
-    processExpediaTrainFile(expediaTrainFile, clusterDistPredictBuilder, userDestPredictBuilder, singleCatPredictBuilder, marketDestPredictBuilder,
-      countsByDestMarketMap)
-
-    val clusterDistPredict = clusterDistPredictBuilder.create()
-    val userDestPredict = userDestPredictBuilder.toUserDestPredictionModel()
-    val marketDestPredict = marketDestPredictBuilder.toMarketDestPredictionModel()
-    val singleCatPredict = singleCatPredictBuilder.toSingleCatPredictionModel()
-    new EnsemblePredictionModel(clusterDistPredict, userDestPredict, singleCatPredict, marketDestPredict, countsByDestMarketMap)
-
-  }
-
-  private def processExpediaTrainFile(expediaTrainFile: String, clusterDistPredictBuilder: ClusterDistPredictionModelBuilder,
-                                      userDestPredictBuilder: UserDestPredictionModelBuilder,
-                                      singleCatPredictBuilder: SingleCatPredictionModelBuilder, marketDestPredictBuilder: MarketDestPredictionModelBuilder,
-                                      countsByDestMarketMap: mutable.Map[Tuple2[Int, Int], Int]) = {
     def onClick(click: Click) = {
       val key = (click.userLoc, click.dist, click.market)
       clusterDistPredictBuilder.processCluster(click)
@@ -60,17 +47,26 @@ object EnsemblePredictionModel extends LazyLogging {
       singleCatPredictBuilder.processCluster(click.market, click.cluster)
 
       if (click.isBooking == 1) {
-        val currDestMarketCount = countsByDestMarketMap.getOrElseUpdate((click.destId, click.market), 0)
-        countsByDestMarketMap.update((click.destId, click.market), currDestMarketCount + 1)
+        destMarketCounterMap.add((click.destId, click.market))
+        destCounterMap.add(click.destId)
       }
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
+    val clusterDistPredict = clusterDistPredictBuilder.create()
+    val userDestPredict = userDestPredictBuilder.toUserDestPredictionModel()
+    val marketDestPredict = marketDestPredictBuilder.toMarketDestPredictionModel()
+    val singleCatPredict = singleCatPredictBuilder.toSingleCatPredictionModel()
+    new EnsemblePredictionModel(clusterDistPredict, userDestPredict, singleCatPredict, marketDestPredict, destMarketCounterMap, destCounterMap)
+
   }
+
 }
 
 case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel, userDestPredict: UserDestPredictionModel, singleCatPredictionModel: SingleCatPredictionModel,
-                                   marketDestPredict: MarketDestPredictionModel, countsByDestMarketMap: mutable.Map[Tuple2[Int, Int], Int])
+                                   marketDestPredict: MarketDestPredictionModel,
+                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+                                   destCounterMap: CounterMap[Int])
     extends LazyLogging {
 
   /**
@@ -80,16 +76,24 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 
     val clustDistProbs = clusterDistPredict.predict(userLoc, dist, market)
     val userDestProbs = userDestPredict.predict(userId, destId, hotelContinent)
-    
+
     val clustersProbVector = DenseVector.fill(100)(0d)
     (0 until 100).foreach { hotelCluster =>
       val leakProb = clustDistProbs(hotelCluster)
 
       val prob = if (leakProb.isNaN()) {
-        val destMarketCounts = countsByDestMarketMap.getOrElse((destId, market), 0)
-
-        if (destMarketCounts < 150) marketDestPredict.predict(market, destId, hotelContinent, hotelCluster)
-        else userDestProbs(hotelCluster)
+        val destMarketCounts = destMarketCounterMap.getOrElse((destId, market), 0)
+        val destCounts = destCounterMap.getOrElse(destId, 0)
+        if (destMarketCounts < 150) {
+     //   logger.info("dm=%d, d=%d".format(destMarketCounts, destCounts))
+          marketDestPredict.predict(market, destId, hotelContinent, hotelCluster)
+        } 
+        else if (destCounts/destMarketCounts>1.5 ) {
+        //  logger.info("..")
+           marketDestPredict.predict(market, destId, hotelContinent, hotelCluster)
+       
+        }
+           else userDestProbs(hotelCluster)
       } else leakProb
       clustersProbVector(hotelCluster) = prob
     }
