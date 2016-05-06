@@ -17,40 +17,39 @@ import expedia.stats.calcVectorProbs
 import expedia.stats.calcVectorMapProbs
 import expedia.stats.calcVectorProbsMutable
 import expedia.stats.calcVectorMapProbsMutable
-import expedia.stats.UserDestStatsMap
 import expedia.stats.MulticlassHistByKey
+import expedia.data.Click
 
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]) extends LazyLogging {
+case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double]) extends LazyLogging {
 
   val clusterStatMap = CatStats()
 
   val clusterHistByContinent = MulticlassHistByKey[Int](100)
-  
+
   val clusterHistByDest = MulticlassHistByKey[Int](100)
 
-    val clusterHistByUserDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
+  //key ((destId, marketId)
+  val clusterHistByDestMarket = MulticlassHistByKey[Tuple2[Int, Int]](100)
+
+  //key ((destId, marketId,userId)
+  val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
 
   val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
   val continentByDest: mutable.Map[Int, Int] = mutable.Map()
 
-  def processCluster(userId: Int, destId: Int, isBooking: Int, hotelContinent: Int, cluster: Int) = {
-      clusterStatMap.add(cluster)
+  def processCluster(click: Click) = {
+    clusterStatMap.add(click.cluster)
+    clusterHistByContinent.add(click.hotelContinent, click.cluster)
+    clusterHistByDest.add(click.destId, click.cluster)
 
-      clusterHistByContinent.add(hotelContinent, cluster)
+    clusterHistByDestMarket.add((click.destId, click.market), click.cluster)
+    clusterHistByDestMarketUser.add((click.destId, click.market, click.userId), click.cluster)
 
-      
-         clusterHistByDest.add(destId, cluster)
-      
-
-      if (userIds.isEmpty || userIds.contains(userId.toInt)) {
-       clusterHistByUserDest.add((destId, userId), cluster)
-      }
-
-      continentByDest += destId -> hotelContinent
+    continentByDest += click.destId -> click.hotelContinent
   }
 
   def toMarketDestPredictionModel(): MarketDestPredictionModel = {
@@ -59,25 +58,25 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)
 
     clusterHistByDest.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
-  
     calcVectorMapProbsMutable(clusterHistByDest.getMap().toMap)
 
-    logger.info("Calc clusterProbsByUser stats...")
-    clusterHistByUserDest.getMap().foreach {
-      case ((destId, userId), clusterProbs) =>
-        clusterProbs :+= 1f * clusterHistByDest.getMap()(destId)
+    logger.info("Add prior stats to clusterHistByUserDest...")
+    clusterHistByDestMarket.getMap().foreach { case ((destId, userId), clusterProbs) => clusterProbs :+= 1f * clusterHistByDest.getMap()(destId) }
+    logger.info("Add prior stats to clusterHistByUserDest...done")
 
-    }
-    logger.info("Calc clusterProbsByUser stats...done")
+    logger.info("Normalise clusterHistByUserDest...")
+    clusterHistByDestMarket.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+    logger.info("Normalise clusterHistByUserDest...done")
 
-    logger.info("Calc clusterProbsByUser probs...")
-    clusterHistByUserDest.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+    logger.info("Add prior stats to clusterHistByDestMarketUser...")
+    clusterHistByDestMarketUser.getMap().foreach { case ((destId, marketId, userId), clusterProbs) => clusterProbs :+= 1f * clusterHistByDestMarket.getMap()((destId, marketId)) }
+    logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
+    logger.info("Normalise clusterHistByDestMarketUser...")
+    clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+    logger.info("Normalise clusterHistByDestMarketUser...done")
 
-    logger.info("Calc clusterProbsByUser probs...done")
-    // val clusterProbsByUser: Map[Double, Map[Double, DenseVector[Double]]] = calcClusterProbsByUserMap(clusterProbByDestMap)
-
-    MarketDestPredictionModel(clusterHistByUserDest.getMap(), clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
+    MarketDestPredictionModel(clusterHistByDestMarketUser.getMap(),clusterHistByDestMarket.getMap(), clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
   }
 
 }

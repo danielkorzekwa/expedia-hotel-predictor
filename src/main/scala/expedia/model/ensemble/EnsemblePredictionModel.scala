@@ -32,7 +32,7 @@ object EnsemblePredictionModel extends LazyLogging {
 
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
     val userDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, userIds)
-    val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set())
+    val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData)
 
     val singleCatPredictBuilder = SingleCatPredictionModelBuilder()
 
@@ -43,7 +43,7 @@ object EnsemblePredictionModel extends LazyLogging {
       val key = (click.userLoc, click.dist, click.market)
       clusterDistPredictBuilder.processCluster(click)
       userDestPredictBuilder.processCluster(click.userId, click.destId, click.isBooking, click.hotelContinent, click.cluster)
-      marketDestPredictBuilder.processCluster(click.market, click.destId, click.isBooking, click.hotelContinent, click.cluster)
+      marketDestPredictBuilder.processCluster(click)
       singleCatPredictBuilder.processCluster(click.market, click.cluster)
 
       if (click.isBooking == 1) {
@@ -76,7 +76,7 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 
     val clustDistProbs = clusterDistPredict.predict(userLoc, dist, market)
     val userDestProbs = userDestPredict.predict(userId, destId, hotelContinent)
-    val marketDestProbs = marketDestPredict.predict(market, destId, hotelContinent)
+    val marketDestProbs = marketDestPredict.predict(userId,market, destId, hotelContinent)
     val clustersProbVector = DenseVector.fill(100)(0d)
     (0 until 100).foreach { hotelCluster =>
       val leakProb = clustDistProbs(hotelCluster)
