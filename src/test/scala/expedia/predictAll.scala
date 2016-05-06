@@ -12,9 +12,7 @@ import expedia.model.ensemble.EnsemblePredictionModel
 import expedia.model.svm.SVMPredictionModel
 import scala.io.Source
 import java.io.File
-import expedia.data.loadTestData
-import expedia.model.ensemble.EnsemblePredictionModelTest
-import expedia.model.ensemble.EnsemblePredictionModelUserDestSimTesting
+import expedia.model.popularhotels.PopularHotelsModelBuilder
 
 object predictAll extends LazyLogging {
 
@@ -23,14 +21,14 @@ object predictAll extends LazyLogging {
    */
   def apply(expediaTrainFile: String, expediaTestFile: String, svmPredictionsData: DenseMatrix[Double], test: DenseMatrix[Double]): DenseMatrix[Double] = {
 
-  //  val testData = loadTestData(expediaTestFile)
-    
+    //  val testData = loadTestData(expediaTestFile)
+
     val userIds = test(::, 2).toArray.distinct.map(_.toInt).toSet
 
     logger.info("Computing stats...")
 
-    val ensemblePredict = EnsemblePredictionModelUserDestSimTesting(expediaTrainFile, svmPredictionsData, userIds)
-
+      val ensemblePredict = EnsemblePredictionModel(expediaTrainFile, svmPredictionsData, userIds)
+    //val popularHotelsModel = PopularHotelsModel(expediaTrainFile)
     logger.info("Making predictions...")
 
     var c = new AtomicInteger(0)
@@ -44,7 +42,8 @@ object predictAll extends LazyLogging {
       val hotelContinent = lArray(20).toInt
       val market = lArray(22).toInt
 
-      val predicted = ensemblePredict.predict(userLoc,dist,userId,destId,hotelContinent,market)
+         val predicted = ensemblePredict.predict(userLoc,dist,userId,destId,hotelContinent,market)
+      //val predicted = popularHotelsModel.predict()
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 

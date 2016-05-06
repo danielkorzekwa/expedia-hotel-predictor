@@ -18,6 +18,7 @@ import expedia.stats.calcVectorMapProbs
 import expedia.stats.UserDestStatsMap
 import expedia.stats.calcVectorProbsMutable
 import expedia.stats.calcVectorMapProbsMutable
+import expedia.stats.MulticlassHistByKey
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -26,9 +27,9 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
   val clusterStatMap = CatStats()
 
-  val clusterStatByContinentMapNoPrior = CatStatsMapNoPrior()
+  val clusterHistByContinent = MulticlassHistByKey[Int](100)
 
-  val clusterStatByDestMapNoPrior = CatStatsMapNoPrior()
+  val clusterHistByDest = MulticlassHistByKey[Int](100)
 
   val userDestStatsMap = UserDestStatsMap()
 
@@ -37,32 +38,36 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
   val continentByDest: mutable.Map[Int, Int] = mutable.Map()
 
   def processCluster(userId: Int, destId: Int, isBooking: Int, hotelContinent: Int, cluster: Int) = {
-      clusterStatMap.add(cluster)
+    clusterStatMap.add(cluster)
 
-      clusterStatByContinentMapNoPrior.add(hotelContinent, cluster)
+    clusterHistByContinent.add(hotelContinent, cluster)
 
-      clusterStatByDestMapNoPrior.add(destId, cluster)
+    if (isBooking == 1) clusterHistByDest.add(destId, cluster)
+    else clusterHistByDest.add(destId, cluster, value = 0.05f)
 
-      if (userIds.isEmpty || userIds.contains(userId.toInt)) {
-           userDestStatsMap.add(userId, destId, cluster)
-      }
+    //clusterStatByDestMapNoPrior.add(destId, cluster)
 
-      continentByDest += destId -> hotelContinent
+    if (userIds.isEmpty || userIds.contains(userId.toInt)) {
+      if (isBooking == 1) userDestStatsMap.add(userId, destId, cluster)
+      else userDestStatsMap.add(userId, destId, cluster, value = 0.7f)
+    }
+
+    continentByDest += destId -> hotelContinent
   }
 
   def toUserDestPredictionModel(): UserDestPredictionModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
 
-    calcVectorMapProbsMutable(clusterStatByContinentMapNoPrior.getMap().toMap)
+    calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)
 
-    clusterStatByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
-  
-    calcVectorMapProbsMutable(clusterStatByDestMapNoPrior.getMap().toMap)
+    clusterHistByDest.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
+
+    calcVectorMapProbsMutable(clusterHistByDest.getMap().toMap)
 
     logger.info("Calc clusterProbsByUser stats...")
     userDestStatsMap.getMap().foreach {
       case (userId, clusterByDestMapNoPrior) =>
-        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 10f * clusterStatByDestMapNoPrior.getMap()(destId) }
+        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 10f * clusterHistByDest.getMap()(destId) }
     }
     logger.info("Calc clusterProbsByUser stats...done")
 
@@ -72,7 +77,7 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
     logger.info("Calc clusterProbsByUser probs...done")
 
-    UserDestPredictionModel(clusterProbsByUser, clusterStatByDestMapNoPrior.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterStatByContinentMapNoPrior.getMap())
+    UserDestPredictionModel(clusterProbsByUser, clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
   }
 
 }

@@ -21,15 +21,14 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Int, Map[Int, DenseVe
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(userId: Int, destId: Int, continent: Int, hotelCluster: Double): Double = {
+  def predict(userId: Int, destId: Int, continent: Int ): DenseVector[Float] = {
 
     val userProb = clusterProbsByUser.getOrElse(userId, clusterProbByDestMap)
 
-    val userCluster = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
+    val userClusterProbs = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
+ //val userClusterProbs = userProb.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, 0f*clusterProbMap))
 
-    val prob = userCluster(hotelCluster.toInt)
-
-    prob
+  userClusterProbs
 
   }
 

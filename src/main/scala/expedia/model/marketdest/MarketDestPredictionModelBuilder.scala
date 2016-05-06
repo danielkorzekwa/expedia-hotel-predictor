@@ -41,10 +41,14 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
       clusterStatByContinentMapNoPrior.add(hotelContinent, cluster)
 
-      clusterStatByDestMapNoPrior.add(destId, cluster)
+      
+        clusterStatByDestMapNoPrior.add(destId, cluster)
+      
+//      clusterStatByDestMapNoPrior.add(destId, cluster)
 
       if (userIds.isEmpty || userIds.contains(userId.toInt)) {
-           userDestStatsMap.add(userId, destId, cluster)
+        //   userDestStatsMap.add(userId, destId, cluster)
+        userDestStatsMap.add(userId, destId, cluster)
       }
 
       continentByDest += destId -> hotelContinent
@@ -62,7 +66,7 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     logger.info("Calc clusterProbsByUser stats...")
     userDestStatsMap.getMap().foreach {
       case (userId, clusterByDestMapNoPrior) =>
-        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 10f * clusterStatByDestMapNoPrior.getMap()(destId) }
+        clusterByDestMapNoPrior.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= 1f * clusterStatByDestMapNoPrior.getMap()(destId) }
     }
     logger.info("Calc clusterProbsByUser stats...done")
 

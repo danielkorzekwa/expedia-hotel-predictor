@@ -39,7 +39,7 @@ case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
 
   }
 
-  def toClusterDistPredictionModel(topClustersByDistMap: Map[Tuple3[Double, Double, Double], List[Double]]): ClusterDistBayesPredictionModel = {
+  def toClusterDistPredictionModel(topClustersByDistMap: Map[Tuple3[Double, Double, Double], DenseVector[Int]]): ClusterDistBayesPredictionModel = {
 
     logger.info("Predicting cluser dist bayes...")
 
@@ -57,13 +57,13 @@ case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
     /**
      * Compute cluster similarities
      */
-    val distClutersSeq = clustersByDistMap.map { case (key, clusters) => clusters.toList.distinct }.toList
+    val distClutersSeq = clustersByDistMap.map { case (key, clusters) => DenseVector(clusters.toList.distinct.toArray.map(_.toInt)) }.toList
     val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
     val jacardSimMatrix = calcJacardSimMatrix(clusterCoExistMat)
 
     val jacardSimMatrixByCluster: Map[Double, DenseMatrix[Double]] = (0 until 100).map { cluster =>
 
-      val distClutersSeqForCluster = distClutersSeq.filter { clusters => clusters.contains(cluster) }
+      val distClutersSeqForCluster = distClutersSeq.filter { clusters => clusters.toArray.contains(cluster) }
       println(distClutersSeqForCluster.size + ":" + distClutersSeq.size)
       cluster.toDouble -> calcJacardSimMatrix(calcClusterCoExistMatrix(distClutersSeqForCluster))
 
@@ -82,7 +82,7 @@ case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
     // val predictedByClustersList: mutable.Map[List[Int], DenseVector[Double]] = mutable.Map()
 
     //key (num of clusters, top cluster)
-    val gprFastModelsByClustersSize: mutable.Map[Tuple2[Int,Double], GprFastModel] = mutable.Map()
+    val gprFastModelsByClustersSize: mutable.Map[Tuple2[Int,Int], GprFastModel] = mutable.Map()
     clustersByDistMap.toList.foreach {
       case (key, clusters) =>
         if (clusters.size < 10) {
@@ -124,7 +124,7 @@ case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
   }
 
   var ii = new AtomicInteger(0)
-  private def createGPFastModel(gpModelKey:Tuple2[Int,Double],clusters: Seq[Double], jacardSimMatrix: DenseMatrix[Double]): GprFastModel = {
+  private def createGPFastModel(gpModelKey:Tuple2[Int,Int],clusters: Seq[Double], jacardSimMatrix: DenseMatrix[Double]): GprFastModel = {
 
      logger.info("Creating gp model...: " + gpModelKey + ":" + ii.incrementAndGet())
     val gpData = getDataForGP(DenseVector(clusters.toArray.map(_.toDouble)), clustersSize = 100)

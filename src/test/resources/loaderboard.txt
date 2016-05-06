@@ -1,3 +1,24 @@
+not tested:
+weighted clicks(dest,user) + (market,dest),hotel continent + clusterDistSimTuned + clusterDistSim + user priorCounts*10 + Used SVM as prior for clusterByDEst + Use clicks for clusterStatMap/clusterStatByDestMapNoPrior/userDestStatsMap + sorted by counts clustersByDistance + svm + hierarchical bayes: all/fest/userId + dataleak(src_dest_distance)(all clusters on the same distance have prob=1)
+... (1976304 total)
+mapk=0.46119, size=1976304
+analysis time=97748
+
+
+not tested:
+weighted clicks(dest,user) + (market,dest),hotel continent + clusterDistSimTuned + clusterDistSim + user priorCounts*10 + Used SVM as prior for clusterByDEst + Use clicks for clusterStatMap/clusterStatByDestMapNoPrior/userDestStatsMap + sorted by counts clustersByDistance + svm + hierarchical bayes: all/fest/userId + dataleak(src_dest_distance)(all clusters on the same distance have prob=1)
+mapk=0.46111, size=1976304
+analysis time=103405
+0.7
+
+not tested: 
+weighted clicks(dest) + (market,dest),hotel continent + clusterDistSimTuned + clusterDistSim + user priorCounts*10 + Used SVM as prior for clusterByDEst + Use clicks for clusterStatMap/clusterStatByDestMapNoPrior/userDestStatsMap + sorted by counts clustersByDistance + svm + hierarchical bayes: all/fest/userId + dataleak(src_dest_distance)(all clusters on the same distance have prob=1)
+... (1976304 total)
+mapk=0.46107, size=1976304
+analysis time=97114
+
+------------------------------------------------------
+
 (market,dest),hotel continent + clusterDistSimTuned + clusterDistSim + user priorCounts*10 + Used SVM as prior for clusterByDEst + Use clicks for clusterStatMap/clusterStatByDestMapNoPrior/userDestStatsMap + sorted by counts clustersByDistance + svm + hierarchical bayes: all/fest/userId + dataleak(src_dest_distance)(all clusters on the same distance have prob=1)
 ... (1976304 total)
 mapk=0.46054, size=1976304
