@@ -84,10 +84,10 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
       val prob = if (leakProb.isNaN()) {
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, market), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
-        if (destMarketCounts < 150) {
+        if (destMarketCounts < 300) {
           //   logger.info("dm=%d, d=%d".format(destMarketCounts, destCounts))
           marketDestProbs(hotelCluster)
-        } else if (destCounts / destMarketCounts > 1.5f) {
+        } else if (destCounts / destMarketCounts > 1.5) {
           //  logger.info("..")
           marketDestProbs(hotelCluster)
 
