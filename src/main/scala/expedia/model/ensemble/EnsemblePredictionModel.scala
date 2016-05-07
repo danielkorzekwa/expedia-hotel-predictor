@@ -11,10 +11,6 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
 import expedia.model.userdest.UserDestPredictionModelBuilder
-import expedia.model.singlecatmodel.SingleCatPredictionModel
-import expedia.model.singlecatmodel.SingleCatPredictionModelBuilder
-import expedia.model.singlecatmodel.SingleCatPredictionModel
-import expedia.model.singlecatmodel.SingleCatPredictionModel
 import expedia.model.userdest.UserDestPredictionModel
 import scala.collection._
 import expedia.model.marketdest.MarketDestPredictionModelBuilder
@@ -34,36 +30,34 @@ object EnsemblePredictionModel extends LazyLogging {
     val userDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, userIds)
     val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData)
 
-    val singleCatPredictBuilder = SingleCatPredictionModelBuilder()
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()
+val marketCounterMap = CounterMap[Int]()
 
     def onClick(click: Click) = {
-      val key = (click.userLoc, click.dist, click.market)
       clusterDistPredictBuilder.processCluster(click)
-      userDestPredictBuilder.processCluster(click.userId, click.destId, click.isBooking, click.hotelContinent, click.cluster)
+      userDestPredictBuilder.processCluster(click)
       marketDestPredictBuilder.processCluster(click)
-      singleCatPredictBuilder.processCluster(click.market, click.cluster)
 
       if (click.isBooking == 1) {
         destMarketCounterMap.add((click.destId, click.market))
         destCounterMap.add(click.destId)
+        marketCounterMap.add(click.market)
       }
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
     val clusterDistPredict = clusterDistPredictBuilder.create()
-    val userDestPredict = userDestPredictBuilder.toUserDestPredictionModel()
-    val marketDestPredict = marketDestPredictBuilder.toMarketDestPredictionModel()
-    val singleCatPredict = singleCatPredictBuilder.toSingleCatPredictionModel()
-    new EnsemblePredictionModel(clusterDistPredict, userDestPredict, singleCatPredict, marketDestPredict, destMarketCounterMap, destCounterMap)
+    val userDestPredict = userDestPredictBuilder.create()
+    val marketDestPredict = marketDestPredictBuilder.create(destMarketCounterMap,destCounterMap,marketCounterMap)
+    new EnsemblePredictionModel(clusterDistPredict, userDestPredict,  marketDestPredict, destMarketCounterMap, destCounterMap)
 
   }
 
 }
 
-case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel, userDestPredict: UserDestPredictionModel, singleCatPredictionModel: SingleCatPredictionModel,
+case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel, userDestPredict: UserDestPredictionModel,
                                    marketDestPredict: MarketDestPredictionModel,
                                    destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                    destCounterMap: CounterMap[Int])

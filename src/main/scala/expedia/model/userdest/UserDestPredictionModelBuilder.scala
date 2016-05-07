@@ -3,22 +3,17 @@ package expedia.model.userdest
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
-import expedia.stats.calcCatStatsMap
-import expedia.stats.calcCatStats
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
 import expedia.stats.CatStats
-import expedia.stats.CatStatsMapNoPrior
-import expedia.stats.CatStatsMap
-import expedia.stats.calcVectorProbs
-import expedia.stats.calcVectorMapProbs
 import expedia.stats.calcVectorProbsMutable
 import expedia.stats.calcVectorMapProbsMutable
 import expedia.stats.MulticlassHistByKey
 import expedia.stats.MulticlassHistByKey
+import expedia.data.Click
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -28,7 +23,7 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
   val clusterStatMap = CatStats()
 
   val clusterHistByContinent = MulticlassHistByKey[Int](100)
-
+  
   val clusterHistByDest = MulticlassHistByKey[Int](100)
 
   //key - (destId,userId)
@@ -38,23 +33,23 @@ case class UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double
 
   val continentByDest: mutable.Map[Int, Int] = mutable.Map()
 
-  def processCluster(userId: Int, destId: Int, isBooking: Int, hotelContinent: Int, cluster: Int) = {
-    clusterStatMap.add(cluster)
+  def processCluster(click:Click) = {
+    clusterStatMap.add(click.cluster)
 
-    clusterHistByContinent.add(hotelContinent, cluster)
+    clusterHistByContinent.add(click.hotelContinent, click.cluster)
 
-    if (isBooking == 1) clusterHistByDest.add(destId, cluster)
-    else clusterHistByDest.add(destId, cluster, value = 0.05f)
+    if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
+    else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
 
-    if (userIds.isEmpty || userIds.contains(userId.toInt)) {
-      if (isBooking == 1) clusterHistByUserDest.add((destId, userId), cluster)
-      else clusterHistByUserDest.add((destId, userId), cluster, value = 0.7f)
+    if (userIds.isEmpty || userIds.contains(click.userId)) {
+      if (click.isBooking == 1) clusterHistByUserDest.add((click.destId, click.userId), click.cluster)
+      else clusterHistByUserDest.add((click.destId, click.userId), click.cluster, value = 0.7f)
     }
 
-    continentByDest += destId -> hotelContinent
+    continentByDest += click.destId -> click.hotelContinent
   }
 
-  def toUserDestPredictionModel(): UserDestPredictionModel = {
+  def create(): UserDestPredictionModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
 
     calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)

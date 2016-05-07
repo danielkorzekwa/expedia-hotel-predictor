@@ -9,7 +9,6 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
 import breeze.linalg.DenseMatrix
 import expedia.stats.CatStats
-import expedia.stats.calcVectorProbs
 import expedia.stats.calcVectorProbsMutable
 import breeze.numerics._
 import dk.gp.gpr.GprModel

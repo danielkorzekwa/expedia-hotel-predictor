@@ -3,13 +3,12 @@ package expedia.model.userdest
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import breeze.linalg._
-import expedia.stats.calcCatStatsMap
-import expedia.stats.calcCatStats
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
+import expedia.data.ExDataSource
 
 case class UserDestPredictionModel(clusterProbsByUser: Map[Tuple2[Int, Int], DenseVector[Float]],
                                    clusterProbByDestMap: Map[Int, DenseVector[Float]],
@@ -32,4 +31,15 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Tuple2[Int, Int], Den
 
   }
 
+}
+
+object UserDestPredictionModel {
+  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]): UserDestPredictionModel = {
+
+    val modelBuilder = UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double], userIds: Set[Int])
+
+    ExDataSource(expediaTrainFile).foreach { click => modelBuilder.processCluster(click) }
+
+    modelBuilder.create()
+  }
 }
