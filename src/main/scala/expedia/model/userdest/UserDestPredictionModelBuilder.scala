@@ -45,17 +45,15 @@ case class UserDestPredictionModelBuilder(userIds: Set[Int]) extends LazyLogging
   def create(destModel:DestModel): UserDestPredictionModel = {
 
     logger.info("Calc clusterProbsByUser stats...")
-
     clusterHistByUserDest.getMap().foreach {
       case ((destId, userId), clusterProbs) =>
         clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))//clusterHistByDest.getMap()(destId)
 
     }
     logger.info("Calc clusterProbsByUser stats...done")
-
+    
     logger.info("Calc clusterProbsByUser probs...")
     clusterHistByUserDest.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
-
     logger.info("Calc clusterProbsByUser probs...done")
 
     UserDestPredictionModel(destModel,clusterHistByUserDest.getMap() )

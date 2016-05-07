@@ -20,7 +20,7 @@ import expedia.model.dest.DestModel
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double]) extends LazyLogging {
+case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double],userIds: Set[Int]) extends LazyLogging {
 
   val clusterStatMap = CatStats()
 
@@ -31,8 +31,9 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
   //key ((destId, marketId,userId)
   val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
-
-  val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
+  
+   //key - (destId,marketId,userId)
+  val clusterHistByDestMarketUser2 = MulticlassHistByKey[Tuple3[Int,Int, Int]](100)
 
   val continentByDest: mutable.Map[Int, Int] = mutable.Map()
 
@@ -44,6 +45,12 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     clusterHistByDestMarketUser.add((click.destId, click.market, click.userId), click.cluster)
 
     continentByDest += click.destId -> click.hotelContinent
+    
+     if (userIds.isEmpty || userIds.contains(click.userId)) {
+      if (click.isBooking == 1) clusterHistByDestMarketUser2.add((click.destId, click.market,click.userId), click.cluster)
+      else clusterHistByDestMarketUser2.add((click.destId, click.market,click.userId), click.cluster, value = 0.7f)
+      
+    }
   }
 
   def create(destModel: DestModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
@@ -79,7 +86,23 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
-    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap(), clusterHistByDestMarket.getMap())
+    
+    
+    
+    
+     logger.info("Calc clusterHistByDestMarketUser2 stats...")
+    clusterHistByDestMarketUser2.getMap().foreach {
+      case ((destId, marketId,userId), clusterProbs) =>
+        clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
+
+    }
+    logger.info("Calc clusterHistByDestMarketUser2 stats...done")
+    
+    logger.info("Calc clusterHistByDestMarketUser2 probs...")
+    clusterHistByDestMarketUser2.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+    logger.info("Calc clusterHistByDestMarketUser2 probs...done")
+
+    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap(), clusterHistByDestMarket.getMap(),clusterHistByDestMarketUser2)
   }
 
 }

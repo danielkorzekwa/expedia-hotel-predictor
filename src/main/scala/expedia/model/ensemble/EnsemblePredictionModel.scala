@@ -28,8 +28,8 @@ object EnsemblePredictionModel extends LazyLogging {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]): EnsemblePredictionModel = {
     val destModelBuilder = DestModelBuilder(svmPredictionsData)
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
-    val userDestPredictBuilder = UserDestPredictionModelBuilder(userIds)
-    val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData)
+  //  val userDestPredictBuilder = UserDestPredictionModelBuilder(userIds)
+    val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData,userIds)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()
@@ -38,7 +38,7 @@ object EnsemblePredictionModel extends LazyLogging {
     def onClick(click: Click) = {
       destModelBuilder.processCluster(click)
       clusterDistPredictBuilder.processCluster(click)
-      userDestPredictBuilder.processCluster(click)
+   //   userDestPredictBuilder.processCluster(click)
       marketDestPredictBuilder.processCluster(click)
 
       if (click.isBooking == 1) {
@@ -51,15 +51,15 @@ object EnsemblePredictionModel extends LazyLogging {
 
     val destModel = destModelBuilder.create()
     val clusterDistPredict = clusterDistPredictBuilder.create()
-    val userDestPredict = userDestPredictBuilder.create(destModel)
+ //   val userDestPredict = userDestPredictBuilder.create(destModel)
     val marketDestPredict = marketDestPredictBuilder.create(destModel,destMarketCounterMap, destCounterMap, marketCounterMap)
-    new EnsemblePredictionModel(clusterDistPredict, userDestPredict, marketDestPredict, destMarketCounterMap, destCounterMap)
+    new EnsemblePredictionModel(clusterDistPredict, marketDestPredict, destMarketCounterMap, destCounterMap)
 
   }
 
 }
 
-case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel, userDestPredict: UserDestPredictionModel,
+case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionModel, 
                                    marketDestPredict: MarketDestPredictionModel,
                                    destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                    destCounterMap: CounterMap[Int])
@@ -70,16 +70,19 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
    */
   def predict(userLoc: Int, dist: Double, userId: Int, destId: Int, hotelContinent: Int, market: Int): DenseVector[Double] = {
 
+      val destMarketCounts = destMarketCounterMap.getOrElse((destId, market), 0)
+        val destCounts = destCounterMap.getOrElse(destId, 0)
+    
     val clustDistProbs = clusterDistPredict.predict(userLoc, dist, market)
-    val userDestProbs = userDestPredict.predict(userId, destId, hotelContinent)
-    val marketDestProbs = marketDestPredict.predict(userId, market, destId, hotelContinent)
+  //  val userDestProbs = userDestPredict.predict(userId, destId, hotelContinent)
+    val marketDestProbs = marketDestPredict.predict(userId, market, destId, hotelContinent,false)
+    val marketDestProbs2 = marketDestPredict.predict(userId, market, destId, hotelContinent,true)
     val clustersProbVector = DenseVector.fill(100)(0d)
     (0 until 100).foreach { hotelCluster =>
       val leakProb = clustDistProbs(hotelCluster)
 
       val prob = if (leakProb.isNaN()) {
-        val destMarketCounts = destMarketCounterMap.getOrElse((destId, market), 0)
-        val destCounts = destCounterMap.getOrElse(destId, 0)
+      
         if (destMarketCounts < 300) {
           //   logger.info("dm=%d, d=%d".format(destMarketCounts, destCounts))
           marketDestProbs(hotelCluster)
@@ -87,7 +90,7 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
           //  logger.info("..")
           marketDestProbs(hotelCluster)
 
-        } else userDestProbs(hotelCluster)
+        } else  marketDestProbs2(hotelCluster) //userDestProbs(hotelCluster)
       } else leakProb
       clustersProbVector(hotelCluster) = prob
     }

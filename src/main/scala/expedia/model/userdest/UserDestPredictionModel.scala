@@ -19,12 +19,7 @@ case class UserDestPredictionModel(
    * @param hotelCluster
    */
   def predict(userId: Int, destId: Int, continent: Int): DenseVector[Float] = {
-
-   
-
-    val userProb = clusterProbsByUser.getOrElse((destId, userId), destModel.predict(destId, continent))
-    userProb
-
+    clusterProbsByUser.getOrElse((destId, userId), destModel.predict(destId, continent))
   }
 
 }
