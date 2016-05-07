@@ -12,14 +12,12 @@ import expedia.data.ExDataSource
 import expedia.data.Click
 import expedia.stats.CounterMap
 import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModel
 
 case class MarketDestPredictionModel(
+    destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
-    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
-    clusterProbByDestMap: Map[Int, DenseVector[Float]],
-    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
-    clusterProbMap: DenseVector[Float],
-    clusterStatByContinentMapNoPrior: Map[Int, DenseVector[Float]]) extends LazyLogging {
+    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
@@ -27,11 +25,7 @@ case class MarketDestPredictionModel(
    */
   def predict(userId: Int, marketId: Int, destId: Int, continent: Int): DenseVector[Float] = {
 
-    def userProbDefault(destId: Int): DenseVector[Float] = {
-      clusterProbByDestMap.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
-    }
-
-    val userProb = clusterHistByDestMarketUser.getOrElse((destId, marketId, userId), clusterProbsByDestMarket.getOrElse((destId, marketId), userProbDefault(destId)))
+    val userProb = clusterHistByDestMarketUser.getOrElse((destId, marketId, userId), clusterProbsByDestMarket.getOrElse((destId, marketId), destModel.predict(destId, continent)))
     userProb
 
   }
@@ -46,7 +40,7 @@ object MarketDestPredictionModel {
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()
-val marketCounterMap = CounterMap[Int]()
+    val marketCounterMap = CounterMap[Int]()
 
     def onClick(click: Click) = {
       destModelBuilder.create()
@@ -60,7 +54,7 @@ val marketCounterMap = CounterMap[Int]()
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
-val destModel = destModelBuilder.create()
-    modelBuilder.create(destModel,destMarketCounterMap,destCounterMap,marketCounterMap)
+    val destModel = destModelBuilder.create()
+    modelBuilder.create(destModel, destMarketCounterMap, destCounterMap, marketCounterMap)
   }
 }

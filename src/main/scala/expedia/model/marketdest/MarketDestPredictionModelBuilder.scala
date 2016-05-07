@@ -24,9 +24,6 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
   val clusterStatMap = CatStats()
 
-  val clusterHistByContinent = MulticlassHistByKey[Int](100)
-
-  val clusterHistByDest = MulticlassHistByKey[Int](100)
   val clusterHistByMarket = MulticlassHistByKey[Int](100)
 
   //key ((destId, marketId)
@@ -41,8 +38,6 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
   def processCluster(click: Click) = {
     clusterStatMap.add(click.cluster)
-    clusterHistByContinent.add(click.hotelContinent, click.cluster)
-    clusterHistByDest.add(click.destId, click.cluster)
     clusterHistByMarket.add(click.market, click.cluster)
 
     clusterHistByDestMarket.add((click.destId, click.market), click.cluster)
@@ -51,13 +46,8 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     continentByDest += click.destId -> click.hotelContinent
   }
 
-  def create(destModel:DestModel,destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
+  def create(destModel: DestModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
-
-    calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)
-
-    clusterHistByDest.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
-    calcVectorMapProbsMutable(clusterHistByDest.getMap().toMap)
 
     clusterHistByMarket.getMap().foreach { case (marketId, clusterCounts) => clusterCounts :+= clusterStatMap.getItemVec }
     calcVectorMapProbsMutable(clusterHistByMarket.getMap().toMap)
@@ -71,7 +61,7 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
         if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterProbs :+= 1f * clusterHistByMarket.getMap()(marketId)
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 1f * destModel.predict(destId, continentByDest(destId))//clusterHistByDest.getMap()(destId)
+        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 1f * destModel.predict(destId, continentByDest(destId)) //clusterHistByDest.getMap()(destId)
         else clusterProbs :+= 1f * clusterHistByMarket.getMap()(marketId)
     }
 
@@ -89,7 +79,7 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
-    MarketDestPredictionModel(clusterHistByDestMarketUser.getMap(), clusterHistByDestMarket.getMap(), clusterHistByDest.getMap(), clusterProbByDestMapSVM, clusterStatMap.getItemVec, clusterHistByContinent.getMap())
+    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap(), clusterHistByDestMarket.getMap())
   }
 
 }

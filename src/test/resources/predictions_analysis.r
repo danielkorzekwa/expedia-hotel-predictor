@@ -2,16 +2,18 @@ rm(list=ls())
 
 #Predictions analysis
 p <- read.csv('predictions_analysis_2014/predictions.csv')
-p2 <- read.csv('predictions_analysis_2014/predictions2.csv')
-train <- read.csv('data_booked/train_booked_2013.csv')
 
+p2 <- read.csv('predictions_analysis_2014/predictions2.csv')
+pp <- merge(p,p2,by=c(0),sort=FALSE)
+
+train <- read.csv('data_booked/train_booked_2013.csv')
 test <- read.csv('data_booked/train_booked_2014_all_cols.csv')
 test$time_to_ci <- as.Date(test$srch_ci) - as.Date(test$date_time)
 test$length <- as.Date(test$srch_co) - as.Date(test$srch_ci)
 test$weekday <- weekdays(as.Date(test$srch_ci))
 test$month <- months(as.Date(test$srch_ci))
 
-pp <- merge(p,p2,by=c(0),sort=FALSE)
+
 
 #analyze mapk
 stat <- sqldf('select srch_destination_id,count(*) as c from train  group by srch_destination_id order by c')
@@ -29,8 +31,6 @@ testc$r1_2 <- p2$r1
 
 testc$r2_2 <- p2$r2
 testc$mapk2 <- p2$mapk
-
-
 
 testc <- merge(testc,stat,all.x=T,sort=FALSE)
 testc$c[is.na(testc$c)] <- 0
