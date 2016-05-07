@@ -15,6 +15,7 @@ import expedia.stats.MulticlassHistByKey
 import expedia.data.Click
 import expedia.stats.MulticlassHistByKey
 import expedia.stats.CounterMap
+import expedia.model.dest.DestModel
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -50,7 +51,7 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     continentByDest += click.destId -> click.hotelContinent
   }
 
-  def create(destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
+  def create(destModel:DestModel,destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
 
     calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)
@@ -63,7 +64,6 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
     logger.info("Add prior stats to clusterHistByDestMarket...")
 
-    //  clusterHistByDestMarket.getMap().foreach { case ((destId, marketId), clusterProbs) => clusterProbs :+= 1f * clusterHistByDest.getMap()(destId) }
     clusterHistByDestMarket.getMap().foreach {
       case ((destId, marketId), clusterProbs) =>
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
@@ -71,7 +71,7 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
         if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterProbs :+= 1f * clusterHistByMarket.getMap()(marketId)
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 1f * clusterHistByDest.getMap()(destId)
+        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 1f * destModel.predict(destId, continentByDest(destId))//clusterHistByDest.getMap()(destId)
         else clusterProbs :+= 1f * clusterHistByMarket.getMap()(marketId)
     }
 

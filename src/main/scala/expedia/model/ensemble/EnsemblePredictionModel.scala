@@ -19,23 +19,24 @@ import expedia.data.ExDataSource
 import expedia.data.Click
 import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.stats.CounterMap
+import expedia.model.dest.DestModelBuilder
 
 /**
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
  */
 object EnsemblePredictionModel extends LazyLogging {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]): EnsemblePredictionModel = {
-
+    val destModelBuilder = DestModelBuilder(svmPredictionsData)
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
-    val userDestPredictBuilder = UserDestPredictionModelBuilder(svmPredictionsData, userIds)
+    val userDestPredictBuilder = UserDestPredictionModelBuilder(userIds)
     val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData)
-
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()
-val marketCounterMap = CounterMap[Int]()
+    val marketCounterMap = CounterMap[Int]()
 
     def onClick(click: Click) = {
+      destModelBuilder.processCluster(click)
       clusterDistPredictBuilder.processCluster(click)
       userDestPredictBuilder.processCluster(click)
       marketDestPredictBuilder.processCluster(click)
@@ -48,10 +49,11 @@ val marketCounterMap = CounterMap[Int]()
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
+    val destModel = destModelBuilder.create()
     val clusterDistPredict = clusterDistPredictBuilder.create()
-    val userDestPredict = userDestPredictBuilder.create()
-    val marketDestPredict = marketDestPredictBuilder.create(destMarketCounterMap,destCounterMap,marketCounterMap)
-    new EnsemblePredictionModel(clusterDistPredict, userDestPredict,  marketDestPredict, destMarketCounterMap, destCounterMap)
+    val userDestPredict = userDestPredictBuilder.create(destModel)
+    val marketDestPredict = marketDestPredictBuilder.create(destModel,destMarketCounterMap, destCounterMap, marketCounterMap)
+    new EnsemblePredictionModel(clusterDistPredict, userDestPredict, marketDestPredict, destMarketCounterMap, destCounterMap)
 
   }
 
@@ -70,7 +72,7 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 
     val clustDistProbs = clusterDistPredict.predict(userLoc, dist, market)
     val userDestProbs = userDestPredict.predict(userId, destId, hotelContinent)
-    val marketDestProbs = marketDestPredict.predict(userId,market, destId, hotelContinent)
+    val marketDestProbs = marketDestPredict.predict(userId, market, destId, hotelContinent)
     val clustersProbVector = DenseVector.fill(100)(0d)
     (0 until 100).foreach { hotelCluster =>
       val leakProb = clustDistProbs(hotelCluster)

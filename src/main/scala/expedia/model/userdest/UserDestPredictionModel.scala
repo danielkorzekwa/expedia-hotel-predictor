@@ -1,20 +1,18 @@
 package expedia.model.userdest
 
-import breeze.linalg.DenseVector
-import breeze.linalg.DenseMatrix
-import breeze.linalg._
+import scala.collection.Map
+import scala.collection.Set
 import com.typesafe.scalalogging.slf4j.LazyLogging
-import java.util.concurrent.atomic.AtomicInteger
-import scala.collection._
-import expedia.model.svm.loadClusterProbsByDestMap
-import expedia.model.svm.SVMPredictionModel
+import breeze.linalg.DenseMatrix
+import breeze.linalg.DenseVector
+import expedia.data.Click
 import expedia.data.ExDataSource
+import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModel
 
-case class UserDestPredictionModel(clusterProbsByUser: Map[Tuple2[Int, Int], DenseVector[Float]],
-                                   clusterProbByDestMap: Map[Int, DenseVector[Float]],
-                                   clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
-                                   clusterProbMap: DenseVector[Float],
-                                   clusterStatByContinentMapNoPrior: Map[Int, DenseVector[Float]]) extends LazyLogging {
+case class UserDestPredictionModel(
+    destModel:DestModel,
+    clusterProbsByUser: Map[Tuple2[Int, Int], DenseVector[Float]]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
@@ -22,11 +20,9 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Tuple2[Int, Int], Den
    */
   def predict(userId: Int, destId: Int, continent: Int): DenseVector[Float] = {
 
-    def userProbDefault(destId: Int): DenseVector[Float] = {
-      clusterProbByDestMap.getOrElse(destId, clusterProbByDestMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterStatByContinentMapNoPrior.getOrElse(continent, clusterProbMap))))
-    }
+   
 
-    val userProb = clusterProbsByUser.getOrElse((destId, userId), userProbDefault(destId))
+    val userProb = clusterProbsByUser.getOrElse((destId, userId), destModel.predict(destId, continent))
     userProb
 
   }
@@ -36,10 +32,18 @@ case class UserDestPredictionModel(clusterProbsByUser: Map[Tuple2[Int, Int], Den
 object UserDestPredictionModel {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int]): UserDestPredictionModel = {
 
-    val modelBuilder = UserDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double], userIds: Set[Int])
+    val destModelBuilder = DestModelBuilder(svmPredictionsData)
 
-    ExDataSource(expediaTrainFile).foreach { click => modelBuilder.processCluster(click) }
+    val modelBuilder = UserDestPredictionModelBuilder( userIds: Set[Int])
 
-    modelBuilder.create()
+    def onClick(click: Click) = {
+      destModelBuilder.create()
+      modelBuilder.processCluster(click)
+
+    }
+    ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
+
+    val destModel = destModelBuilder.create()
+    modelBuilder.create(destModel)
   }
 }

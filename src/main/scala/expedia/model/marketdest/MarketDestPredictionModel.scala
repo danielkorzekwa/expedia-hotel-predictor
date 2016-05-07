@@ -11,6 +11,7 @@ import expedia.model.svm.SVMPredictionModel
 import expedia.data.ExDataSource
 import expedia.data.Click
 import expedia.stats.CounterMap
+import expedia.model.dest.DestModelBuilder
 
 case class MarketDestPredictionModel(
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
@@ -40,13 +41,15 @@ case class MarketDestPredictionModel(
 object MarketDestPredictionModel {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double]): MarketDestPredictionModel = {
 
-    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double])
+    val destModelBuilder = DestModelBuilder(svmPredictionsData)
+    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()
 val marketCounterMap = CounterMap[Int]()
 
     def onClick(click: Click) = {
+      destModelBuilder.create()
       modelBuilder.processCluster(click)
 
       if (click.isBooking == 1) {
@@ -57,7 +60,7 @@ val marketCounterMap = CounterMap[Int]()
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
-
-    modelBuilder.create(destMarketCounterMap,destCounterMap,marketCounterMap)
+val destModel = destModelBuilder.create()
+    modelBuilder.create(destModel,destMarketCounterMap,destCounterMap,marketCounterMap)
   }
 }
