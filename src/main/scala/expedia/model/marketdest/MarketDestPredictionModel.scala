@@ -19,17 +19,17 @@ case class MarketDestPredictionModel(
     destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
     clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
-    clusterHistByDestMarketUser2:MulticlassHistByKey[Tuple3[Int,Int, Int]]
-  ) extends LazyLogging {
+    clusterHistByDestMarketUser2: MulticlassHistByKey[Tuple3[Int, Int, Int]]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(userId: Int, marketId: Int, destId: Int, continent: Int,useUserDest:Boolean): DenseVector[Float] = {
+  def predict(userId: Int, marketId: Int, destId: Int, continent: Int, useUserDest: Boolean): DenseVector[Float] = {
 
-    val userProb = if(!useUserDest) clusterHistByDestMarketUser.getOrElse((destId, marketId, userId), clusterProbsByDestMarket.getOrElse((destId, marketId), destModel.predict(destId, continent)))
-    else  clusterHistByDestMarketUser2.getMap.getOrElse((destId,marketId, userId), destModel.predict(destId, continent))
+    val userProb = if (!useUserDest) clusterHistByDestMarketUser.getOrElse((destId, marketId, userId), clusterProbsByDestMarket.getOrElse((destId, marketId), destModel.predict(destId, continent)))
+
+    else clusterHistByDestMarketUser2.getMap.getOrElse((destId, marketId, userId), destModel.predict(destId, continent))
     userProb
 
   }
@@ -40,7 +40,7 @@ object MarketDestPredictionModel {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double]): MarketDestPredictionModel = {
 
     val destModelBuilder = DestModelBuilder(svmPredictionsData)
-    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData,Set())
+    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set())
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()
