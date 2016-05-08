@@ -21,11 +21,9 @@ object predictAll extends LazyLogging {
   /**
    * @return p1..p5,r1..r5
    */
-  def apply(expediaTrainFile: String, expediaTestFile: String, svmPredictionsData: DenseMatrix[Double], test: DenseMatrix[Double]): DenseMatrix[Double] = {
+  def apply(expediaTrainFile: String, expediaTestFile: String, svmPredictionsData: DenseMatrix[Double]): DenseMatrix[Double] = {
 
-    //  val testData = loadTestData(expediaTestFile)
 
-    //val userIds = test(::, 2).toArray.distinct.map(_.toInt).toSet
 
      val testClicks = ExDataSource(expediaTestFile).getAllClicks()
     val userIds = testClicks.map(c => c.userId).toSet

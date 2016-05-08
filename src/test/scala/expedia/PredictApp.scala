@@ -29,7 +29,7 @@ object PredictApp extends LazyLogging {
     val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dest_20K.csv"), skipLines = 1)
 
     val filteredDataB = dataB //filterRows(dataB,0, userId => userId == 195876)
-    val predictionData = predictAll(expediaTrainFile, expediaTestFile, svmPredictionsData, filteredDataB)
+    val predictionData = predictAll(expediaTrainFile, expediaTestFile, svmPredictionsData)
     val actual = filteredDataB(::, filteredDataB.cols - 1)
     val apk = (0 until actual.size).map { i =>
       averagePrecision(predictionData(i, 5 to 9).t.toArray, Array(actual(i)), 5)
