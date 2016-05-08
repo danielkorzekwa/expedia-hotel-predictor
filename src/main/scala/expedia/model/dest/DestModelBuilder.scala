@@ -37,7 +37,6 @@ case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double],testClicks: 
 
   def create(countryModel : CountryModel): DestModel = {
 
-
     clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+=  countryModel.predict(countryByDest(destId)) }  
     calcVectorMapProbsMutable(clusterHistByDest.getMap.toMap)
 

@@ -80,7 +80,6 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     clusterHistByDestMarket.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
     logger.info("Normalise clusterHistByDestMarket...done")
 
-    
     logger.info("Add prior stats to clusterHistByDestMarketUser...")
     clusterHistByDestMarketUser.getMap.foreach {
       case ((destId, marketId, userId), clusterProbs) =>
