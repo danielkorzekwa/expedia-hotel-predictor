@@ -25,10 +25,10 @@ object predictAll extends LazyLogging {
 
     //  val testData = loadTestData(expediaTestFile)
 
-    val userIds = test(::, 2).toArray.distinct.map(_.toInt).toSet
+    //val userIds = test(::, 2).toArray.distinct.map(_.toInt).toSet
 
      val testClicks = ExDataSource(expediaTestFile).getAllClicks()
-    
+    val userIds = testClicks.map(c => c.userId).toSet
     logger.info("Computing stats...")
 
     

@@ -43,8 +43,8 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
   def processCluster(click: Click) = {
 
-    clusterHistMarket.add(click.marketId, click.cluster)
-
+  clusterHistMarket.add(click.marketId, click.cluster)
+       
     clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
 
     countryByMarket += click.marketId -> click.countryId

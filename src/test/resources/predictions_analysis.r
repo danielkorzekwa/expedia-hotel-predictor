@@ -7,9 +7,18 @@ p2 <- read.csv('predictions_analysis_2014/predictions2.csv')
 pp <- merge(p,p2,by=c(0),sort=FALSE)
 
 train <- read.csv('data_booked/train_booked_2013.csv')
+
+d13 <- read.csv('data_500K/train_500K_2013.csv')
+d13$time_to_ci <- as.Date(d13$srch_ci) - as.Date(d13$date_time)
+d13$length <- as.Date(d13$srch_co) - as.Date(d13$srch_ci)
+
+d14 <- read.csv('data_500K/train_500K_2014.csv')
+d14$time_to_ci <- as.Date(d14$srch_ci) - as.Date(d14$date_time)
+d14$length <- as.Date(d14$srch_co) - as.Date(d14$srch_ci)
+
 test <- read.csv('data_booked/train_booked_2014_all_cols.csv')
 test$time_to_ci <- as.Date(test$srch_ci) - as.Date(test$date_time)
-test$length <- as.Date(test$srch_co) - as.Date(test$srch_ci)
+test$length <- as.factor(as.Date(test$srch_co) - as.Date(test$srch_ci))
 test$weekday <- weekdays(as.Date(test$srch_ci))
 test$month <- months(as.Date(test$srch_ci))
 
