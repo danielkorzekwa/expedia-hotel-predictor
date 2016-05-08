@@ -48,7 +48,6 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
 
     countryByMarket += click.marketId -> click.countryId
-
     continentByDest += click.destId -> click.continentId
 
     if (userIds.isEmpty || userIds.contains(click.userId)) {

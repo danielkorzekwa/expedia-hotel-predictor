@@ -7,12 +7,10 @@ import scala.collection._
 
 case class DestModel(
     clusterHistByDest:MulticlassHistByKey[Int],
-    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]],
-    clusterHistByContinent:MulticlassHistByKey[Int],
-    clusterHist:CatStats) {
+    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]]) {
   
   def predict(destId: Int,continentId:Int): DenseVector[Float] = {
   
-    clusterHistByDest.getMap.getOrElse(destId, clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentId, clusterHist.getItemVec())))
+    clusterHistByDest.getMap(destId)
   }
 }

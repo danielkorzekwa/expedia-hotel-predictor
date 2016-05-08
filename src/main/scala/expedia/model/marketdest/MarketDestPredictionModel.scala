@@ -38,7 +38,7 @@ case class MarketDestPredictionModel(
 object MarketDestPredictionModel {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]): MarketDestPredictionModel = {
 
-    val destModelBuilder = DestModelBuilder(svmPredictionsData)
+    val destModelBuilder = DestModelBuilder(svmPredictionsData,testClicks)
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set(), testClicks)
 
@@ -59,8 +59,9 @@ object MarketDestPredictionModel {
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
-    val destModel = destModelBuilder.create()
+  
     val countryModel = countryModelBuilder.create()
+      val destModel = destModelBuilder.create(countryModel)
     modelBuilder.create(destModel, countryModel,destMarketCounterMap, destCounterMap, marketCounterMap)
   }
 }

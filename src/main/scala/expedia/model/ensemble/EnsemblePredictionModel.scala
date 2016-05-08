@@ -25,7 +25,7 @@ import expedia.model.country.CountryModelBuilder
 object EnsemblePredictionModel extends LazyLogging {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], userIds: Set[Int], testClicks: Seq[Click]): EnsemblePredictionModel = {
    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val destModelBuilder = DestModelBuilder(svmPredictionsData)
+    val destModelBuilder = DestModelBuilder(svmPredictionsData,testClicks)
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
     //  val userDestPredictBuilder = UserDestPredictionModelBuilder(userIds)
     val marketDestPredictBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, userIds, testClicks)
@@ -50,7 +50,7 @@ object EnsemblePredictionModel extends LazyLogging {
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create()
+    val destModel = destModelBuilder.create(countryModel)
     val clusterDistPredict = clusterDistPredictBuilder.create()
     val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel,destMarketCounterMap, destCounterMap, marketCounterMap)
     new EnsemblePredictionModel(clusterDistPredict, marketDestPredict, destMarketCounterMap, destCounterMap)

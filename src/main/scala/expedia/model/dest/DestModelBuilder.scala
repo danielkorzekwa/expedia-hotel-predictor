@@ -12,37 +12,36 @@ import breeze.linalg.DenseMatrix
 import scala.collection._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import scala.collection._
-case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double]) extends LazyLogging{
-  private val clusterStatMap = CatStats()
+import expedia.model.country.CountryModel
+case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double],testClicks: Seq[Click]) extends LazyLogging{
 
-  private val clusterHistByContinent = MulticlassHistByKey[Int](100)
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
 
   val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
   val continentByDest: mutable.Map[Int, Int] = mutable.Map()
+  
+   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
+  testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
+
 
   def processCluster(click: Click) = {
- clusterStatMap.add(click.cluster)
-    clusterHistByContinent.add(click.continentId, click.cluster)
   
     if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
     else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
     
+     countryByDest += click.destId -> click.countryId
       continentByDest += click.destId -> click.continentId
   }
 
-  def create(): DestModel = {
-    calcVectorProbsMutable(clusterStatMap.getItemVec)
+  def create(countryModel : CountryModel): DestModel = {
 
-    calcVectorMapProbsMutable(clusterHistByContinent.getMap.toMap)
 
-    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
+    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+=  countryModel.predict(countryByDest(destId)) }  
     calcVectorMapProbsMutable(clusterHistByDest.getMap.toMap)
 
-
-    DestModel(clusterHistByDest, clusterProbByDestMapSVM, clusterHistByContinent,clusterStatMap)
+    DestModel(clusterHistByDest, clusterProbByDestMapSVM)
   }
 
 }
