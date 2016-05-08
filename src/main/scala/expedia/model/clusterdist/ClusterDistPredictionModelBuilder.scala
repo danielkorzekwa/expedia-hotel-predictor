@@ -16,7 +16,7 @@ case class ClusterDistPredictionModelBuilder() {
   def processCluster(click: Click) = {
 
     if (click.dist != -1) {
-      val key = (click.userLoc.toDouble, click.dist, click.market.toDouble)
+      val key = (click.userLoc.toDouble, click.dist, click.marketId.toDouble)
       clusterMap.getOrElseUpdate(key, ListBuffer()) += click.cluster
 
       // clusterHistByKey.add(key, click.cluster)

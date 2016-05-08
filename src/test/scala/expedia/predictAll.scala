@@ -41,7 +41,7 @@ object predictAll extends LazyLogging {
    
     
     val predictionRecords = testClicks.par.map{click =>
-         val predicted = ensemblePredict.predict(click.userLoc,click.dist,click.userId,click.destId,click.hotelContinent,click.market)
+         val predicted = ensemblePredict.predict(click.userLoc,click.dist,click.userId,click.destId,click.continentId,click.marketId)
       //val predicted = marketDestModel.predict(userId, marketId,destId, hotelContinent)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray

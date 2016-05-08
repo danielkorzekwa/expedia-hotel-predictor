@@ -18,6 +18,6 @@ case class MulticlassHistByKey[K](classNum: Int) {
 
   }
 
-  def getMap(): Map[K, DenseVector[Float]] = histByKeyMap
+  def getMap: Map[K, DenseVector[Float]] = histByKeyMap
 
 }

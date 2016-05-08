@@ -14,6 +14,9 @@ import expedia.stats.CounterMap
 import expedia.model.dest.DestModelBuilder
 import expedia.model.dest.DestModel
 import expedia.stats.MulticlassHistByKey
+import expedia.model.country.CountryModelBuilder
+import expedia.model.country.CountryModelBuilder
+import expedia.model.country.CountryModelBuilder
 
 case class MarketDestPredictionModel(
     destModel: DestModel,
@@ -36,6 +39,7 @@ object MarketDestPredictionModel {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]): MarketDestPredictionModel = {
 
     val destModelBuilder = DestModelBuilder(svmPredictionsData)
+    val countryModelBuilder = CountryModelBuilder(testClicks)
     val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set(), testClicks)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
@@ -43,18 +47,20 @@ object MarketDestPredictionModel {
     val marketCounterMap = CounterMap[Int]()
 
     def onClick(click: Click) = {
-      destModelBuilder.create()
+      destModelBuilder.processCluster(click)
+      countryModelBuilder.processCluster(click)
       modelBuilder.processCluster(click)
 
       if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.market))
+        destMarketCounterMap.add((click.destId, click.marketId))
         destCounterMap.add(click.destId)
-        marketCounterMap.add(click.market)
+        marketCounterMap.add(click.marketId)
       }
     }
     ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
 
     val destModel = destModelBuilder.create()
-    modelBuilder.create(destModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val countryModel = countryModelBuilder.create()
+    modelBuilder.create(destModel, countryModel,destMarketCounterMap, destCounterMap, marketCounterMap)
   }
 }

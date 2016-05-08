@@ -44,10 +44,11 @@ case class ExDataSource(expediaFile: String) extends LazyLogging {
     val destId = lArray(16).toInt
     val isBooking = if(lArray(18).length>0) lArray(18).toInt else -1
     val hotelContinent = lArray(20).toInt
+    val countryId = lArray(21).toInt
     val market = lArray(22).toInt
     val cluster = if(lArray.size==24) lArray(23).toInt else -1
 
-    val click = Click(userLoc, dist, userId, destId, isBooking, hotelContinent, market, cluster)
+    val click = Click(userLoc, dist, userId, destId, isBooking, hotelContinent, countryId,market, cluster)
     click
   }
 }

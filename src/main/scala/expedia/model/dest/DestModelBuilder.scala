@@ -25,21 +25,21 @@ case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double]) extends Laz
 
   def processCluster(click: Click) = {
  clusterStatMap.add(click.cluster)
-    clusterHistByContinent.add(click.hotelContinent, click.cluster)
+    clusterHistByContinent.add(click.continentId, click.cluster)
   
     if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
     else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
     
-      continentByDest += click.destId -> click.hotelContinent
+      continentByDest += click.destId -> click.continentId
   }
 
   def create(): DestModel = {
     calcVectorProbsMutable(clusterStatMap.getItemVec)
 
-    calcVectorMapProbsMutable(clusterHistByContinent.getMap().toMap)
+    calcVectorMapProbsMutable(clusterHistByContinent.getMap.toMap)
 
-    clusterHistByDest.getMap().foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
-    calcVectorMapProbsMutable(clusterHistByDest.getMap().toMap)
+    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= clusterProbByDestMapSVM.getOrElse(destId, clusterHistByContinent.getMap.getOrElse(continentByDest(destId), clusterStatMap.getItemVec)) }
+    calcVectorMapProbsMutable(clusterHistByDest.getMap.toMap)
 
 
     DestModel(clusterHistByDest, clusterProbByDestMapSVM, clusterHistByContinent,clusterStatMap)
