@@ -14,7 +14,7 @@ object SubmissionApp extends LazyLogging {
 
     logger.info("Loading train data")
     val expediaTrainFile = "c:/perforce/daniel/ex/orig_data/train.csv"
-    val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/data_booked/svm_predictions_dest_20K.csv"), skipLines = 1)
+    val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dest_20K.csv"), skipLines = 1)
 
     logger.info("Loading test data...")
      val expediaTestFile = "c:/perforce/daniel/ex/data_test/test_all_all_cols.csv"

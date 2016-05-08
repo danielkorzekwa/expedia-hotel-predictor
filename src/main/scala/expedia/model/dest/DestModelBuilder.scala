@@ -13,9 +13,9 @@ import scala.collection._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import scala.collection._
 case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double]) extends LazyLogging{
-  val clusterStatMap = CatStats()
+  private val clusterStatMap = CatStats()
 
-  val clusterHistByContinent = MulticlassHistByKey[Int](100)
+  private val clusterHistByContinent = MulticlassHistByKey[Int](100)
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
 

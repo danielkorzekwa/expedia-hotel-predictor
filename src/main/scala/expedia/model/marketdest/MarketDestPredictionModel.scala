@@ -18,29 +18,25 @@ import expedia.stats.MulticlassHistByKey
 case class MarketDestPredictionModel(
     destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
-    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
-    clusterHistByDestMarketUser2: MulticlassHistByKey[Tuple3[Int, Int, Int]]) extends LazyLogging {
+    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]]) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(userId: Int, marketId: Int, destId: Int, continent: Int, useUserDest: Boolean): DenseVector[Float] = {
+  def predict(userId: Int, marketId: Int, destId: Int, continent: Int): DenseVector[Float] = {
 
-    val userProb = if (!useUserDest) clusterHistByDestMarketUser.getOrElse((destId, marketId, userId), clusterProbsByDestMarket.getOrElse((destId, marketId), destModel.predict(destId, continent)))
-
-    else clusterHistByDestMarketUser2.getMap.getOrElse((destId, marketId, userId), destModel.predict(destId, continent))
+    val userProb = clusterHistByDestMarketUser((destId, marketId, userId))
     userProb
-
   }
 
 }
 
 object MarketDestPredictionModel {
-  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double]): MarketDestPredictionModel = {
+  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]): MarketDestPredictionModel = {
 
     val destModelBuilder = DestModelBuilder(svmPredictionsData)
-    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set())
+    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set(), testClicks)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()

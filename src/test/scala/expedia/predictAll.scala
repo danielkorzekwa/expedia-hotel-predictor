@@ -13,8 +13,8 @@ import expedia.model.svm.SVMPredictionModel
 import scala.io.Source
 import java.io.File
 import expedia.model.popularhotels.PopularHotelsModelBuilder
-import expedia.model.userdest.UserDestPredictionModel
 import expedia.model.marketdest.MarketDestPredictionModel
+import expedia.data.ExDataSource
 
 object predictAll extends LazyLogging {
 
@@ -27,36 +27,34 @@ object predictAll extends LazyLogging {
 
     val userIds = test(::, 2).toArray.distinct.map(_.toInt).toSet
 
+     val testClicks = ExDataSource(expediaTestFile).getAllClicks()
+    
     logger.info("Computing stats...")
 
-      val ensemblePredict = EnsemblePredictionModel(expediaTrainFile, svmPredictionsData, userIds)
+    
+      val ensemblePredict = EnsemblePredictionModel(expediaTrainFile, svmPredictionsData, userIds,testClicks)
    // val marketDestModel = MarketDestPredictionModel(expediaTrainFile,svmPredictionsData)
     logger.info("Making predictions...")
 
     var c = new AtomicInteger(0)
-    val predictionRecords = Source.fromFile(new File(expediaTestFile)).getLines().drop(1).toSeq.par.map { l =>
-      val lArray = l.split(",")
-
-      val userLoc = lArray(5).toInt
-      val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
-      val userId = lArray(7).toInt
-      val destId = lArray(16).toInt
-      val hotelContinent = lArray(20).toInt
-      val marketId = lArray(22).toInt
-
-         val predicted = ensemblePredict.predict(userLoc,dist,userId,destId,hotelContinent,marketId)
+    
+   
+    
+    val predictionRecords = testClicks.par.map{click =>
+         val predicted = ensemblePredict.predict(click.userLoc,click.dist,click.userId,click.destId,click.hotelContinent,click.market)
       //val predicted = marketDestModel.predict(userId, marketId,destId, hotelContinent)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 
       val predictionProbs = predictedProbTuples.map(_._1.toDouble)
       val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-
-      if (c.incrementAndGet() % 100000 == 0) logger.info("Processed test rows: %d".format(c.get))
+      
+         if (c.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(c.get))
 
       val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
       record
     }.toList
+    
 
     val predictionMatrix = DenseVector.horzcat(predictionRecords: _*).t
     predictionMatrix
