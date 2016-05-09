@@ -18,6 +18,8 @@ import expedia.data.ExDataSource
 import expedia.model.dest.DestModel
 import expedia.data.Click
 import expedia.data.ExDataSource
+import expedia.model.clusterdist.ClusterDistPredictionModel
+import expedia.model.clusterdistprox.ClusterDistProxModel
 
 object predictAll extends LazyLogging {
 
@@ -29,14 +31,14 @@ object predictAll extends LazyLogging {
     logger.info("Computing stats...")
 
         val ensemblePredict = EnsemblePredictionModel(trainDatasource,  testClicks)
-    //val destModel = DestModel(expediaTrainFile, svmPredictionsData, testClicks)
+    //val clusterDistProxModel = ClusterDistProxModel(trainDatasource,testClicks)
     logger.info("Making predictions...")
 
     var c = new AtomicInteger(0)
 
     val predictionRecords = testClicks.par.map { click =>
       val predicted = ensemblePredict.predict(click)
-    //  val predicted = destModel.predict(click.destId, click.continentId,click.stayDays)
+    //  val predicted = clusterDistProxModel.predict(click)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 

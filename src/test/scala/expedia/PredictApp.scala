@@ -25,8 +25,8 @@ object PredictApp extends LazyLogging {
    //  val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
 
     def clickFilter(click: Click) = {
-    //  click.destId == 8250
-      true
+    true
+      // click.userLoc==24103 && click.marketId==628
     }
     val trainDataSource = ExDataSource(expediaTrainFile,clickFilter)
 

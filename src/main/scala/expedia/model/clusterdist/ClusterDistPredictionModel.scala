@@ -50,7 +50,12 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Do
           } else 1d - 0.0001 * clusterIndex
           prob
         }
-        case None => Double.NaN
+        case None => {
+          if(userLoc==24103 && market==628 && dist>227.2 && dist<227.8) {
+            println(key)
+          }
+          Double.NaN
+        }
       }
 
       prob2

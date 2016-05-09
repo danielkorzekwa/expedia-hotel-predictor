@@ -67,7 +67,8 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     }
   }
 
-  def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
+  def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]], 
+      destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
 
     clusterHistMarket.getMap.foreach { case (marketId, clusterCounts) => clusterCounts :+= countryModel.predict(countryByMarket(marketId)) }
     clusterHistMarket.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
