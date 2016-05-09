@@ -17,17 +17,18 @@ import expedia.model.marketdest.MarketDestPredictionModel
 import expedia.data.ExDataSource
 import expedia.model.dest.DestModel
 import expedia.data.Click
+import expedia.data.ExDataSource
 
 object predictAll extends LazyLogging {
 
   /**
    * @return p1..p5,r1..r5
    */
-  def apply(expediaTrainFile: String, testClicks:Seq[Click]): DenseMatrix[Double] = {
+  def apply(trainDatasource:ExDataSource, testClicks:Seq[Click]): DenseMatrix[Double] = {
 
     logger.info("Computing stats...")
 
-        val ensemblePredict = EnsemblePredictionModel(expediaTrainFile,  testClicks)
+        val ensemblePredict = EnsemblePredictionModel(trainDatasource,  testClicks)
     //val destModel = DestModel(expediaTrainFile, svmPredictionsData, testClicks)
     logger.info("Making predictions...")
 

@@ -18,11 +18,12 @@ import expedia.stats.CounterMap
 import expedia.model.dest.DestModel
 import expedia.model.country.CountryModel
 import expedia.stats.CounterMap
+import expedia.stats.OnlineAvg
 
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder( testClicks: Seq[Click]) extends LazyLogging {
+case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
 
   private val userIds = testClicks.map { c => c.userId }.distinct.toSet
 
@@ -44,6 +45,8 @@ case class MarketDestPredictionModelBuilder( testClicks: Seq[Click]) extends Laz
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
+  private val avgDaysStayByDestCust: mutable.Map[Tuple2[Int, Int], OnlineAvg] = mutable.Map()
+
   def processCluster(click: Click) = {
 
     clusterHistMarket.add(click.marketId, click.cluster)
@@ -52,6 +55,9 @@ case class MarketDestPredictionModelBuilder( testClicks: Seq[Click]) extends Laz
 
     countryByMarket += click.marketId -> click.countryId
     continentByDest += click.destId -> click.continentId
+
+    val destCustAvgStayDays = avgDaysStayByDestCust.getOrElseUpdate((click.destId, click.userId), OnlineAvg())
+    destCustAvgStayDays.add(click.stayDays)
 
     if (userIds.isEmpty || userIds.contains(click.userId)) {
 
@@ -84,9 +90,9 @@ case class MarketDestPredictionModelBuilder( testClicks: Seq[Click]) extends Laz
     logger.info("Normalise clusterHistByDestMarket...done")
 
     logger.info("Add prior stats to clusterHistByDestMarketUser...")
-    
+
     val bigDestsCounter = CounterMap[Int]()
-    
+
     clusterHistByDestMarketUser.getMap.foreach {
       case ((destId, marketId, userId), clusterProbs) =>
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
@@ -95,11 +101,18 @@ case class MarketDestPredictionModelBuilder( testClicks: Seq[Click]) extends Laz
         if (destMarketCounts < 300 || destCounts / destMarketCounts > 1.5) {
           clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
         } else {
-          clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
+          val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
+            case Some(avgStayDays) if destModel.svmDestIds.contains(destId) => {
+              val custStayDays = avgStayDays.avg().toInt
+              clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId), custStayDays)
+            }
+            case _ => clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
+          }
+          //  clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
         }
 
     }
-    
+
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
     logger.info("Normalise clusterHistByDestMarketUser...")

@@ -23,7 +23,7 @@ import expedia.model.country.CountryModelBuilder
  * @param trainData ('user_location_city','orig_destination_distance','user_id','srch_destination_id','hotel_market','hotel_cluster')
  */
 object EnsemblePredictionModel extends LazyLogging {
-  def apply(expediaTrainFile: String,  testClicks: Seq[Click]): EnsemblePredictionModel = {
+  def apply(trainDatasource:ExDataSource,  testClicks: Seq[Click]): EnsemblePredictionModel = {
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val destModelBuilder = DestModelBuilder( testClicks)
     val clusterDistPredictBuilder = ClusterDistPredictionModelBuilder()
@@ -50,7 +50,7 @@ object EnsemblePredictionModel extends LazyLogging {
 
       userCounterMap.add(click.userId)
     }
-    ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
+    trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
     val destModel = destModelBuilder.create(countryModel)

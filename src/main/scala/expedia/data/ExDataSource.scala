@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
-case class ExDataSource(expediaFile: String) extends LazyLogging {
+case class ExDataSource(expediaFile: String,filter:(Click) => Boolean = (click) => true) extends LazyLogging {
 
   def getAllClicks(): Seq[Click] = {
 
@@ -23,7 +23,7 @@ case class ExDataSource(expediaFile: String) extends LazyLogging {
       click
     }
 
-    clicks.toList
+    clicks.filter(c => filter(c)).toList
   }
 
   def foreach(onClick: (Click) => Unit) = {
@@ -35,7 +35,7 @@ case class ExDataSource(expediaFile: String) extends LazyLogging {
     Source.fromFile(new File(expediaFile)).getLines().drop(1).foreach { l =>
       val click = createClick(l, df)
 
-      onClick(click)
+     if(filter(click)) onClick(click)
       i += 1
       if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }
