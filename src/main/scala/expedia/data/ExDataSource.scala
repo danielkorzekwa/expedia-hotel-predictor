@@ -34,8 +34,8 @@ case class ExDataSource(expediaFile: String) extends LazyLogging {
     var i = 0
     Source.fromFile(new File(expediaFile)).getLines().drop(1).foreach { l =>
       val click = createClick(l, df)
-      onClick(click)
 
+      onClick(click)
       i += 1
       if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }

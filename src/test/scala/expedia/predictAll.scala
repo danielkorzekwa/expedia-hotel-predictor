@@ -23,19 +23,19 @@ object predictAll extends LazyLogging {
   /**
    * @return p1..p5,r1..r5
    */
-  def apply(expediaTrainFile: String, testClicks:Seq[Click], svmPredictionsData: DenseMatrix[Double]): DenseMatrix[Double] = {
+  def apply(expediaTrainFile: String, testClicks:Seq[Click]): DenseMatrix[Double] = {
 
     logger.info("Computing stats...")
 
-    //    val ensemblePredict = EnsemblePredictionModel(expediaTrainFile, svmPredictionsData, userIds,testClicks)
-    val destModel = DestModel(expediaTrainFile, svmPredictionsData, testClicks)
+        val ensemblePredict = EnsemblePredictionModel(expediaTrainFile,  testClicks)
+    //val destModel = DestModel(expediaTrainFile, svmPredictionsData, testClicks)
     logger.info("Making predictions...")
 
     var c = new AtomicInteger(0)
 
     val predictionRecords = testClicks.par.map { click =>
-    //  val predicted = ensemblePredict.predict(click.userLoc, click.dist, click.userId, click.destId, click.continentId, click.marketId)
-      val predicted = destModel.predict(click.destId, click.continentId,click.stayDays)
+      val predicted = ensemblePredict.predict(click)
+    //  val predicted = destModel.predict(click.destId, click.continentId,click.stayDays)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 

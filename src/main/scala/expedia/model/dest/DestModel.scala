@@ -15,29 +15,30 @@ import expedia.model.svm.loadClusterProbsByKeyMap
 import expedia.stats.MulticlassHistByKey
 
 case class DestModel(
-    clusterHistByDest: MulticlassHistByKey[Int],
-    clusterProbByDestMapSVM: Map[Int, DenseVector[Float]]) {
+    clusterHistByDest: MulticlassHistByKey[Int]) {
 
-   val svmPredictionsByStaydaysData = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_8250_628_by_staylength.csv"), skipLines = 1)
-  val clusterProbsByStaydays: Map[Int, DenseVector[Float]] = loadClusterProbsByKeyMap(svmPredictionsByStaydaysData)
+  val svmDestIds = List(8250, 8267, 8253, 8279, 12206, 8745, 8268, 8230, 8791, 8260, 8254)
+  //val svmDestIds = Set(8250, 8267,  8253,  8279, 12206,  8745,  8268,  8230,  8791,  8260,  8254 , 8291 , 7635, 8223 , 8746 , 8220,  8788,  8242 , 8278 , 8819 ,468 ,26022 , 8281 , 8213, 669 , 8288 , 8282 , 8287 ,11353 , 8739 ,12603 , 8747, 11439 , 8266 ,12233 , 8818 , 8255, 12175)
 
-  val zeroProbs =  DenseVector.fill(100)(0f)
-  
-  def predict(destId: Int, continentId: Int,stayDays:Int): DenseVector[Float] = {
+  //key - destId, val Map[stayDays,clusterProbs]]
+  val clusterProbsByStaydays: Map[Int, Map[Int, DenseVector[Float]]] = svmDestIds.map { destId =>
 
-     
-     if(destId==8250) {
-     //   clusterHistByDest.getMap(destId)
-       clusterProbsByStaydays.getOrElse(stayDays,clusterHistByDest.getMap(destId))
-     }
-     else zeroProbs
-    
+    val svmPredictionsByStaydaysData = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_" + destId + ".csv"), skipLines = 1)
+
+    destId -> loadClusterProbsByKeyMap(svmPredictionsByStaydaysData)
+  }.toMap
+
+  def predict(destId: Int, continentId: Int, stayDays: Int): DenseVector[Float] = {
+
+    val clusterProbs = clusterProbsByStaydays(destId).getOrElse(stayDays, clusterHistByDest.getMap(destId))
+    clusterProbs
+
   }
-   
-    def predict(destId: Int, continentId: Int): DenseVector[Float] = {
+
+  def predict(destId: Int, continentId: Int): DenseVector[Float] = {
 
     clusterHistByDest.getMap(destId)
-    
+
   }
 }
 
@@ -46,7 +47,7 @@ object DestModel {
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]): DestModel = {
 
     val countryModelBuilder = CountryModelBuilder(testClicks)
-    val destModelBuilder = DestModelBuilder(svmPredictionsData, testClicks)
+    val destModelBuilder = DestModelBuilder(testClicks)
 
     def onClick(click: Click) = {
       countryModelBuilder.processCluster(click)

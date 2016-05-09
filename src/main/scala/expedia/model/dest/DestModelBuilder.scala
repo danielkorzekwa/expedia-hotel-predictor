@@ -14,12 +14,11 @@ import expedia.stats.calcVectorMapProbsMutable
 import breeze.linalg._
 import java.io.File
 
-case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]) extends LazyLogging {
+case class DestModelBuilder( testClicks: Seq[Click]) extends LazyLogging {
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByDest.add(click.destId, click.cluster, value = 0))
 
-  val clusterProbByDestMapSVM: Map[Int, DenseVector[Float]] = loadClusterProbsByDestMap(svmPredictionsData)
 
  
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
@@ -38,7 +37,7 @@ case class DestModelBuilder(svmPredictionsData: DenseMatrix[Double], testClicks:
     clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= countryModel.predict(countryByDest(destId)) }
     calcVectorMapProbsMutable(clusterHistByDest.getMap.toMap)
 
-    DestModel(clusterHistByDest, clusterProbByDestMapSVM)
+    DestModel(clusterHistByDest)
   }
 
 }

@@ -17,11 +17,14 @@ import expedia.stats.MulticlassHistByKey
 import expedia.stats.CounterMap
 import expedia.model.dest.DestModel
 import expedia.model.country.CountryModel
+import expedia.stats.CounterMap
 
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Double], userIds: Set[Int], testClicks: Seq[Click]) extends LazyLogging {
+case class MarketDestPredictionModelBuilder( testClicks: Seq[Click]) extends LazyLogging {
+
+  private val userIds = testClicks.map { c => c.userId }.distinct.toSet
 
   //key: cont/market
   private val clusterHistMarket = MulticlassHistByKey[Int](100)
@@ -43,8 +46,8 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
   def processCluster(click: Click) = {
 
-  clusterHistMarket.add(click.marketId, click.cluster)
-       
+    clusterHistMarket.add(click.marketId, click.cluster)
+
     clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
 
     countryByMarket += click.marketId -> click.countryId
@@ -81,6 +84,9 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
     logger.info("Normalise clusterHistByDestMarket...done")
 
     logger.info("Add prior stats to clusterHistByDestMarketUser...")
+    
+    val bigDestsCounter = CounterMap[Int]()
+    
     clusterHistByDestMarketUser.getMap.foreach {
       case ((destId, marketId, userId), clusterProbs) =>
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
@@ -88,9 +94,12 @@ case class MarketDestPredictionModelBuilder(svmPredictionsData: DenseMatrix[Doub
 
         if (destMarketCounts < 300 || destCounts / destMarketCounts > 1.5) {
           clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
-        } else clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
+        } else {
+          clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
+        }
 
     }
+    
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
     logger.info("Normalise clusterHistByDestMarketUser...")

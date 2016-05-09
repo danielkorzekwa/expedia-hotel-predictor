@@ -36,11 +36,11 @@ case class MarketDestPredictionModel(
 }
 
 object MarketDestPredictionModel {
-  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]): MarketDestPredictionModel = {
+  def apply(expediaTrainFile: String, testClicks: Seq[Click]): MarketDestPredictionModel = {
 
-    val destModelBuilder = DestModelBuilder(svmPredictionsData,testClicks)
+    val destModelBuilder = DestModelBuilder(testClicks)
     val countryModelBuilder = CountryModelBuilder(testClicks)
-    val modelBuilder = MarketDestPredictionModelBuilder(svmPredictionsData, Set(), testClicks)
+    val modelBuilder = MarketDestPredictionModelBuilder(  testClicks)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()

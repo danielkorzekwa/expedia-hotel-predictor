@@ -24,11 +24,9 @@ object PredictApp extends LazyLogging {
     // val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(expediaTestFile).getAllClicks().filter(c => c.destId==8250)
+    val testClicks = ExDataSource(expediaTestFile).getAllClicks()//.filter(c => c.destId==8250)
 
-    val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dest_20K.csv"), skipLines = 1)
-
-    val predictionData = predictAll(expediaTrainFile, testClicks, svmPredictionsData)
+    val predictionData = predictAll(expediaTrainFile, testClicks)
     val actual = DenseVector(testClicks.map(c => c.cluster).toArray) //filteredDataB(::, filteredDataB.cols - 1)
     val apk = (0 until actual.size).map { i => averagePrecision(predictionData(i, 5 to 9).t.toArray, Array(actual(i)), 5)}
     val apkVector = DenseVector(apk.toArray)
