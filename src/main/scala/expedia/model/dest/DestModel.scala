@@ -27,8 +27,8 @@ case class DestModel(
 
      
      if(destId==8250) {
-        clusterHistByDest.getMap(destId)
-       //clusterProbsByStaydays.getOrElse(stayDays,clusterHistByDest.getMap(destId))
+     //   clusterHistByDest.getMap(destId)
+       clusterProbsByStaydays.getOrElse(stayDays,clusterHistByDest.getMap(destId))
      }
      else zeroProbs
     

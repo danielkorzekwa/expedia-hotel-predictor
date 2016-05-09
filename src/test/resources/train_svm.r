@@ -4,7 +4,7 @@ train <- fread('data_booked/train_booked_2014_all_cols.csv')
 train <- subset(train,srch_destination_id==8250 & hotel_market == 628)
 train$time_to_ci <- as.Date(train$srch_ci) - as.Date(train$date_time)
 train$length <- as.Date(train$srch_co) - as.Date(train$srch_ci)
-train <- subset(train,length<4)
+#train <- subset(train,length<4)
 
 svmData_a <- train[1:6000,c(24,26),with=F]
 svmData_a$hotel_cluster <- as.factor(svmData_a$hotel_cluster)
@@ -20,7 +20,7 @@ missingClustersMat = matrix(0,nrow=nrow(svmProbs),ncol=length(missingClusterCols
 colnames(missingClustersMat) <- missingClusterCols
 svmProbs <- cbind(svmProbs,missingClustersMat)
 
-svmProbs <- svmProbs[, order(colnames(svmProbs))]
+svmProbs <- svmProbs[, order(as.integer(colnames(svmProbs)))]
 
 svmProbs <- data.frame(svmProbs)
 svmProbs$length <- svmData_a$length
