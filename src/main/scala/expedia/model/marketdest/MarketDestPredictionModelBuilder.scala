@@ -108,7 +108,6 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
             }
             case _ => clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
           }
-          //  clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
         }
 
     }
