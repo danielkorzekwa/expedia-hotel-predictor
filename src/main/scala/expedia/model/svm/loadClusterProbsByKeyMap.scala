@@ -4,22 +4,23 @@ import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import scala.collection._
 
-object loadClusterProbsByKeyMap {
+object loadClusterProbsByDestMap {
   
   /**
-   * @param svmPredictionsData [c0,c1,c99,key]
+   * @param svmPredictionsData [c0,c1,c99,srch_dest_id]
    */
   def apply(svmPredictionsData:DenseMatrix[Double]):Map[Int,DenseVector[Float]] = {
-     val clusterProbsByKeyMap: mutable.Map[Int, DenseVector[Float]] = mutable.Map()
+     val clusterProbsByDestMap: mutable.Map[Int, DenseVector[Float]] = mutable.Map()
+
 
     (0 until svmPredictionsData.rows).foreach { i =>
       val row = svmPredictionsData(i, ::).t
-      val key = row(100).toInt
+      val srchDestId = row(100).toInt
       val clusterProbsVector = row(0 to 99).map(x => x.toFloat)
 
-    clusterProbsByKeyMap.update(key, clusterProbsVector)
+    clusterProbsByDestMap.update(srchDestId, clusterProbsVector)
     }
 
-    clusterProbsByKeyMap.toMap
+    clusterProbsByDestMap.toMap
   }
 }

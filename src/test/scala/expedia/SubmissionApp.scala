@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils
 import scala.collection.JavaConversions._
 import expedia.model.svm.SVMPredictionModel
 import expedia.model.svm.libsvm.LibSvmModel
+import expedia.data.ExDataSource
 
 object SubmissionApp extends LazyLogging {
 
@@ -17,11 +18,13 @@ object SubmissionApp extends LazyLogging {
     val svmPredictionsData = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dest_20K.csv"), skipLines = 1)
 
     logger.info("Loading test data...")
-     val expediaTestFile = "c:/perforce/daniel/ex/data_test/test_all_all_cols.csv"
+    val expediaTestFile = "c:/perforce/daniel/ex/data_test/test_all_all_cols.csv"
+    val testClicks = ExDataSource(expediaTestFile).getAllClicks()
+
     val test = csvread(new File("c:/perforce/daniel/ex/data_test/test_all.csv"), skipLines = 1) //(0 to 1000, ::)
 
     logger.info("Loading test data...done")
-    val predictionData = predictAll(expediaTrainFile, expediaTestFile,svmPredictionsData)
+    val predictionData = predictAll(expediaTrainFile, testClicks, svmPredictionsData)
 
     logger.info("Saving predictions...")
     FileUtils.writeLines(new File("target/submission.csv"), List("id,hotel_cluster"), false)
