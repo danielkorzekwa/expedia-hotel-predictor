@@ -10,32 +10,41 @@ import breeze.numerics._
 
 case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
 
-  private val clusterHistByKey: mutable.Map[Tuple3[Int, Double, Int], DenseVector[Float]] = mutable.Map()
+  //key - (userLoc,market),value - map[dist,clusterProbs]
+  private val clusterHistByKey: mutable.Map[Tuple2[Int, Int], mutable.Map[Double, DenseVector[Float]]] = mutable.Map()
 
   testClicks.foreach { click =>
-    val key = (click.userLoc, click.dist, click.marketId)
-    clusterHistByKey += key -> DenseVector.fill(100)(0f)
+
+    val distClusterProbs = clusterHistByKey.getOrElseUpdate((click.userLoc, click.marketId), mutable.Map())
+    distClusterProbs.getOrElseUpdate(click.dist, DenseVector.fill(100)(0f))
   }
 
   def processCluster(click: Click) = {
 
     if (click.dist != -1) {
 
-      clusterHistByKey.foreach {
-        case (key, clusterProbs) =>
-          if (click.userLoc == key._1 && click.marketId == key._3 && abs(click.dist - key._2) < 0.5) {
+      clusterHistByKey.get((click.userLoc, click.marketId)) match {
+        case Some(distClusterProbs) => {
 
-            val currVal = clusterProbs(click.cluster)
-            clusterProbs(click.cluster) = currVal + 1
+          distClusterProbs.foreach {
+            case (dist, clusterProbs) =>
+              if (abs(click.dist - dist) < 0.02) {
+
+                val currVal = clusterProbs(click.cluster)
+                clusterProbs(click.cluster) = currVal + 1
+              }
           }
+        }
+        case None =>
       }
     }
-
   }
 
   def create(): ClusterDistProxModel = {
-    clusterHistByKey.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
-
+    clusterHistByKey.foreach {
+      case (key, distProbs) =>
+        distProbs.foreach { case (dist, clusterProbs) => calcVectorProbsMutable(clusterProbs) }
+    }
     ClusterDistProxModel(clusterHistByKey)
   }
 }

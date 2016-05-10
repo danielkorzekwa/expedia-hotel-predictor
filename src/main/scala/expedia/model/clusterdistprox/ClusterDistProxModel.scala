@@ -7,7 +7,8 @@ import expedia.stats.MulticlassHistByKey
 import scala.collection._
 import expedia.util.calcTopNClusters
 
-case class ClusterDistProxModel(clusterHistByKey: Map[Tuple3[Int, Double, Int], DenseVector[Float]]) {
+//key - (userLoc,market),value - map[dist,clusterProbs]
+case class ClusterDistProxModel(clusterHistByKey: mutable.Map[Tuple2[Int, Int], mutable.Map[Double, DenseVector[Float]]]) {
 
   private def nanClustProbs = DenseVector.fill(100)(Float.NaN)
   def predict(click:Click): DenseVector[Float] = {
@@ -15,7 +16,7 @@ case class ClusterDistProxModel(clusterHistByKey: Map[Tuple3[Int, Double, Int], 
     val key = (click.userLoc, click.dist, click.marketId)
    
     
-    val clusterProbs = clusterHistByKey(key)
+    val clusterProbs = clusterHistByKey((click.userLoc, click.marketId))(click.dist)
     
 //     if(click.dist==227.6473) {
 //      println("..." + calcTopNClusters(clusterProbs,100))

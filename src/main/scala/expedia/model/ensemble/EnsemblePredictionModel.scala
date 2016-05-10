@@ -45,7 +45,7 @@ object EnsemblePredictionModel extends LazyLogging {
 
     logger.info("Creating EnsemblePredictionModel...DONE")
     def onClick(click: Click) = {
-     
+
       countryModelBuilder.processCluster(click)
       destModelBuilder.processCluster(click)
 
@@ -97,18 +97,22 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 
     val clusterDistProxProbs = clusterDistProxModel.predict(click)
 
-    val marketDestProbs =
-      if (!userCounterMap.contains(click.userId) && marketDestPredict.destModel.svmDestIds.contains(click.destId)
-        && !(destMarketCounts < 300 || destCounts / destMarketCounts > 1.5)) {
-        marketDestPredict.destModel.predict(click.destId, click.continentId, click.stayDays)
-      } else marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
+//    val marketDestProbs =
+//      if (!userCounterMap.contains(click.userId) && marketDestPredict.destModel.svmDestIds.contains(click.destId)
+//        && !(destMarketCounts < 300 || destCounts / destMarketCounts > 1.5)) {
+//        marketDestPredict.destModel.predict(click.destId, click.continentId, click.stayDays)
+//      } else marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
 
+        val marketDestProbs = marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
+
+      
     val clustersProbVector = DenseVector.fill(100)(0d)
     (0 until 100).foreach { hotelCluster =>
-      val leakProb = clustDistProbs(hotelCluster)
-
-      if (leakProb.isNaN()) clustersProbVector(hotelCluster) = clusterDistProxProbs(hotelCluster) //clustersProbVector(hotelCluster) = marketDestProbs(hotelCluster)
-      else clustersProbVector(hotelCluster) = leakProb
+      var clusterProb = clustDistProbs(hotelCluster)
+      if (clusterProb.isNaN()) clusterProb = marketDestProbs(hotelCluster)
+      //  if (clusterProb.isNaN()) clusterProb = clusterDistProxProbs(hotelCluster)
+      //  if (clusterProb.isNaN() || clusterProb<0.8) clusterProb = marketDestProbs(hotelCluster)
+      clustersProbVector(hotelCluster) = clusterProb
 
     }
     clustersProbVector

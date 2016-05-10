@@ -45,16 +45,16 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Do
                 0.99 - 0.0002
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 4)) {
                 0.99 - 0.0003
-              } else Double.NaN
-            } else Double.NaN
+              } else 0d//Double.NaN
+            } else 0d//Double.NaN
           } else 1d - 0.0001 * clusterIndex
           prob
         }
         case None => {
-          if(userLoc==24103 && market==628 && dist>227.2 && dist<227.8) {
-            println(key)
-          }
-          Double.NaN
+        //  if(userLoc==24103 && market==628 && dist>227.2 && dist<227.8) {
+        //    println(key)
+        //  }
+          0d//Double.NaN
         }
       }
 

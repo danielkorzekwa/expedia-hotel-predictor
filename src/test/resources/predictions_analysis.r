@@ -2,8 +2,8 @@ rm(list=ls())
 
 #Predictions analysis
 p <- fread('predictions_analysis_2014/predictions.csv')
+p2 <- fread('predictions_analysis_2014/predictions2.csv')
 
-p2 <- read.csv('predictions_analysis_2014/predictions2.csv')
 pp <- merge(p,p2,by=c(0),sort=FALSE)
 
 test <- fread('data_booked/train_booked_2014_all_cols.csv')

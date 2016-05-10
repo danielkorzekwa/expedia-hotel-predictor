@@ -18,7 +18,7 @@ case class ExDataSource(expediaFile: String,filter:(Click) => Boolean = (click) 
       val click = createClick(l, df)
 
       i += 1
-      if (i % 10000 == 0) logger.info("Processed expedia rows: %d".format(i))
+      if (i % 1000000 == 0) logger.info("Processed expedia rows: %d".format(i))
 
       click
     }
@@ -37,7 +37,7 @@ case class ExDataSource(expediaFile: String,filter:(Click) => Boolean = (click) 
 
      if(filter(click)) onClick(click)
       i += 1
-      if (i % 100 == 0) logger.info("Processed expedia rows: %d".format(i))
+      if (i % 1000000 == 0) logger.info("Processed expedia rows: %d".format(i))
     }
 
   }

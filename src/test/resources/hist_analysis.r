@@ -11,6 +11,6 @@ geom_histogram(aes(col='1',x=ud1$orig_destination_distance),binwidth=0.1,alpha=0
 geom_histogram(aes(col='79',x=ud2$orig_destination_distance),binwidth=0.1,alpha=0.5) + 
 coord_cartesian(xlim=c(226,232))
 
-subset(train_14,hotel_market==628 & user_location_city==24103 & orig_destination_distance>227.2 & orig_destination_distance < 227.8)
+subset(train_14,hotel_market==628 & user_location_city==24103 & orig_destination_distance>227.5322-0.02 & orig_destination_distance < 227.5322+0.02)
 
 sqldf('select hotel_cluster,count(*) as c from s where length=10 group by hotel_cluster order by c desc limit 10')
