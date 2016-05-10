@@ -54,7 +54,7 @@ object DestModel {
       destModelBuilder.processCluster(click)
 
     }
-    ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
+    ExDataSource(dsName="trainDS",expediaTrainFile).foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
     val destModel = destModelBuilder.create(countryModel)

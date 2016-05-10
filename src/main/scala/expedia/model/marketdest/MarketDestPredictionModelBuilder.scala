@@ -19,6 +19,8 @@ import expedia.model.dest.DestModel
 import expedia.model.country.CountryModel
 import expedia.stats.CounterMap
 import expedia.stats.OnlineAvg
+import expedia.model.clusterdist.ClusterDistPredictionModel
+import expedia.model.clusterdistprox.ClusterDistProxModel
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -68,7 +70,8 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
   }
 
   def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]], 
-      destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestPredictionModel = {
+      destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
+       clusterDistProxModel:ClusterDistProxModel): MarketDestPredictionModel = {
 
     clusterHistMarket.getMap.foreach { case (marketId, clusterCounts) => clusterCounts :+= countryModel.predict(countryByMarket(marketId)) }
     clusterHistMarket.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
@@ -119,7 +122,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
-    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap)
+    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap, clusterDistProxModel)
   }
 
 }

@@ -55,7 +55,7 @@ object predictClusters extends LazyLogging {
 
     val countryModel = countryModelBuilder.create()
     val destModel = destModelBuilder.create(countryModel)
-    val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,clusterDistProxModel)
 
     /**
      * Cluster dist
@@ -69,7 +69,7 @@ object predictClusters extends LazyLogging {
       val predictionProbs = predictedProbTuples.map(_._1.toDouble)
       val predictionRanks = predictedProbTuples.map(_._2.toDouble)
 
-      if (c1.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(c1.get))
+      if (c1.incrementAndGet() % 5000000 == 0) logger.info("Predicting clusters: %d".format(c1.get))
 
       val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
       record
@@ -102,7 +102,7 @@ object predictClusters extends LazyLogging {
      */
     val c3 = new AtomicInteger(0)
     val predictionRecordsMarketDest = testClicks.par.map { click =>
-      val predicted = marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
+      val predicted = marketDestPredict.predict(click)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 

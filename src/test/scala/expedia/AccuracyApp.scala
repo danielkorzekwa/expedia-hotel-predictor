@@ -18,10 +18,10 @@ object AccuracyApp extends LazyLogging {
     val now = System.currentTimeMillis()
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(expediaTestFile).getAllClicks()
+    val testClicks = ExDataSource(dsName="testDS",expediaTestFile).getAllClicks()
 
    // ClusterDistProxModel(ExDataSource("c:/perforce/daniel/ex/data_all/train_all_2013.csv"),testClicks)
-  //  predictClustersAndSaveToFile(testClicks)
+   // predictClustersAndSaveToFile(testClicks)
 
     logger.info("Load clusterPredictions...")
     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
@@ -39,7 +39,7 @@ object AccuracyApp extends LazyLogging {
     println(top5predictions.toString(20, 320))
 
     val mapk = mean(apkVector)
-    println("mapk=%.5f, test size=%d".format(mapk, top5predictions.rows))
+    println("mapk=%.6f, test size=%d".format(mapk, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
 
@@ -51,7 +51,7 @@ object AccuracyApp extends LazyLogging {
 
     val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
     //  val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
-    val trainDataSource = ExDataSource(expediaTrainFile)
+    val trainDataSource = ExDataSource(dsName="trainDS",expediaTrainFile)
 
     val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClusters(trainDataSource, testClicks)
   

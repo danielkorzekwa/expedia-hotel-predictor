@@ -34,7 +34,13 @@ object combineClusterPredictions {
       //fill marketDestPred
       (0 until 5).foreach { i =>
        val vote = marketDestVotes(i)
-        prioritizedVotes += marketDestVotes(i)
+       
+        val worseVote = prioritizedVotes.find(otherVote => vote._2 > otherVote._2 )
+         if (worseVote.isDefined) {
+            println("vote insert")
+            prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
+          }
+         else prioritizedVotes += vote
       }
 
       //fill clusterDistPredProx

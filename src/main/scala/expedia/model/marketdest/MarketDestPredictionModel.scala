@@ -17,19 +17,37 @@ import expedia.stats.MulticlassHistByKey
 import expedia.model.country.CountryModelBuilder
 import expedia.model.country.CountryModelBuilder
 import expedia.model.country.CountryModelBuilder
+import expedia.model.clusterdist.ClusterDistPredictionModel
+import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
+import expedia.model.clusterdistprox.ClusterDistProxModel
 
 case class MarketDestPredictionModel(
     destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
-    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]]) extends LazyLogging {
+    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
+    clusterDistProxModel:ClusterDistProxModel) extends LazyLogging {
 
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(userId: Int, marketId: Int, destId: Int, continent: Int): DenseVector[Float] = {
+  def predict(click:Click): DenseVector[Float] = {
 
-    val userProb = clusterHistByDestMarketUser((destId, marketId, userId))
+ 
+    val userProb = clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
+    
+     val  clusterDistProxProbs =  clusterDistProxModel.predict(click)
+  
+// clusterDistProxProbs.foreachPair{(index,prob) => 
+//   if(prob<0.005) {
+//     
+//     if(click.userLoc==24103 && click.marketId==628 && click.dist==227.5322) {
+//       println("...")
+//     }
+ //    userProb(index)=prob
+//  }
+// }
+    
     userProb
   }
 
@@ -38,6 +56,8 @@ case class MarketDestPredictionModel(
 object MarketDestPredictionModel {
   def apply(expediaTrainFile: String, testClicks: Seq[Click]): MarketDestPredictionModel = {
 
+    val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
+    
     val destModelBuilder = DestModelBuilder(testClicks)
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val modelBuilder = MarketDestPredictionModelBuilder(  testClicks)
@@ -47,6 +67,8 @@ object MarketDestPredictionModel {
     val marketCounterMap = CounterMap[Int]()
 
     def onClick(click: Click) = {
+      clusterDistProxModelBuilder.processCluster(click)
+      
       destModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
       modelBuilder.processCluster(click)
@@ -57,11 +79,11 @@ object MarketDestPredictionModel {
         marketCounterMap.add(click.marketId)
       }
     }
-    ExDataSource(expediaTrainFile).foreach { click => onClick(click) }
+    ExDataSource(dsName="trainDS",expediaTrainFile).foreach { click => onClick(click) }
 
-  
+  val clusterDistProxModel = clusterDistProxModelBuilder.create()
     val countryModel = countryModelBuilder.create()
       val destModel = destModelBuilder.create(countryModel)
-    modelBuilder.create(destModel, countryModel,destMarketCounterMap, destCounterMap, marketCounterMap)
+    modelBuilder.create(destModel, countryModel,destMarketCounterMap, destCounterMap, marketCounterMap,clusterDistProxModel)
   }
 }

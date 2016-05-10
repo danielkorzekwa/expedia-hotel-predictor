@@ -15,7 +15,7 @@ object PopularHotelsModel {
 
     val modelBuilder = PopularHotelsModelBuilder()
 
-    ExDataSource(expediaTrainFile).foreach { click =>modelBuilder.processCluster(click) }
+    ExDataSource(dsName="trainDS",expediaTrainFile).foreach { click =>modelBuilder.processCluster(click) }
 
     modelBuilder.create()
   }

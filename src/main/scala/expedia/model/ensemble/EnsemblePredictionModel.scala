@@ -70,7 +70,7 @@ object EnsemblePredictionModel extends LazyLogging {
     val clusterDistPredict = clusterDistPredictBuilder.create()
     val clusterDistProxModel = clusterDistProcModelBuilder.create()
 
-    val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,clusterDistProxModel)
     new EnsemblePredictionModel(clusterDistPredict, marketDestPredict, destMarketCounterMap, destCounterMap, userCounterMap, clusterDistProxModel)
 
   }
@@ -103,7 +103,7 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 //        marketDestPredict.destModel.predict(click.destId, click.continentId, click.stayDays)
 //      } else marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
 
-        val marketDestProbs = marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
+        val marketDestProbs = marketDestPredict.predict(click)
 
       
     val clustersProbVector = DenseVector.fill(100)(0d)
