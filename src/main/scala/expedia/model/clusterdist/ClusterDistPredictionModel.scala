@@ -4,6 +4,8 @@ import breeze.linalg.DenseVector
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import scala.collection._
 import breeze.linalg.DenseMatrix
+import expedia.data.Click
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * @param clusterByDistMap Map[(userLoc,dist,market),[all clusters for the key]]
@@ -23,6 +25,26 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Do
   val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
   val similarClustersMatrix = calcSimilarClustersMap(clusterCoExistMat)
 
+  def predictTop5(clicks: Seq[Click]): DenseMatrix[Double] = {
+     val i = new AtomicInteger(0)
+    val predictionRecordsClusterDist = clicks.par.map { click =>
+      val predicted = predict(click.userLoc, click.dist, click.marketId)
+
+      val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
+
+      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
+      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
+
+      if (i.incrementAndGet() % 5000000 == 0) logger.info("Predicting clusters: %d".format(i.get))
+
+      val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
+      record
+    }.toList
+
+    val predictionMatrixClusterDist = DenseVector.horzcat(predictionRecordsClusterDist: _*).t
+predictionMatrixClusterDist
+  }
+  
   def predict(userLoc: Double, dist: Double, market: Double): DenseVector[Double] = {
 
     val clusterProbs = DenseVector.tabulate(100) { hotelCluster =>

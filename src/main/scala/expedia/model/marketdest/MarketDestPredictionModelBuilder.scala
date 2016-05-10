@@ -25,7 +25,7 @@ import expedia.model.clusterdistprox.ClusterDistProxModel
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
+case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=300) extends LazyLogging {
 
   private val userIds = testClicks.map { c => c.userId }.distinct.toSet
 
@@ -102,9 +102,16 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
-        if (destMarketCounts < 300 || destCounts / destMarketCounts > 1.5) {
+        if (destMarketCounts < param || destCounts.toDouble / destMarketCounts > 1.5 ) {
+          
           clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
-        } else {
+        }
+//        else if (destCounts.toDouble / destMarketCounts > 10) {
+//          
+//         // logger.info("destCounts: %d, destMarketCounts: %d, ratio: %.2f".format(destCounts,destMarketCounts,destCounts.toDouble / destMarketCounts))
+//           clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
+//        }
+        else {
           val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
             case Some(avgStayDays) if destModel.svmDestIds.contains(destId) => {
               val custStayDays = avgStayDays.avg().toInt

@@ -8,6 +8,8 @@ import scala.collection._
 case class CountryModelBuilder(testClicks: Seq[Click]) {
 
   private val clusterHistByContinent = MulticlassHistByKey[Int](100)
+  testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
+
   
   private val clusterHistByCountry = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByCountry.add(click.countryId, click.cluster, value = 0))

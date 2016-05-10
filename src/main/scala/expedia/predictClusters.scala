@@ -60,62 +60,17 @@ object predictClusters extends LazyLogging {
     /**
      * Cluster dist
      */
-    val c1 = new AtomicInteger(0)
-    val predictionRecordsClusterDist = testClicks.par.map { click =>
-      val predicted = clusterDistModel.predict(click.userLoc, click.dist, click.marketId)
-
-      val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
-
-      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
-      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-
-      if (c1.incrementAndGet() % 5000000 == 0) logger.info("Predicting clusters: %d".format(c1.get))
-
-      val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
-      record
-    }.toList
-
-    val predictionMatrixClusterDist = DenseVector.horzcat(predictionRecordsClusterDist: _*).t
+    val predictionMatrixClusterDist = clusterDistModel.predictTop5(testClicks)
 
     /**
      * Cluster dist prox
      */
-    val c2 = new AtomicInteger(0)
-    val predictionRecordsClusterDistProx = testClicks.par.map { click =>
-      val predicted = clusterDistProxModel.predict(click)
-
-      val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
-
-      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
-      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-
-      if (c2.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(c2.get))
-
-      val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
-      record
-    }.toList
-
-    val predictionMatrixClusterDistProx = DenseVector.horzcat(predictionRecordsClusterDistProx: _*).t
+    val predictionMatrixClusterDistProx = clusterDistProxModel.predictTop5(testClicks)
     
       /**
      * Market dest
      */
-    val c3 = new AtomicInteger(0)
-    val predictionRecordsMarketDest = testClicks.par.map { click =>
-      val predicted = marketDestPredict.predict(click)
-
-      val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
-
-      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
-      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-
-      if (c3.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(c3.get))
-
-      val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
-      record
-    }.toList
-
-    val predictionMatrixMarketDest = DenseVector.horzcat(predictionRecordsMarketDest: _*).t
+    val predictionMatrixMarketDest = marketDestPredict.predictTop5(testClicks)
 
     (predictionMatrixClusterDist,predictionMatrixMarketDest,predictionMatrixClusterDistProx)
   }
