@@ -17,6 +17,7 @@ object combineClusterPredictions {
     val top5ClustersSeq = (0 until clusterDistPred.rows).map { r =>
       val clusterDistPredVec = clusterDistPred(r, ::).t
       val marketDestPredVec = marketDestPred(r, ::).t
+      val clusterDistProxPredVec = clusterDistProxPred(r, ::).t
 
       // seq of (prob,cluster)
       val top5ClustersBuffer = ListBuffer[Tuple2[Double, Int]]()
@@ -28,11 +29,18 @@ object combineClusterPredictions {
 
       //fill marketDestPred
       (0 until (5 - top5ClustersBuffer.size)).foreach { i =>
+        
         top5ClustersBuffer += marketDestPredVec(i) -> marketDestPredVec(5 + i).toInt
       }
+      
+       //fill clusterDistProxPred
+      if(clusterDistProxPredVec(0)>0.3 && top5ClustersBuffer(3)._1<0.2) { top5ClustersBuffer(3) = clusterDistProxPredVec(0) ->  clusterDistProxPredVec(5).toInt}
+ if(clusterDistProxPredVec(0)>0.3 && top5ClustersBuffer(4)._1<0.2) { top5ClustersBuffer(4) = clusterDistProxPredVec(0) ->  clusterDistProxPredVec(5).toInt}
 
       val predictionProbs = top5ClustersBuffer.map(_._1.toDouble).toArray
       val predictionRanks = top5ClustersBuffer.map(_._2.toDouble).toArray
+      
+      if(predictionRanks.toList.distinct.size<5) println(predictionRanks.toList.distinct)
       val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
       record
     }
