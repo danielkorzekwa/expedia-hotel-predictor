@@ -16,7 +16,7 @@ case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
   testClicks.foreach { click =>
 
     val distClusterProbs = clusterHistByKey.getOrElseUpdate((click.userLoc, click.marketId), mutable.Map())
-    distClusterProbs.getOrElseUpdate(click.dist, DenseVector.fill(100)(0f))
+    distClusterProbs.getOrElseUpdate(click.dist, DenseVector.fill(100)(1f))
   }
 
   def processCluster(click: Click) = {
@@ -43,7 +43,11 @@ case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
   def create(): ClusterDistProxModel = {
     clusterHistByKey.foreach {
       case (key, distProbs) =>
-        distProbs.foreach { case (dist, clusterProbs) => calcVectorProbsMutable(clusterProbs) }
+        distProbs.foreach {
+          case (dist, clusterProbs) =>
+
+            calcVectorProbsMutable(clusterProbs)
+        }
     }
     ClusterDistProxModel(clusterHistByKey)
   }

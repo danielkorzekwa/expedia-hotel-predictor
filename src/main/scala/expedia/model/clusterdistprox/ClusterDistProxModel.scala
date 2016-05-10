@@ -10,7 +10,6 @@ import expedia.util.calcTopNClusters
 //key - (userLoc,market),value - map[dist,clusterProbs]
 case class ClusterDistProxModel(clusterHistByKey: mutable.Map[Tuple2[Int, Int], mutable.Map[Double, DenseVector[Float]]]) {
 
-  private def nanClustProbs = DenseVector.fill(100)(Float.NaN)
   def predict(click:Click): DenseVector[Float] = {
 
     val key = (click.userLoc, click.dist, click.marketId)

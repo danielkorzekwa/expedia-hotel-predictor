@@ -8,6 +8,8 @@ import expedia.data.ExDataSource
 import dk.gp.util.averagePrecision
 import breeze.stats._
 import dk.gp.util.csvwrite
+import expedia.model.clusterdistprox.ClusterDistProxModel
+import expedia.data.ExDataSource
 
 object AccuracyApp extends LazyLogging {
 
@@ -18,7 +20,8 @@ object AccuracyApp extends LazyLogging {
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val testClicks = ExDataSource(expediaTestFile).getAllClicks()
 
-    //predictClustersAndSaveToFile(testClicks)
+   // ClusterDistProxModel(ExDataSource("c:/perforce/daniel/ex/data_all/train_all_2013.csv"),testClicks)
+  //  predictClustersAndSaveToFile(testClicks)
 
     logger.info("Load clusterPredictions...")
     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
@@ -51,6 +54,7 @@ object AccuracyApp extends LazyLogging {
     val trainDataSource = ExDataSource(expediaTrainFile)
 
     val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClusters(trainDataSource, testClicks)
+  
     csvwrite("target/clusterDistPred_test.csv", clusterDistPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
     csvwrite("target/marketDestPred_test.csv", marketDestPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
     csvwrite("target/clusterDistProxPred_test.csv", clusterDistProxPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")

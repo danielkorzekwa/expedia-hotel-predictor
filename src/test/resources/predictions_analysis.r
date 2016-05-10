@@ -4,11 +4,11 @@ rm(list=ls())
 p <- fread('predictions_analysis_2014/predictions.csv')
 p2 <- fread('predictions_analysis_2014/predictions2.csv')
 
-pp <- merge(p,p2,by=c(0),sort=FALSE)
-
 test <- fread('data_booked/train_booked_2014_all_cols.csv')
-pp <- cbind(test,p)
 
+pp <- cbind(test,p2)
+pp$mapk1 <- p$mapk
+subset(pp,hotel_market==628 & user_location_city==24103 & orig_destination_distance>227.2 & orig_destination_distance < 227.8 & p1<1)
 
 #analyze mapk
 stat <- sqldf('select srch_destination_id,count(*) as c from train  group by srch_destination_id order by c')

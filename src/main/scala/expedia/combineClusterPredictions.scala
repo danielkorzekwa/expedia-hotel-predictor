@@ -19,28 +19,48 @@ object combineClusterPredictions {
       val marketDestPredVec = marketDestPred(r, ::).t
       val clusterDistProxPredVec = clusterDistProxPred(r, ::).t
 
-      // seq of (prob,cluster)
-      val top5ClustersBuffer = ListBuffer[Tuple2[Double, Int]]()
+      //(modelPriority,prob,cluster)
+      val clusterDistVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (1, clusterDistPredVec(i), clusterDistPredVec(5 + i).toInt))
+      val marketDestVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (2, marketDestPredVec(i), marketDestPredVec(5 + i).toInt))
+      val clusterDistProxVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (3, clusterDistProxPredVec(i), clusterDistProxPredVec(5 + i).toInt))
+
+      val prioritizedVotes = ListBuffer[Tuple3[Int, Double, Int]]()
 
       //fill clusterDistPred
-      (0 until (5 - top5ClustersBuffer.size)).foreach { i =>
-        if (clusterDistPredVec(i) > 0) top5ClustersBuffer += clusterDistPredVec(i) -> clusterDistPredVec(5 + i).toInt
+      (0 until 5).foreach { i =>
+        if (clusterDistVotes(i)._2 > 0) prioritizedVotes += clusterDistVotes(i)
       }
 
       //fill marketDestPred
-      (0 until (5 - top5ClustersBuffer.size)).foreach { i =>
-        
-        top5ClustersBuffer += marketDestPredVec(i) -> marketDestPredVec(5 + i).toInt
+      (0 until 5).foreach { i =>
+       val vote = marketDestVotes(i)
+        prioritizedVotes += marketDestVotes(i)
       }
-      
-       //fill clusterDistProxPred
-      if(clusterDistProxPredVec(0)>0.3 && top5ClustersBuffer(3)._1<0.2) { top5ClustersBuffer(3) = clusterDistProxPredVec(0) ->  clusterDistProxPredVec(5).toInt}
- if(clusterDistProxPredVec(0)>0.3 && top5ClustersBuffer(4)._1<0.2) { top5ClustersBuffer(4) = clusterDistProxPredVec(0) ->  clusterDistProxPredVec(5).toInt}
+
+      //fill clusterDistPredProx
+      (0 until 5).foreach { i =>
+
+        val vote = clusterDistProxVotes(i)
+        if (vote._2 > 0.3) {
+          val worseVote = prioritizedVotes.find(otherVote => otherVote._1 == 2 && vote._2 > otherVote._2 )
+          if (worseVote.isDefined) {
+            println("clusterDistProxVotes")
+            prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
+          }
+        }
+
+      }
+
+      val uniquePrioritizedVotes = ListBuffer[Tuple2[Double, Int]]()
+      prioritizedVotes.foreach { vote =>
+        if (!uniquePrioritizedVotes.exists(uniqueVote => uniqueVote._2 == vote._3)) uniquePrioritizedVotes += vote._2 -> vote._3
+      }
+
+      val top5ClustersBuffer = uniquePrioritizedVotes.toList.take(5)
 
       val predictionProbs = top5ClustersBuffer.map(_._1.toDouble).toArray
       val predictionRanks = top5ClustersBuffer.map(_._2.toDouble).toArray
-      
-      if(predictionRanks.toList.distinct.size<5) println(predictionRanks.toList.distinct)
+
       val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
       record
     }
