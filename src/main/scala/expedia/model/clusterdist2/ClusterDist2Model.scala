@@ -14,6 +14,17 @@ case class ClusterDist2Model(clusterHistByKey: MulticlassHistByKey[Tuple3[Double
     clusterHistByKey.getMap(key)
   }
 
+   def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
+      val i = new AtomicInteger(0)
+    val predictionRecords = clicks.par.map { click =>
+      val predicted = predict(click.userLoc, click.dist, click.marketId)
+      predicted
+    }.toList
+
+    val predictionMatrix = DenseVector.horzcat(predictionRecords: _*).t
+    predictionMatrix
+   }
+  
   def predictTop5(clicks: Seq[Click]): DenseMatrix[Double] = {
     val i = new AtomicInteger(0)
     val predictionRecords = clicks.par.map { click =>

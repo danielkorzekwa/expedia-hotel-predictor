@@ -24,7 +24,7 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
   }
 
   def create(): ClusterDist2Model = {
-       clusterHistByKey.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= DenseVector.fill(100)(1f/100) }
+       clusterHistByKey.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= DenseVector.fill(100)(1f/1000) }
   
     
     clusterHistByKey.normalise()
