@@ -27,7 +27,7 @@ object TrainModelParamsApp2 extends LazyLogging {
     var bestParam = 0d
     paramValues.foreach { param =>
 
-      val top5predictions = MarketDestPredictionModel(trainDS, testClicks, param).predictTop5(testClicks,param)
+      val top5predictions = MarketDestPredictionModel(trainDS, testClicks).predictTop5(testClicks)
 
       val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
       val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))

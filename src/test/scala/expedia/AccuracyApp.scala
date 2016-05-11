@@ -11,6 +11,10 @@ import dk.gp.util.csvwrite
 import expedia.model.clusterdistprox.ClusterDistProxModel
 import expedia.data.ExDataSource
 import expedia.model.marketdest.MarketDestPredictionModel
+import expedia.model.clusterdist.ClusterDistPredictionModel
+import expedia.model.marketdest.MarketDestPredictionModelBuilder
+import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
+import expedia.data.ExDataSource
 
 object AccuracyApp extends LazyLogging {
 
@@ -18,16 +22,22 @@ object AccuracyApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
+    //val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
+    val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
+    
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
 
-     predictClustersAndSaveToFile(testClicks)
+    
+  //   predictClustersAndSaveToFile(testClicks)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
      val top5predictions = loadPredictions()
 
-   // val top5predictions = MarketDestPredictionModel(ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv"), testClicks).predictTop5(testClicks)
+ //   val top5predictions = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
+// val top5predictions = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
 
+    
     logger.info("Compute mapk..")
 
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
@@ -54,14 +64,10 @@ object AccuracyApp extends LazyLogging {
     top5predictions
   }
 
-  private def predictClustersAndSaveToFile(testClicks: Seq[Click]) = {
+  private def predictClustersAndSaveToFile(trainDS:ExDataSource,testClicks: Seq[Click]) = {
     logger.info("predictClusters and save to files...")
 
-    val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
-    //  val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
-    val trainDataSource = ExDataSource(dsName = "trainDS", expediaTrainFile)
-
-    val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClusters(trainDataSource, testClicks)
+    val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClusters(trainDS, testClicks)
 
     csvwrite("target/clusterDistPred_test.csv", clusterDistPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
     csvwrite("target/marketDestPred_test.csv", marketDestPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")

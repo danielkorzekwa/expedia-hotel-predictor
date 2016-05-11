@@ -21,11 +21,15 @@ import expedia.stats.CounterMap
 import expedia.stats.OnlineAvg
 import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.model.clusterdistprox.ClusterDistProxModel
+import expedia.model.country.CountryModelBuilder
+import expedia.data.ExDataSource
+import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
+import expedia.model.dest.DestModelBuilder
 
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder(testClicks: Seq[Click], param: Double = 1) extends LazyLogging {
+case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
 
   private val userIds = testClicks.map { c => c.userId }.distinct.toSet
 
@@ -137,4 +141,39 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click], param: Doubl
     MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap, clusterDistProxModel,userCounterMap,destCounterMap,destMarketCounterMap)
   }
 
+}
+
+object MarketDestPredictionModelBuilder {
+  
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]):MarketDestPredictionModel = {
+      val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
+
+    val destModelBuilder = DestModelBuilder(testClicks)
+    val countryModelBuilder = CountryModelBuilder(testClicks)
+    val modelBuilder = MarketDestPredictionModelBuilder(testClicks)
+
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
+    val marketCounterMap = CounterMap[Int]()
+
+    def onClick(click: Click) = {
+      clusterDistProxModelBuilder.processCluster(click)
+
+      destModelBuilder.processCluster(click)
+      countryModelBuilder.processCluster(click)
+      modelBuilder.processCluster(click)
+
+      if (click.isBooking == 1) {
+        destMarketCounterMap.add((click.destId, click.marketId))
+        destCounterMap.add(click.destId)
+        marketCounterMap.add(click.marketId)
+      }
+    }
+    trainDatasource.foreach { click => onClick(click) }
+
+    val clusterDistProxModel = clusterDistProxModelBuilder.create()
+    val countryModel = countryModelBuilder.create()
+    val destModel = destModelBuilder.create(countryModel)
+    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, clusterDistProxModel)
+  }
 }

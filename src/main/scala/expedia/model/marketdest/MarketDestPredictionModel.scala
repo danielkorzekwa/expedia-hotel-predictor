@@ -34,7 +34,7 @@ case class MarketDestPredictionModel(
    * @param data [user_id,dest]
    * @param hotelCluster
    */
-  def predict(click: Click,param:Double): DenseVector[Float] = {
+  def predict(click: Click): DenseVector[Float] = {
    // val clusterProb = clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
 
       val destCounts = destCounterMap.getOrElse(click.destId, 0)
@@ -67,7 +67,7 @@ case class MarketDestPredictionModel(
   def predictTop5(clicks: Seq[Click],param:Double=0.003): DenseMatrix[Double] = {
     val i = new AtomicInteger(0)
     val predictionRecordsMarketDest = clicks.par.map { click =>
-      val predicted = predict(click,param)
+      val predicted = predict(click)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 
@@ -86,13 +86,13 @@ case class MarketDestPredictionModel(
 }
 
 object MarketDestPredictionModel {
-  def apply(trainDatasource: ExDataSource, testClicks: Seq[Click],param:Double=300): MarketDestPredictionModel = {
+  def apply(trainDatasource: ExDataSource, testClicks: Seq[Click]): MarketDestPredictionModel = {
 
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
     val destModelBuilder = DestModelBuilder(testClicks)
     val countryModelBuilder = CountryModelBuilder(testClicks)
-    val modelBuilder = MarketDestPredictionModelBuilder(testClicks,param)
+    val modelBuilder = MarketDestPredictionModelBuilder(testClicks)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
     val destCounterMap = CounterMap[Int]()

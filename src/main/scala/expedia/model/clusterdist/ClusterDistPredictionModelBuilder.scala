@@ -8,6 +8,7 @@ import expedia.data.Click
 import expedia.stats.MulticlassHistByKey
 import expedia.stats.MulticlassHistByKey
 import expedia.util.calcTopNClusters
+import expedia.data.ExDataSource
 case class ClusterDistPredictionModelBuilder() {
 
   private val clusterMap: mutable.Map[Tuple3[Double, Double, Double], ListBuffer[Double]] = mutable.Map()
@@ -38,5 +39,21 @@ case class ClusterDistPredictionModelBuilder() {
     }
 
     ClusterDistPredictionModel(topClustersByKey)
+  }
+}
+
+object ClusterDistPredictionModelBuilder {
+  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click]): ClusterDistPredictionModel = {
+    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder()
+
+    def onClick(click: Click) = {
+      clusterDistModelBuilder.processCluster(click)
+    }
+
+    trainDS.foreach { click => onClick(click) }
+
+    val clusterDistModel = clusterDistModelBuilder.create()
+
+    clusterDistModel
   }
 }

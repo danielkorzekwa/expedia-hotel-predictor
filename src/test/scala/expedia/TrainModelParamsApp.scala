@@ -22,7 +22,7 @@ object TrainModelParamsApp extends LazyLogging {
 
     def g(x: DenseVector[Double]) = {
 
-      val top5predictions = MarketDestPredictionModel(trainDS, testClicks, x(0)).predictTop5(testClicks)
+      val top5predictions = MarketDestPredictionModel(trainDS, testClicks).predictTop5(testClicks)
 
       val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
       val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))

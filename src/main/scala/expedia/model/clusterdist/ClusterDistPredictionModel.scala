@@ -14,13 +14,6 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Do
 
   logger.info("DistClusterMap size=%d".format(topClusterByDistMap.size))
 
-//  val topClusterByDistMap = clustersByDistMap.map {
-//    case (key, clusters) =>
-//
-//      val sortedClusters = clusters.groupBy { c => c }.map { case (key, keyClusters) => key -> keyClusters.size }.toList.sortWith((a, b) => a._2 > b._2).map(_._1)
-//      (key, sortedClusters)
-//  }
-
   val distClutersSeq = topClusterByDistMap.map { case (key, clusters) => clusters }.toList
   val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
   val similarClustersMatrix = calcSimilarClustersMap(clusterCoExistMat)

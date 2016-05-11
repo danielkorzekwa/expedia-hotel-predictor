@@ -33,14 +33,11 @@ object combineClusterPredictions {
 
       //fill marketDestPred
       (0 until 5).foreach { i =>
-       val vote = marketDestVotes(i)
-       
-        val worseVote = prioritizedVotes.find(otherVote => vote._2 > otherVote._2 )
-         if (worseVote.isDefined) {
-            println("vote insert")
-            prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
-          }
-         else prioritizedVotes += vote
+        val vote = marketDestVotes(i)
+        val worseVote = prioritizedVotes.find(otherVote => vote._2 > otherVote._2 || vote._2 > 0.80)
+        if (worseVote.isDefined) {
+          prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
+        } else prioritizedVotes += vote
       }
 
       //fill clusterDistPredProx
@@ -48,9 +45,8 @@ object combineClusterPredictions {
 
         val vote = clusterDistProxVotes(i)
         if (vote._2 > 0.3) {
-          val worseVote = prioritizedVotes.find(otherVote => otherVote._1 == 2 && vote._2 > otherVote._2 )
+          val worseVote = prioritizedVotes.find(otherVote => otherVote._1 == 2 && vote._2 > otherVote._2)
           if (worseVote.isDefined) {
-            println("clusterDistProxVotes")
             prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
           }
         }
