@@ -27,7 +27,7 @@ case class ClusterDistPredictionModelBuilder() {
   }
 
   def create(): ClusterDistPredictionModel = {
-    val map = clusterMap.map { case (key, clusters) => key -> clusters.toList }
+   // val map = clusterMap.map { case (key, clusters) => key -> clusters.toList }
 
     //   val topClustersByKey:Map[Tuple3[Double, Double, Double], DenseVector[Int]] =  clusterHistByKey.getMap().map{case (key,clusterProbs) => key ->  calcTopNClusters(clusterProbs,100,minProb=0)}
 

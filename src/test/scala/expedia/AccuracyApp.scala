@@ -15,6 +15,7 @@ import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.model.marketdest.MarketDestPredictionModelBuilder
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExDataSource
+import expedia.model.clusterdist2.ClusterDist2ModelBuilder
 
 object AccuracyApp extends LazyLogging {
 
@@ -26,16 +27,16 @@ object AccuracyApp extends LazyLogging {
     val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
     
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
+    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks().filter(c => c.dist != -1)
 
     
   //   predictClustersAndSaveToFile(testClicks)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
-     val top5predictions = loadPredictions()
+  //   val top5predictions = loadPredictions()
 
  //   val top5predictions = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
-// val top5predictions = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
+ val top5predictions = ClusterDist2ModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
 
     
     logger.info("Compute mapk..")

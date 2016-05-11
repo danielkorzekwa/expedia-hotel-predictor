@@ -85,37 +85,3 @@ case class MarketDestPredictionModel(
   }
 }
 
-object MarketDestPredictionModel {
-  def apply(trainDatasource: ExDataSource, testClicks: Seq[Click]): MarketDestPredictionModel = {
-
-    val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
-
-    val destModelBuilder = DestModelBuilder(testClicks)
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val modelBuilder = MarketDestPredictionModelBuilder(testClicks)
-
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-
-    def onClick(click: Click) = {
-      clusterDistProxModelBuilder.processCluster(click)
-
-      destModelBuilder.processCluster(click)
-      countryModelBuilder.processCluster(click)
-      modelBuilder.processCluster(click)
-
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val clusterDistProxModel = clusterDistProxModelBuilder.create()
-    val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create(countryModel)
-    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, clusterDistProxModel)
-  }
-}

@@ -2,6 +2,7 @@ package expedia.stats
 
 import scala.collection._
 import breeze.linalg.DenseVector
+import breeze.linalg._
 
 case class MulticlassHistByKey[K](classNum: Int) {
 
@@ -20,4 +21,11 @@ case class MulticlassHistByKey[K](classNum: Int) {
 
   def getMap: Map[K, DenseVector[Float]] = histByKeyMap
 
+  def normalise() = {
+    histByKeyMap.foreach {
+      case (key, stats) =>
+        val Z = sum(stats)
+        stats :/= Z
+    }
+  }
 }

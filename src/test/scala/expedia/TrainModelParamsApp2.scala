@@ -10,6 +10,7 @@ import expedia.data.ExDataSource
 import expedia.model.marketdest.MarketDestPredictionModel
 import dk.gp.util.averagePrecision
 import breeze.stats._
+import expedia.model.marketdest.MarketDestPredictionModelBuilder
 
 object TrainModelParamsApp2 extends LazyLogging {
 
@@ -27,7 +28,7 @@ object TrainModelParamsApp2 extends LazyLogging {
     var bestParam = 0d
     paramValues.foreach { param =>
 
-      val top5predictions = MarketDestPredictionModel(trainDS, testClicks).predictTop5(testClicks)
+      val top5predictions = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
 
       val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
       val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))
