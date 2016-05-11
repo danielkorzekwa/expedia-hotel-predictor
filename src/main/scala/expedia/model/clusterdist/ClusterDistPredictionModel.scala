@@ -61,7 +61,7 @@ predictionMatrixClusterDist
           val clusterIndex = clusterVec.toArray.toList.indexOf(hotelCluster)
           val prob = if (clusterIndex == -1d) {
 
-            if (false && clusterVec.size > 0 && clusterVec.size <= 2) {
+            if (clusterVec.size > 0 && clusterVec.size <= 2) {
               val topCluster = clusterVec(0)
 
               if (hotelCluster == similarClustersMatrix(topCluster.toInt, 1)) {
