@@ -21,12 +21,12 @@ object AccuracyApp extends LazyLogging {
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
 
-    // predictClustersAndSaveToFile(testClicks)
+     predictClustersAndSaveToFile(testClicks)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
-    // val top5predictions = loadPredictions()
+     val top5predictions = loadPredictions()
 
-    val top5predictions = MarketDestPredictionModel(ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv"), testClicks).predictTop5(testClicks)
+   // val top5predictions = MarketDestPredictionModel(ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv"), testClicks).predictTop5(testClicks)
 
     logger.info("Compute mapk..")
 

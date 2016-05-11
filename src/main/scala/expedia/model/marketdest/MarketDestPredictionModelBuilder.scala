@@ -25,7 +25,7 @@ import expedia.model.clusterdistprox.ClusterDistProxModel
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=300) extends LazyLogging {
+case class MarketDestPredictionModelBuilder(testClicks: Seq[Click], param: Double = 1) extends LazyLogging {
 
   private val userIds = testClicks.map { c => c.userId }.distinct.toSet
 
@@ -49,11 +49,15 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=
 
   private val avgDaysStayByDestCust: mutable.Map[Tuple2[Int, Int], OnlineAvg] = mutable.Map()
 
+   private val userCounterMap = CounterMap[Int]()
+  
   def processCluster(click: Click) = {
 
-    clusterHistMarket.add(click.marketId, click.cluster)
-
-    clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
+     if (click.isBooking == 1)   clusterHistMarket.add(click.marketId, click.cluster)
+    else   clusterHistMarket.add(click.marketId, click.cluster,value = 0.40f)
+    
+    if (click.isBooking == 1) clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
+    else clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster, value = 0.50f)
 
     countryByMarket += click.marketId -> click.countryId
     continentByDest += click.destId -> click.continentId
@@ -64,14 +68,16 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=
     if (userIds.isEmpty || userIds.contains(click.userId)) {
 
       if (click.isBooking == 1) clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster)
-      else clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0.7f)
+      else clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0.6f)
 
     }
+    
+      userCounterMap.add(click.userId)
   }
 
-  def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]], 
-      destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-       clusterDistProxModel:ClusterDistProxModel): MarketDestPredictionModel = {
+  def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+             destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
+             clusterDistProxModel: ClusterDistProxModel): MarketDestPredictionModel = {
 
     clusterHistMarket.getMap.foreach { case (marketId, clusterCounts) => clusterCounts :+= countryModel.predict(countryByMarket(marketId)) }
     clusterHistMarket.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
@@ -84,7 +90,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
         if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterProbs :+= 1f * clusterHistMarket.getMap(marketId)
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 1f * destModel.predict(destId, continentByDest(destId))
+        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 5f * destModel.predict(destId, continentByDest(destId))
         else clusterProbs :+= 1f * clusterHistMarket.getMap(marketId)
     }
     logger.info("Add prior stats to clusterHistByDestMarket...done")
@@ -102,22 +108,21 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
-        if (destMarketCounts < param || destCounts.toDouble / destMarketCounts > 1.5 ) {
-          
-          clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
-        }
-//        else if (destCounts.toDouble / destMarketCounts > 10) {
-//          
-//         // logger.info("destCounts: %d, destMarketCounts: %d, ratio: %.2f".format(destCounts,destMarketCounts,destCounts.toDouble / destMarketCounts))
-//           clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
-//        }
+        if (destMarketCounts < 300 || destCounts.toDouble / destMarketCounts > 1.3) {
+
+          clusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
+        } //        else if (destCounts.toDouble / destMarketCounts > 10) {
+        //          
+        //         // logger.info("destCounts: %d, destMarketCounts: %d, ratio: %.2f".format(destCounts,destMarketCounts,destCounts.toDouble / destMarketCounts))
+        //           clusterProbs :+= 1f * clusterHistByDestMarket.getMap((destId, marketId))
+        //        }
         else {
           val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
             case Some(avgStayDays) if destModel.svmDestIds.contains(destId) => {
               val custStayDays = avgStayDays.avg().toInt
-              clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId), custStayDays)
+              clusterProbs :+= 7f * destModel.predict(destId, continentByDest(destId), custStayDays)
             }
-            case _ => clusterProbs :+= 10f * destModel.predict(destId, continentByDest(destId))
+            case _ => clusterProbs :+= 7f * destModel.predict(destId, continentByDest(destId))
           }
         }
 
@@ -129,7 +134,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click],param:Double=
     clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
-    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap, clusterDistProxModel)
+    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap, clusterDistProxModel,userCounterMap,destCounterMap,destMarketCounterMap)
   }
 
 }

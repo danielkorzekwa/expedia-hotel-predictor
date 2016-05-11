@@ -20,23 +20,23 @@ object TrainModelParamsApp2 extends LazyLogging {
 
     val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
 
-    val paramValues = 10d to 500 by 50
+    val paramValues = 0d to 0.005 by 0.0005
     logger.info("paramValues=" + paramValues)
 
     var bestMapk = 0d
     var bestParam = 0d
     paramValues.foreach { param =>
 
-      val top5predictions = MarketDestPredictionModel(trainDS, testClicks, param).predictTop5(testClicks)
+      val top5predictions = MarketDestPredictionModel(trainDS, testClicks, param).predictTop5(testClicks,param)
 
       val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
       val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))
 
       if (mapk > bestMapk) {
-        logger.info("Best!!!, oldMapk/newMapk=%.6f/%.6f, oldParam/newParam=%.2f/%.2f".format(bestMapk, mapk, bestParam, param))
+        logger.info("Best!!!, oldMapk/newMapk=%.6f/%.6f, oldParam/newParam=%.4f/%.4f".format(bestMapk, mapk, bestParam, param))
         bestMapk = mapk
         bestParam = param
-      } else logger.info("No best!!!, oldMapk/newMapk=%.6f/%.6f, oldParam/newParam=%.2f/%.2f".format(bestMapk, mapk, bestParam, param))
+      } else logger.info("No best!!!, oldMapk/newMapk=%.6f/%.6f, oldParam/newParam=%.4f/%.4f".format(bestMapk, mapk, bestParam, param))
     }
 
   }

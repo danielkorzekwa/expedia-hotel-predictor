@@ -103,7 +103,7 @@ case class EnsemblePredictionModel(clusterDistPredict: ClusterDistPredictionMode
 //        marketDestPredict.destModel.predict(click.destId, click.continentId, click.stayDays)
 //      } else marketDestPredict.predict(click.userId, click.marketId, click.destId, click.continentId)
 
-        val marketDestProbs = marketDestPredict.predict(click)
+        val marketDestProbs = marketDestPredict.predict(click,0.003)
 
       
     val clustersProbVector = DenseVector.fill(100)(0d)
