@@ -55,9 +55,9 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
         val Z = sum(prior)
         prior :/= Z
 
-        clusterCounts :+= prior.map(x => x.toFloat+1e-7f)
+        clusterCounts :+= prior.map(x => x.toFloat)
           }
-          case None => clusterCounts :+= DenseVector.fill(100)(1f / 1000) 
+          case None => clusterCounts :+= DenseVector.fill(100)(0f) 
         }
      
     }

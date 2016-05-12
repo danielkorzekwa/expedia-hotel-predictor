@@ -12,6 +12,7 @@ import expedia.model.marketdest.MarketDestPredictionModelBuilder
 import expedia.model.country.CountryModelBuilder
 import expedia.stats.CounterMap
 import expedia.model.dest.DestModelBuilder
+import expedia.model.clusterdist2.ClusterDist2ModelBuilder
 
 object predictClusters extends LazyLogging {
 
@@ -20,7 +21,7 @@ object predictClusters extends LazyLogging {
    */
   def apply(trainDS: ExDataSource, testClicks: Seq[Click]): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
 
-    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder()
+    val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
     val countryModelBuilder = CountryModelBuilder(testClicks)

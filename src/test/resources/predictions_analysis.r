@@ -1,14 +1,14 @@
 rm(list=ls())
 
 #Predictions analysis
-p <- fread('predictions_analysis_2014/predictions.csv')
-colnames(p) <- c('p1_1','p2_1','p3_1','p4_1','p5_1','r1_1','r2_1','r3_1','r4_1','r5_1','hotel_cluster','mapk_1')
+p1 <- fread('predictions_analysis_2014/predictions.csv')
+colnames(p1) <- c('p1_1','p2_1','p3_1','p4_1','p5_1','r1_1','r2_1','r3_1','r4_1','r5_1','hotel_cluster','mapk_1')
 p2 <- fread('predictions_analysis_2014/predictions2.csv')
 colnames(p2) <- c('p1_2','p2_2','p3_2','p4_2','p5_2','r1_2','r2_2','r3_2','r4_2','r5_2','hotel_cluster','mapk_2')
 
 test <- fread('data_booked/train_booked_2014_all_cols.csv')
 
-pp <- cbind(test,p,p2)
+pp <- cbind(test,p1,p2)
 
 pp$mapk1 <- p$mapk
 subset(pp,hotel_market==628 & user_location_city==24103 & orig_destination_distance>227.2 & orig_destination_distance < 227.8 & p1<1)
