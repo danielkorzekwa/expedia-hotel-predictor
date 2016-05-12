@@ -4,6 +4,8 @@ import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import scala.collection._
 import scala.collection.mutable.ListBuffer
+import expedia.model.svm.libsvm.svr.SvrModel
+import expedia.model.svm.libsvm.svr.svrPredict
 
 object combineClusterPredictions {
 
@@ -24,6 +26,9 @@ object combineClusterPredictions {
       val marketDestVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (2, marketDestPredVec(i), marketDestPredVec(5 + i).toInt))
       val clusterDistProxVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (3, clusterDistProxPredVec(i), clusterDistProxPredVec(5 + i).toInt))
 
+      val clusterDistModel = SvrModel.loadFromFile("target/apk_clusterDistModel.svr")
+      val marketDestModel = SvrModel.loadFromFile("target/apk_marketDestModel.svr")
+
       val prioritizedVotes = ListBuffer[Tuple3[Int, Double, Int]]()
 
       //fill clusterDistPred
@@ -34,7 +39,14 @@ object combineClusterPredictions {
       //fill marketDestPred
       (0 until 5).foreach { i =>
         val vote = marketDestVotes(i)
-        val worseVote = prioritizedVotes.find(otherVote =>  (vote._2 > 0.5 && otherVote._2<0.5)  || (vote._2 > 0.80 && otherVote._2<0.99) || otherVote._2==0.00)
+
+        val worseVote = prioritizedVotes.find { otherVote =>
+          val voteApk = svrPredict(DenseMatrix(vote._2), marketDestModel)(0)
+          val otherApk = svrPredict(DenseMatrix(otherVote._2), clusterDistModel)(0)
+          voteApk > otherApk
+        }
+
+        //   val worseVote = prioritizedVotes.find(otherVote => (vote._2 > 0.5 && otherVote._2 < 0.5) || (vote._2 > 0.80 && otherVote._2 < 0.99) || otherVote._2 == 0.00)
         if (worseVote.isDefined) {
           prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
         } else prioritizedVotes += vote

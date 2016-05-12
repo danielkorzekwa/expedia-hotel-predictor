@@ -49,11 +49,11 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
             val topCluster = clusterVec(0)
             val prior = clusterCoExistMat(topCluster, ::).t.copy
             val Z = sum(prior)
-            prior :/= Z
+            if(Z>0) prior :/= Z
 
             clusterCounts :+= prior.map(x => x.toFloat)
           }
-          case _ => clusterCounts :+= DenseVector.fill(100)(0f)
+          case _ => 
         }
 
     }

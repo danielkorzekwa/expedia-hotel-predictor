@@ -25,7 +25,7 @@ case class MulticlassHistByKey[K](classNum: Int) {
     histByKeyMap.foreach {
       case (key, stats) =>
         val Z = sum(stats)
-        stats :/= Z
+        if(Z>0) stats :/= Z
     }
   }
 }
