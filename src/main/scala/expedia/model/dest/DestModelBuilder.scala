@@ -14,21 +14,20 @@ import expedia.stats.calcVectorMapProbsMutable
 import breeze.linalg._
 import java.io.File
 
-case class DestModelBuilder( testClicks: Seq[Click]) extends LazyLogging {
+case class DestModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByDest.add(click.destId, click.cluster, value = 0))
 
-
- 
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
 
   def processCluster(click: Click) = {
 
-    if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
-    else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
-
+    if (clusterHistByDest.getMap.contains(click.destId)) {
+      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
+      else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
+    }
     countryByDest += click.destId -> click.countryId
   }
 
