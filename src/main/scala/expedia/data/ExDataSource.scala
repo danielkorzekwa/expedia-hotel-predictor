@@ -10,7 +10,8 @@ case class ExDataSource(dsName:String,expediaFile: String,filter:(Click) => Bool
 
   def getAllClicks(): Seq[Click] = {
 
-    val df = new SimpleDateFormat("\"yyyy-MM-dd\"")
+		  val df = new SimpleDateFormat("\"yyyy-MM-dd\"")
+		   
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
 
     var i = 0
