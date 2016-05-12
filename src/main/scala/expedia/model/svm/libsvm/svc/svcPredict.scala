@@ -1,13 +1,14 @@
-package expedia.model.svm.libsvm
+package expedia.model.svm.libsvm.svc
 
+import breeze.linalg.{ * => * }
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
-import breeze.linalg._
+import expedia.model.svm.libsvm.toSvmNodes
 import libsvm.svm
 
-object libSvmPredict {
+object svcPredict {
 
-  def apply(z: DenseMatrix[Double], model: LibSvmModel): DenseMatrix[Double] = {
+  def apply(z: DenseMatrix[Double], model: SvcModel): DenseMatrix[Double] = {
 
     val predictionMatrix = z(*, ::).map { z =>
 
@@ -15,7 +16,7 @@ object libSvmPredict {
       val probsArray = Array.fill(model.svm_model.label.size)(0d)
       svm.svm_predict_probability(model.svm_model, nodes, probsArray)
 
-      val predictedSorted = Array.fill(model.svm_model.label.max+1)(0d)
+      val predictedSorted = Array.fill(model.svm_model.label.max + 1)(0d)
       model.svm_model.label.zipWithIndex.foreach { case (l, index) => predictedSorted(l) = probsArray(index) }
 
       DenseVector(predictedSorted)

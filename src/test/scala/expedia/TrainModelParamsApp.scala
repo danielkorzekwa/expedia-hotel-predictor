@@ -12,7 +12,7 @@ import dk.gp.util.averagePrecision
 import breeze.stats._
 import expedia.model.marketdest.MarketDestPredictionModelBuilder
 
-object TrainModelParamsApp2 extends LazyLogging {
+object TrainModelParamsApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
 

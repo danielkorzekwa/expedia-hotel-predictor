@@ -2,17 +2,16 @@ package expedia.model.svm
 
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
-import expedia.model.svm.libsvm.LibSvmModel
-import expedia.model.svm.libsvm.libSvmTrain
 import breeze.linalg._
 import scala.collection.mutable.ListBuffer
-import expedia.model.svm.libsvm.libSvmPredict
+import expedia.model.svm.libsvm.svc.svcPredict
+import expedia.model.svm.libsvm.svc.SvcModel
 
 /**
  * @param destMatrix [destId,d1,d2,...d149]
  * @trainData [dest,cluster]
  */
-case class SVMPredictionModel(destMatrix: DenseMatrix[Double], d149SvmModel: LibSvmModel) {
+case class SVMPredictionModel(destMatrix: DenseMatrix[Double], d149SvmModel: SvcModel) {
 
   private val d149ByDestMap = calcD149ByDestMap(destMatrix)
 
@@ -26,7 +25,7 @@ case class SVMPredictionModel(destMatrix: DenseMatrix[Double], d149SvmModel: Lib
     val d149Vec = d149ByDestMap.get(destId)
     d149Vec match {
       case Some(d149Vec) => {
-        val probs = libSvmPredict(d149Vec.toDenseMatrix, d149SvmModel)
+        val probs = svcPredict(d149Vec.toDenseMatrix, d149SvmModel)
         Some(probs(0, ::).t)
       }
       case None => None

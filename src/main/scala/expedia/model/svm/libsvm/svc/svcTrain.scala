@@ -1,4 +1,4 @@
-package expedia.model.svm.libsvm
+package expedia.model.svm.libsvm.svc
 
 import breeze.linalg.DenseMatrix
 import libsvm.svm_parameter
@@ -6,21 +6,21 @@ import libsvm.svm
 import breeze.linalg.DenseVector
 import libsvm.svm_problem
 import breeze.linalg._
+import expedia.model.svm.libsvm.toSvmNodes
 
-object libSvmTrain {
+object svcTrain {
 
-  def apply(x: DenseMatrix[Double], y: DenseVector[Double]): LibSvmModel = {
+  def apply(x: DenseMatrix[Double], y: DenseVector[Double]): SvcModel = {
 
     val problem = new svm_problem()
     problem.l = x.rows
     problem.x = x(*, ::).map(xVal => toSvmNodes(xVal)).toArray
     problem.y = y.toArray
     
-
     val param = getSvnParameter(problem.x(0).size)
 
     val model = svm.svm_train(problem, param)
-    LibSvmModel(model)
+    SvcModel(model)
   }
 
   private def getSvnParameter(featuresNum: Int): svm_parameter = {
