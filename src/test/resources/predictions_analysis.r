@@ -3,7 +3,7 @@ rm(list=ls())
 #Predictions analysis
 p1 <- fread('predictions_analysis_2014/predictions.csv')
 colnames(p1) <- c('p1_1','p2_1','p3_1','p4_1','p5_1','r1_1','r2_1','r3_1','r4_1','r5_1','hotel_cluster','mapk_1')
-p2 <- fread('predictions_analysis_2014/predictions_dist2.csv')
+p2 <- fread('predictions_analysis_2014/predictions2.csv')
 colnames(p2) <- c('p1_2','p2_2','p3_2','p4_2','p5_2','r1_2','r2_2','r3_2','r4_2','r5_2','hotel_cluster','mapk_2')
 
 test <- fread('data_booked/train_booked_2014_all_cols.csv')

@@ -64,6 +64,17 @@ case class MarketDestPredictionModel(
     clusterProb
   }
 
+   def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
+      val i = new AtomicInteger(0)
+    val predictionRecords = clicks.par.map { click =>
+      val predicted = predict(click)
+      predicted
+    }.toList
+
+    val predictionMatrix = DenseVector.horzcat(predictionRecords: _*).t
+    predictionMatrix
+   }
+  
   def predictTop5(clicks: Seq[Click],param:Double=0.003): DenseMatrix[Double] = {
     val i = new AtomicInteger(0)
     val predictionRecordsMarketDest = clicks.par.map { click =>

@@ -30,7 +30,7 @@ object AccuracySingleModelApp extends LazyLogging {
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks().filter(c => c.dist != -1)
 
-    val model = ClusterDist2ModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
     val top5predictions = model.predictTop5(testClicks)
     val predictedMat = model.predict(testClicks)
 
