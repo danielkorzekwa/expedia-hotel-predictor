@@ -56,11 +56,12 @@ object AccuracyApp extends LazyLogging {
     logger.info("Load clusterPredictions...")
     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
     val marketDestPred = csvread(new File("target/marketDestPred_test.csv"), skipLines = 1)
+      val marketDestPredNoUser = csvread(new File("target/marketDestPred_no_user_test.csv"), skipLines = 1)
     val clusterDistProxPred = csvread(new File("target/clusterDistProxPred_test.csv"), skipLines = 1)
 
     logger.info("combineClusterPredictions...")
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
-    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred)
+    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred,marketDestPredNoUser)
     top5predictions
   }
 

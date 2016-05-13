@@ -10,6 +10,10 @@ test <- fread('data_booked/train_booked_2014_all_cols.csv')
 
 pp <- cbind(test,p1,p2)
 
+ggplot() + geom_smooth(aes(col='p1',x=p1$p1_1,y=p1$mapk_1)) + geom_smooth(aes(col='p2',x=p2$p1_2,y=p2$mapk_2)) + 
+  scale_x_continuous(breaks=seq(0,1,0.05)
+
+                     test <- fread('data_booked/train_booked_2014_all_cols.csv')             
 pp$mapk1 <- p$mapk
 subset(pp,hotel_market==628 & user_location_city==24103 & orig_destination_distance>227.2 & orig_destination_distance < 227.8 & p1<1)
 

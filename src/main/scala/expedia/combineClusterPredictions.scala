@@ -16,7 +16,8 @@ object combineClusterPredictions extends LazyLogging {
    *
    * @return Top 5 predictions  [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(clusterDistPred: DenseMatrix[Double], marketDestPred: DenseMatrix[Double], clusterDistProxPred: DenseMatrix[Double]): DenseMatrix[Double] = {
+  def apply(clusterDistPred: DenseMatrix[Double], marketDestPred: DenseMatrix[Double], clusterDistProxPred: DenseMatrix[Double],
+            marketDestPredNoUser: DenseMatrix[Double]): DenseMatrix[Double] = {
 
     val i = new AtomicInteger(0)
     val top5ClustersSeq = (0 until clusterDistPred.rows).map { r =>
@@ -40,9 +41,9 @@ object combineClusterPredictions extends LazyLogging {
       }
 
       //fill marketDestPred
-   //  if(!prioritizedVotes.isEmpty && ((marketDestVotes(0)._2 > 0.87 && prioritizedVotes(0)._2 < 0.99) ||  ((marketDestVotes(0)._2 - prioritizedVotes(0)._2) > 0)) ) prioritizedVotes.insertAll(0,marketDestVotes)
- //   else  prioritizedVotes ++= marketDestVotes
-     
+      //  if(!prioritizedVotes.isEmpty && ((marketDestVotes(0)._2 > 0.87 && prioritizedVotes(0)._2 < 0.99) ||  ((marketDestVotes(0)._2 - prioritizedVotes(0)._2) > 0)) ) prioritizedVotes.insertAll(0,marketDestVotes)
+      //   else  prioritizedVotes ++= marketDestVotes
+
       (0 until 5).foreach { i =>
         val vote = marketDestVotes(i)
 
