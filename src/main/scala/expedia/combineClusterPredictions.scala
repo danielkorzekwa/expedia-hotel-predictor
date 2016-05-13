@@ -40,6 +40,9 @@ object combineClusterPredictions extends LazyLogging {
       }
 
       //fill marketDestPred
+   //  if(!prioritizedVotes.isEmpty && ((marketDestVotes(0)._2 > 0.87 && prioritizedVotes(0)._2 < 0.99) ||  ((marketDestVotes(0)._2 - prioritizedVotes(0)._2) > 0)) ) prioritizedVotes.insertAll(0,marketDestVotes)
+ //   else  prioritizedVotes ++= marketDestVotes
+     
       (0 until 5).foreach { i =>
         val vote = marketDestVotes(i)
 
@@ -49,9 +52,9 @@ object combineClusterPredictions extends LazyLogging {
         //          voteApk > otherApk
         //        }
 
-      //  val worseVote = prioritizedVotes.find(otherVote => ((vote._2 - otherVote._2) >0.1 && otherVote._2>0.4) || (vote._2 > 0.5 && otherVote._2 < 0.5)|| (vote._2 > 0.80 && otherVote._2 < 0.99) || otherVote._2 == 0.00)
+        //  val worseVote = prioritizedVotes.find(otherVote => ((vote._2 - otherVote._2) >0.1 && otherVote._2>0.4) || (vote._2 > 0.5 && otherVote._2 < 0.5)|| (vote._2 > 0.80 && otherVote._2 < 0.99) || otherVote._2 == 0.00)
 
-             val worseVote = prioritizedVotes.find(otherVote => (vote._2 > 0.5 && otherVote._2 < 0.5) || (vote._2 > 0.80 && otherVote._2 < 0.99) || otherVote._2 == 0.00)
+        val worseVote = prioritizedVotes.find(otherVote => (vote._2 > 0.5 && otherVote._2 < 0.5) || (vote._2 > 0.80 && otherVote._2 < 0.99) || otherVote._2 == 0.00)
         if (worseVote.isDefined) {
           prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
         } else prioritizedVotes += vote
