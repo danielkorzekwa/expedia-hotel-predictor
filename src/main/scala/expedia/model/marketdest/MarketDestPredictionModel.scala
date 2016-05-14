@@ -22,50 +22,83 @@ import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
 import expedia.model.clusterdistprox.ClusterDistProxModel
 import expedia.stats.CounterMap
 import expedia.stats.CounterMap
+import expedia.model.svm.loadClusterProbsByKeyMap
+import java.io.File
+import expedia.model.svm.loadClusterProbsByKeyMap2
 
 case class MarketDestPredictionModel(
     destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
     clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
     clusterDistProxModel: ClusterDistProxModel,
-    userCounterMap:CounterMap[Int],destCounterMap:CounterMap[Int],destMarketCounterMap:CounterMap[Tuple2[Int, Int]]) extends LazyLogging {
+    userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]]) extends LazyLogging {
+
+   val svmPredictionsByDistData1 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist.csv"), skipLines = 1)
+val svmPredictionsByDistMap1 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData1)
+   
+  val svmPredictionsByDistData2 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist2.csv"), skipLines = 1)
+val svmPredictionsByDistMap2 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData2)
+
+  
 
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
    */
   def predict(click: Click): DenseVector[Float] = {
-   // val clusterProb = clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
+    // val clusterProb = clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
 
-      val destCounts = destCounterMap.getOrElse(click.destId, 0)
-      val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
-      
-        val clusterProb =
-      if (!userCounterMap.contains(click.userId) && destModel.svmDestIds.contains(click.destId)
+    val destCounts = destCounterMap.getOrElse(click.destId, 0)
+    val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
+
+    var clusterProb =
+      if (!userCounterMap.contains(click.userId) && destModel.svmDestIds.contains(click.destId) && click.stayDays < 3
         && !(destMarketCounts < 300 || destCounts / destMarketCounts > 1.5)) {
         destModel.predict(click.destId, click.continentId, click.stayDays)
-      } else clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
-    
-    
+      } else {
+        clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
+      }
+    clusterProb = clusterProb.copy
     val clusterDistProxProbs = clusterDistProxModel.predict(click)
 
-    
-    
-     clusterDistProxProbs.foreachPair{(index,prob) => 
-       if(prob<0.0010) {
-         
-//         if(click.userLoc==24103 && click.marketId==628 && click.dist==227.5322) {
-//           println("...")
-//         }
-        clusterProb(index)=prob
+    if (click.userLoc == 24103 && click.marketId == 365 && click.dist > -1) {
+      val probVec = svmPredictionsByDistMap1(click.dist)
+      println(click)
+      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
+      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
+      println("--------------------------")
+
+      probVec.foreachPair { (index, prob) =>
+   //    if (prob < 0.005) clusterProb(index) = prob
       }
-     }
+    }
+    
+      if (click.userLoc == 24103 && click.marketId == 628 && click.dist > -1) {
+      val probVec = svmPredictionsByDistMap2(click.dist)
+      println(click)
+      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
+      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
+      println("--------------------------")
+
+      probVec.foreachPair { (index, prob) =>
+
+    //    if (prob < 0.005) clusterProb(index) = prob
+      }
+    }
+
+    clusterDistProxProbs.foreachPair { (index, prob) =>
+
+      if (click.userLoc == 24103 && click.marketId == 365  && prob < 0.008) {
+
+     //  clusterProb(index) = prob
+      }
+    }
 
     clusterProb
   }
 
-   def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
-      val i = new AtomicInteger(0)
+  def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
+    val i = new AtomicInteger(0)
     val predictionRecords = clicks.par.map { click =>
       val predicted = predict(click)
       predicted
@@ -73,9 +106,9 @@ case class MarketDestPredictionModel(
 
     val predictionMatrix = DenseVector.horzcat(predictionRecords: _*).t
     predictionMatrix
-   }
-  
-  def predictTop5(clicks: Seq[Click],param:Double=0.003): DenseMatrix[Double] = {
+  }
+
+  def predictTop5(clicks: Seq[Click], param: Double = 0.003): DenseMatrix[Double] = {
     val i = new AtomicInteger(0)
     val predictionRecordsMarketDest = clicks.par.map { click =>
       val predicted = predict(click)

@@ -55,9 +55,9 @@ object combineClusterPredictions extends LazyLogging {
 
       
            val worseVote = prioritizedVotes.find{otherVote =>
-            if (otherVote._2==1 && vote._2>0.9) {println("true");true}
-              else if (otherVote._2<0.995 && vote._2>0.7) {println("true");true}
-             else if (otherVote._2<0.51 && vote._2>0.5) {println("true");true}
+            if (otherVote._2==1 && vote._2>0.9) {true}
+              else if (otherVote._2<0.995 && vote._2>0.7) {true}
+             else if (otherVote._2<0.51 && vote._2>0.5) {true}
              else false
           }
      

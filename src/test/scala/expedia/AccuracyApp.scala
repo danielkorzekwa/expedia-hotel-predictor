@@ -30,7 +30,7 @@ object AccuracyApp extends LazyLogging {
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(c => c.dist != -1)
 
-   //  predictClustersAndSaveToFile(trainDS, testClicks)
+     predictClustersAndSaveToFile(trainDS, testClicks)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
     val top5predictions = loadPredictions()
@@ -45,7 +45,7 @@ object AccuracyApp extends LazyLogging {
     println(top5predictions.toString(20, 320))
 
     val mapk = mean(apkVector)
-    println("mapk=%.6f, test size=%d".format(mapk, top5predictions.rows))
+    println("mapk=%.8f, test size=%d".format(mapk, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
 

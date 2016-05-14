@@ -25,16 +25,24 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
+    def filter(click: Click) = true//click.userLoc == 24103 && click.marketId == 365
+
     //val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
-    val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
+    val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv", filter)
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks().filter(c => c.dist != -1)
+ 
+     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
+    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().
+    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0 && c.userLoc == 24103 && c.marketId == 365}.
+    map(_._1)
+    //.filter(c => c.userLoc == 24103 && c.marketId == 628)
+    //
 
-    val model = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
     val top5predictions = model.predictTop5(testClicks)
 
-    val predictedMat = model.predict(testClicks)
+  //  val predictedMat = model.predict(testClicks)
 
     println(top5predictions.toString(20, 320))
 
@@ -45,16 +53,16 @@ object AccuracySingleModelApp extends LazyLogging {
     val apkVector = averagePrecision(top5predictions(::, 5 to 9), actual, k = 5)
     val mapk = mean(apkVector)
 
-    val loglikValue = loglik(predictedMat.map(x => x.toDouble), actual)
+    val loglikValue = Double.NaN//loglik(predictedMat.map(x => x.toDouble), actual)
 
     println("mapk=%.6f, loglik=%6f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
 
-    val calibrationData = computeCalibrationData(top5predictions,actual)
-    logger.info("Calibration rows:" + calibrationData.rows)
-    csvwrite("target/calibration.csv",calibrationData, header = "p,actual")
-    
+  //  val calibrationData = computeCalibrationData(top5predictions, actual)
+  //  logger.info("Calibration rows:" + calibrationData.rows)
+  //  csvwrite("target/calibration.csv", calibrationData, header = "p,actual")
+
     // csvwrite("target/marketDestPred_no_user_test.csv", top5predictions, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
 
     println("analysis time=" + (System.currentTimeMillis() - now))
@@ -80,19 +88,15 @@ object AccuracySingleModelApp extends LazyLogging {
 
         if (p > 0) {
           val actualFlag = if (r == actualVal) {
-            if(p<0.6) {   
-              println(".")
-            }
             1
-          }
-          else 0
-          
+          } else 0
+
           calibrationDataBuffer += DenseVector(p, actualFlag)
         }
       }
     }
 
-    val calibrationData = DenseVector.horzcat(calibrationDataBuffer.toList :_*).t
+    val calibrationData = DenseVector.horzcat(calibrationDataBuffer.toList: _*).t
     calibrationData
   }
 
