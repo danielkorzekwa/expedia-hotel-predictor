@@ -21,7 +21,7 @@ object predictClusters extends LazyLogging {
    */
   def apply(trainDS: ExDataSource, testClicks: Seq[Click]): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
 
-    val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
+    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder()
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
     val countryModelBuilder = CountryModelBuilder(testClicks)

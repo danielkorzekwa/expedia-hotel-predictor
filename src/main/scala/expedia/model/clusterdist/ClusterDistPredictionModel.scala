@@ -40,6 +40,8 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Do
       val predictionProbs = predictedProbTuples.map(_._1.toDouble)
       val predictionRanks = predictedProbTuples.map(_._2.toDouble)
 
+  
+      
       if (i.incrementAndGet() % 5000000 == 0) logger.info("Predicting clusters: %d".format(i.get))
 
       val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
@@ -65,16 +67,16 @@ predictionMatrixClusterDist
               val topCluster = clusterVec(0)
 
               if (hotelCluster == similarClustersMatrix(topCluster.toInt, 1)) {
-                0.99f
+                0.5f
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 2)) {
-                0.99f - 0.0001
+                0.5f - 0.01
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 3)) {
-                0.99f - 0.0002
+                0.5f - 0.02
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 4)) {
-                0.99f - 0.0003
+                0.5f - 0.03
               } else 0f//Double.NaN
             } else 0f//Double.NaN
-          } else 1f - 0.0001 * clusterIndex
+          } else 1f - 0.01 * clusterIndex
           prob.toFloat
         }
         case None => {

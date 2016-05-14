@@ -17,6 +17,7 @@ import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExDataSource
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
 import dk.bayes.math.accuracy.loglik
+import scala.collection.mutable.ListBuffer
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -28,10 +29,11 @@ object AccuracySingleModelApp extends LazyLogging {
     val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks()//.filter(c => c.dist != -1)
+    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks().filter(c => c.dist != -1)
 
-    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
     val top5predictions = model.predictTop5(testClicks)
+
     val predictedMat = model.predict(testClicks)
 
     println(top5predictions.toString(20, 320))
@@ -48,10 +50,50 @@ object AccuracySingleModelApp extends LazyLogging {
     println("mapk=%.6f, loglik=%6f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
-  
-   // csvwrite("target/marketDestPred_no_user_test.csv", top5predictions, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+
+    val calibrationData = computeCalibrationData(top5predictions,actual)
+    logger.info("Calibration rows:" + calibrationData.rows)
+    csvwrite("target/calibration.csv",calibrationData, header = "p,actual")
     
+    // csvwrite("target/marketDestPred_no_user_test.csv", top5predictions, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+
     println("analysis time=" + (System.currentTimeMillis() - now))
+  }
+
+  /**
+   * @return [prob, actual(0/1)]
+   */
+  private def computeCalibrationData(top5predictions: DenseMatrix[Double], actual: DenseVector[Double]): DenseMatrix[Double] = {
+
+    //List of [prob,actual]
+    val calibrationDataBuffer = ListBuffer[DenseVector[Double]]()
+
+    (0 until top5predictions.rows).foreach { r =>
+
+      val predictionRow = top5predictions(r, ::)
+      val actualVal = actual(r)
+
+      (0 until 5).foreach { pIndex =>
+
+        val p = predictionRow(pIndex)
+        val r = predictionRow(pIndex + 5)
+
+        if (p > 0) {
+          val actualFlag = if (r == actualVal) {
+            if(p<0.6) {   
+              println(".")
+            }
+            1
+          }
+          else 0
+          
+          calibrationDataBuffer += DenseVector(p, actualFlag)
+        }
+      }
+    }
+
+    val calibrationData = DenseVector.horzcat(calibrationDataBuffer.toList :_*).t
+    calibrationData
   }
 
 }
