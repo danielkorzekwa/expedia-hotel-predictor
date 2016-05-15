@@ -65,18 +65,6 @@ case class MarketDestPredictionModel(
     clusterProb = clusterProb.copy
     val clusterDistProxProbs = clusterDistProxModel.predict(click)
 
-    //    if (click.userLoc == 24103 && click.marketId == 365 && click.dist > -1) {
-    //      val probVec = svmPredictionsByDistMap1(click.dist)
-    //      println(click)
-    //      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
-    //      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
-    //      println("--------------------------")
-    //
-    //      probVec.foreachPair { (index, prob) =>
-    //       if (prob < 0.005) clusterProb(index) = prob
-    //      }
-    //    }
-
     if (click.dist > -1) {
       val svmDistPrediction = svmDistPredictionsByLocMarket.get((click.userLoc, click.marketId))
       svmDistPrediction match {
@@ -84,27 +72,17 @@ case class MarketDestPredictionModel(
           val probVec = svmDistPrediction(click.dist)
           logger.info("svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
           probVec.foreachPair { (index, prob) =>
-            if (prob < 0.008)
+            if (prob < 0.008 && prob>0)
               clusterProb(index) = prob
           }
         }
         case None => //do nothing
       }
     }
-    //      if (click.userLoc == 24103 && click.marketId == 628 && click.dist > -1) {
-    //    val probVec = svmDistPredictionsByLocMarket((click.userLoc,click.marketId))(click.dist)
-    //        //  val probVec = svmPredictionsByDistMap2(click.dist)
-    //      println(click)
-    //      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
-    //      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
-    //      println("--------------------------")
-    //
-    //      probVec.foreachPair { (index, prob) => if (prob < 0.005) clusterProb(index) = prob       }
-    //    }
-
+   
     clusterDistProxProbs.foreachPair { (index, prob) =>
 
-      if (click.userLoc == 24103 && click.marketId == 365 && prob < 0.008) {
+      if ( prob < 0.005) {
 
         //  clusterProb(index) = prob
       }

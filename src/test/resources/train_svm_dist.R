@@ -5,7 +5,7 @@
   
   test_14 <- fread('data_booked/train_booked_2014_all_cols.csv')
   
- userLocMarketList <- sqldf('select user_location_city,hotel_market,count(*) from train_13 where is_booking > -1 group by user_location_city,hotel_market having count(*) > 100 order by count(*)')
+ userLocMarketList <- sqldf('select user_location_city,hotel_market,count(*) from train_13 where is_booking > -1 group by user_location_city,hotel_market having count(*) > 100 order by count(*) desc')
  write.csv(userLocMarketList,'svm/svm_dist100/userLocMarketList.csv',row.names=F) 
  
   for(i in 1: nrow(userLocMarketList)) {
@@ -21,7 +21,7 @@
     summary(model)
     
     test <- subset(test_14, hotel_market==market & user_location_city==userLoc & !is.na(orig_destination_distance) )
-    
+    if(nrow(test)>0) {
     svmProbs <- predict(model,test[,c('orig_destination_distance'),with=F],probability=T)
     svmProbs <- attr(svmProbs, "probabilities")
     
@@ -34,6 +34,8 @@
     svmProbs <- data.frame(svmProbs)
     svmProbs$orig_destination_distance <- test$orig_destination_distance
     write.csv(svmProbs,sprintf('svm/svm_dist100/svm_predictions_loc_%d_market_%d.csv',userLoc,market),row.names=F)
+    
+    }
   }
   
   
