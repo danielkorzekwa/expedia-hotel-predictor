@@ -38,7 +38,7 @@ case class MarketDestPredictionModel(
     val userLoc = userLocMarketList(row, 0).toInt
     val marketId = userLocMarketList(row, 1).toInt
 
-    val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)), skipLines = 1)
+    val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist1000/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)), skipLines = 1)
 
     (userLoc, marketId) -> loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData)
   }.toMap
@@ -84,7 +84,7 @@ case class MarketDestPredictionModel(
           val probVec = svmDistPrediction(click.dist)
           logger.info("svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
           probVec.foreachPair { (index, prob) =>
-            if (prob < 0.005)
+            if (prob < 0.008)
               clusterProb(index) = prob
           }
         }
