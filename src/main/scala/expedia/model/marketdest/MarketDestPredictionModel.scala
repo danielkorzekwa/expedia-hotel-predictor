@@ -25,24 +25,32 @@ case class MarketDestPredictionModel(
     clusterDistProxModel: ClusterDistProxModel,
     userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]]) extends LazyLogging {
 
-  val svmPredictionsByDistData1 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist.csv"), skipLines = 1)
-  val svmPredictionsByDistMap1 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData1)
-
-  val svmPredictionsByDistData2 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist2.csv"), skipLines = 1)
-  val svmPredictionsByDistMap2 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData2)
-
-  val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist/userLocMarketList.csv"), skipLines = 1)
+  val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist1000/userLocMarketList.csv"), skipLines = 1)
 
   //key - (userLoc,market), val Map[dist,clusterProbs]]
-  val svmDistPredictionsByLocMarket: Map[Tuple2[Int, Int], Map[Double, DenseVector[Float]]] = (0 until userLocMarketList.rows).map { row =>
-    val userLoc = userLocMarketList(row, 0).toInt
-    val marketId = userLocMarketList(row, 1).toInt
+  val svmDistPredictionsByLocMarket: Map[Tuple2[Int, Int], Map[Double, DenseVector[Float]]] = (0 until userLocMarketList.rows).
+    filter { row =>
+      val userLoc = userLocMarketList(row, 0).toInt
+      val marketId = userLocMarketList(row, 1).toInt
+      new File("c:/perforce/daniel/ex/svm/svm_dist1000/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)).exists()
+    }.
+    map { row =>
+      val userLoc = userLocMarketList(row, 0).toInt
+      val marketId = userLocMarketList(row, 1).toInt
 
-    val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist1000/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)), skipLines = 1)
+      val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist1000/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)), skipLines = 1)
 
-    (userLoc, marketId) -> loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData)
-  }.toMap
+      val svmMap = try {
+        loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData)
+      } catch {
+        case e: Exception => {
+          Map[Double, DenseVector[Float]]()
+        }
+      }
 
+      (userLoc, marketId) -> svmMap
+    }.filter(_._2.size > 0).toMap
+  println(svmDistPredictionsByLocMarket.size)
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
@@ -70,19 +78,19 @@ case class MarketDestPredictionModel(
       svmDistPrediction match {
         case Some(svmDistPrediction) => {
           val probVec = svmDistPrediction(click.dist)
-          logger.info("svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
+
           probVec.foreachPair { (index, prob) =>
-            if (prob < 0.008 && prob>0)
-              clusterProb(index) = prob
+            if (prob < 0.008 && prob > 0) clusterProb(index) = prob
+
           }
         }
         case None => //do nothing
       }
     }
-   
+
     clusterDistProxProbs.foreachPair { (index, prob) =>
 
-      if ( prob < 0.005) {
+      if (prob < 0.005) {
 
         //  clusterProb(index) = prob
       }
