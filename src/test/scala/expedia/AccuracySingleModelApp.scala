@@ -34,7 +34,7 @@ object AccuracySingleModelApp extends LazyLogging {
  
      val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().
-    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0 && c.userLoc == 24103 && c.marketId == 365}.
+    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0 }.
     map(_._1)
     //.filter(c => c.userLoc == 24103 && c.marketId == 628)
     //
@@ -55,7 +55,7 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val loglikValue = Double.NaN//loglik(predictedMat.map(x => x.toDouble), actual)
 
-    println("mapk=%.6f, loglik=%6f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
+    println("mapk=%.8f, loglik=%6f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
 

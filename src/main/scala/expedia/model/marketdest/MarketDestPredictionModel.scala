@@ -1,30 +1,22 @@
 package expedia.model.marketdest
 
-import breeze.linalg.DenseVector
-import breeze.linalg.DenseMatrix
-import breeze.linalg._
-import com.typesafe.scalalogging.slf4j.LazyLogging
-import java.util.concurrent.atomic.AtomicInteger
-import scala.collection._
-import expedia.model.svm.loadClusterProbsByDestMap
-import expedia.model.svm.SVMPredictionModel
-import expedia.data.ExDataSource
-import expedia.data.Click
-import expedia.stats.CounterMap
-import expedia.model.dest.DestModelBuilder
-import expedia.model.dest.DestModel
-import expedia.stats.MulticlassHistByKey
-import expedia.model.country.CountryModelBuilder
-import expedia.model.country.CountryModelBuilder
-import expedia.model.country.CountryModelBuilder
-import expedia.model.clusterdist.ClusterDistPredictionModel
-import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
-import expedia.model.clusterdistprox.ClusterDistProxModel
-import expedia.stats.CounterMap
-import expedia.stats.CounterMap
-import expedia.model.svm.loadClusterProbsByKeyMap
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.collection._
+
+import com.typesafe.scalalogging.slf4j.LazyLogging
+
+import breeze.linalg._
+import breeze.linalg.DenseMatrix
+import breeze.linalg.DenseVector
+import expedia.data.Click
+import expedia.model.clusterdistprox.ClusterDistProxModel
+import expedia.model.dest.DestModel
 import expedia.model.svm.loadClusterProbsByKeyMap2
+import expedia.stats.CounterMap
+import expedia.stats.CounterMap
+import expedia.stats.CounterMap
 
 case class MarketDestPredictionModel(
     destModel: DestModel,
@@ -33,18 +25,30 @@ case class MarketDestPredictionModel(
     clusterDistProxModel: ClusterDistProxModel,
     userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]]) extends LazyLogging {
 
-   val svmPredictionsByDistData1 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist.csv"), skipLines = 1)
-val svmPredictionsByDistMap1 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData1)
-   
-  val svmPredictionsByDistData2 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist2.csv"), skipLines = 1)
-val svmPredictionsByDistMap2 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData2)
+  val svmPredictionsByDistData1 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist.csv"), skipLines = 1)
+  val svmPredictionsByDistMap1 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData1)
 
-  
+  val svmPredictionsByDistData2 = csvread(new File("c:/perforce/daniel/ex/svm/svm_predictions_dist2.csv"), skipLines = 1)
+  val svmPredictionsByDistMap2 = loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData2)
+
+  val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist/userLocMarketList.csv"), skipLines = 1)
+
+  //key - (userLoc,market), val Map[dist,clusterProbs]]
+  val svmDistPredictionsByLocMarket: Map[Tuple2[Int, Int], Map[Double, DenseVector[Float]]] = (0 until userLocMarketList.rows).map { row =>
+    val userLoc = userLocMarketList(row, 0).toInt
+    val marketId = userLocMarketList(row, 1).toInt
+
+    val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)), skipLines = 1)
+
+    (userLoc, marketId) -> loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData)
+  }.toMap
 
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
    */
+
+  var svmDistProbCounter = new AtomicInteger(0)
   def predict(click: Click): DenseVector[Float] = {
     // val clusterProb = clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
 
@@ -61,36 +65,48 @@ val svmPredictionsByDistMap2 = loadClusterProbsByKeyMap2[Double](svmPredictionsB
     clusterProb = clusterProb.copy
     val clusterDistProxProbs = clusterDistProxModel.predict(click)
 
-    if (click.userLoc == 24103 && click.marketId == 365 && click.dist > -1) {
-      val probVec = svmPredictionsByDistMap1(click.dist)
-      println(click)
-      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
-      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
-      println("--------------------------")
+    //    if (click.userLoc == 24103 && click.marketId == 365 && click.dist > -1) {
+    //      val probVec = svmPredictionsByDistMap1(click.dist)
+    //      println(click)
+    //      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
+    //      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
+    //      println("--------------------------")
+    //
+    //      probVec.foreachPair { (index, prob) =>
+    //       if (prob < 0.005) clusterProb(index) = prob
+    //      }
+    //    }
 
-      probVec.foreachPair { (index, prob) =>
-   //    if (prob < 0.005) clusterProb(index) = prob
+    if (click.dist > -1) {
+      val svmDistPrediction = svmDistPredictionsByLocMarket.get((click.userLoc, click.marketId))
+      svmDistPrediction match {
+        case Some(svmDistPrediction) => {
+          val probVec = svmDistPrediction(click.dist)
+          logger.info("svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
+          probVec.foreachPair { (index, prob) =>
+            if (prob < 0.005)
+              clusterProb(index) = prob
+          }
+        }
+        case None => //do nothing
       }
     }
-    
-      if (click.userLoc == 24103 && click.marketId == 628 && click.dist > -1) {
-      val probVec = svmPredictionsByDistMap2(click.dist)
-      println(click)
-      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
-      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
-      println("--------------------------")
-
-      probVec.foreachPair { (index, prob) =>
-
-    //    if (prob < 0.005) clusterProb(index) = prob
-      }
-    }
+    //      if (click.userLoc == 24103 && click.marketId == 628 && click.dist > -1) {
+    //    val probVec = svmDistPredictionsByLocMarket((click.userLoc,click.marketId))(click.dist)
+    //        //  val probVec = svmPredictionsByDistMap2(click.dist)
+    //      println(click)
+    //      println(probVec.toArray.map(x => "%.3f".format(x)).toList)
+    //      println(clusterDistProxProbs.toArray.map(x => "%.3f".format(x)).toList)
+    //      println("--------------------------")
+    //
+    //      probVec.foreachPair { (index, prob) => if (prob < 0.005) clusterProb(index) = prob       }
+    //    }
 
     clusterDistProxProbs.foreachPair { (index, prob) =>
 
-      if (click.userLoc == 24103 && click.marketId == 365  && prob < 0.008) {
+      if (click.userLoc == 24103 && click.marketId == 365 && prob < 0.008) {
 
-     //  clusterProb(index) = prob
+        //  clusterProb(index) = prob
       }
     }
 
