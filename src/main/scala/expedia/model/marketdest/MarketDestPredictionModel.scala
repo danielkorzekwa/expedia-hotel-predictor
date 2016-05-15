@@ -81,7 +81,7 @@ case class MarketDestPredictionModel(
 
           probVec.foreachPair { (index, prob) =>
             if (prob < 0.008 && prob > 0) clusterProb(index) = prob
-
+//clusterProb(index) = prob
           }
         }
         case None => //do nothing

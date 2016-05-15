@@ -1,6 +1,7 @@
 not tested:
+svmDist
 ... (1976304 total)
-mapk=0.463717, test size=1976304
+mapk=0.46374495, test size=19763044
 
 not tested:
 clusterDist2Model + destProxModel + svm + marketPrior for destmarketuser model + dest/market/user + else if (destCounts/destMarketCounts>1.5 )  + weighted clicks(dest,user) + (market,dest),hotel continent + clusterDistSimTuned + clusterDistSim + user priorCounts*10 + Used SVM as prior for clusterByDEst + Use clicks for clusterStatMap/clusterStatByDestMapNoPrior/userDestStatsMap + sorted by counts clustersByDistance + svm + hierarchical bayes: all/fest/userId + dataleak(src_dest_distance)(all clusters on the same distance have prob=1)
