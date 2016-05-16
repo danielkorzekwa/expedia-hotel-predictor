@@ -47,6 +47,7 @@ case class ExDataSource(dsName:String,expediaFile: String,filter:(Click) => Bool
   private def createClick(l: String, df: SimpleDateFormat): Click = {
     val lArray = l.split(",")
 
+    val userRegion = lArray(4).toInt
     val userLoc = lArray(5).toInt
     val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
     val userId = lArray(7).toInt
@@ -60,7 +61,7 @@ case class ExDataSource(dsName:String,expediaFile: String,filter:(Click) => Bool
     val cluster = if (lArray.size == 24) lArray(23).toInt else -1
 
     val stayDays = ((checkout-checkin) / (1000L*60*60*24)).toInt
-    val click = Click(userLoc, dist, userId, destId, isBooking, hotelContinent, countryId, market, stayDays,cluster)
+    val click = Click(userRegion,userLoc, dist, userId, destId, isBooking, hotelContinent, countryId, market, stayDays,cluster)
     click
   }
 }

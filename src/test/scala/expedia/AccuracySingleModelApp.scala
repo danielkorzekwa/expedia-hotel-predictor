@@ -25,7 +25,7 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    def filter(click: Click) = true//click.userLoc == 24103 && click.marketId == 365
+    def filter(click: Click) =  click.marketId == 628 && click.userRegion==442
 
     //val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
     val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv", filter)
@@ -34,7 +34,7 @@ object AccuracySingleModelApp extends LazyLogging {
  
      val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().
-    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0  }.
+    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0 && c.marketId == 628 && c.userRegion==442}.
     map(_._1)
     //.filter(c => c.userLoc == 24103 && c.marketId == 628)
     //
