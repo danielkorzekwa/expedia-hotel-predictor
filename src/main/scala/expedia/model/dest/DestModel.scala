@@ -15,10 +15,10 @@ import expedia.model.svm.loadClusterProbsByKeyMap
 import expedia.stats.MulticlassHistByKey
 
 case class DestModel(
-    clusterHistByDest: MulticlassHistByKey[Int]) {
+    clusterHistByDest: MulticlassHistByKey[Int], clusterHistByDestReg174: MulticlassHistByKey[Int]) {
 
   val svmDestIds = List(8250, 8267, 8253, 8279, 12206, 8745, 8268, 8230, 8791, 8260, 8254)
-//  val svmDestIds = Set(8250, 8267,  8253,  8279, 12206,  8745,  8268,  8230,  8791,  8260,  8254 , 8291 , 7635, 8223 , 8746 , 8220,  8788,  8242 , 8278 , 8819 ,468 ,26022 , 8281 , 8213, 669 , 8288 , 8282 , 8287 ,11353 , 8739 ,12603 , 8747, 11439 , 8266 ,12233 , 8818 , 8255, 12175)
+  //  val svmDestIds = Set(8250, 8267,  8253,  8279, 12206,  8745,  8268,  8230,  8791,  8260,  8254 , 8291 , 7635, 8223 , 8746 , 8220,  8788,  8242 , 8278 , 8819 ,468 ,26022 , 8281 , 8213, 669 , 8288 , 8282 , 8287 ,11353 , 8739 ,12603 , 8747, 11439 , 8266 ,12233 , 8818 , 8255, 12175)
 
   //key - destId, val Map[stayDays,clusterProbs]]
   val clusterProbsByStaydays: Map[Int, Map[Int, DenseVector[Float]]] = svmDestIds.map { destId =>
@@ -35,9 +35,15 @@ case class DestModel(
 
   }
 
-  def predict(destId: Int, continentId: Int): DenseVector[Float] = {
+  def predictForUserReg(destId:Int,continentId:Int,userReg:Int,marketId:Int): DenseVector[Float] = {
 
-    clusterHistByDest.getMap(destId)
+    if (userReg == 174 && destId==8250 && marketId==628) {
+      clusterHistByDestReg174.getMap(destId)
+    } else {
+      clusterHistByDest.getMap(destId)
+    }
+    
+  //   clusterHistByDest.getMap(destId)
 
   }
 }
@@ -54,7 +60,7 @@ object DestModel {
       destModelBuilder.processCluster(click)
 
     }
-    ExDataSource(dsName="trainDS",expediaTrainFile).foreach { click => onClick(click) }
+    ExDataSource(dsName = "trainDS", expediaTrainFile).foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
     val destModel = destModelBuilder.create(countryModel)

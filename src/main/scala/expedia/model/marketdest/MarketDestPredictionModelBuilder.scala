@@ -51,6 +51,9 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
+   private val regionByUser: mutable.Map[Int, Int] = mutable.Map()
+  testClicks.foreach(click => regionByUser += click.userId -> click.userRegion)
+  
   private val avgDaysStayByDestCust: mutable.Map[Tuple2[Int, Int], OnlineAvg] = mutable.Map()
 
   private val userCounterMap = CounterMap[Int]()
@@ -69,7 +72,8 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
     countryByMarket += click.marketId -> click.countryId
     continentByDest += click.destId -> click.continentId
-
+regionByUser += click.userId -> click.userRegion
+    
     val destCustAvgStayDays = avgDaysStayByDestCust.getOrElseUpdate((click.destId, click.userId), OnlineAvg())
     destCustAvgStayDays.add(click.stayDays)
 
@@ -97,7 +101,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
         if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterProbs :+= 1f * clusterHistMarket.getMap(marketId)
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 5f * destModel.predict(destId, continentByDest(destId))
+        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterProbs :+= 5f * destModel.predictForUserReg(destId, continentByDest(destId),-1,marketId)
         else clusterProbs :+= 1f * clusterHistMarket.getMap(marketId)
     }
     logger.info("Add prior stats to clusterHistByDestMarket...done")
@@ -111,7 +115,12 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     val bigDestsCounter = CounterMap[Int]()
 
     clusterHistByDestMarketUser.getMap.foreach {
+     
       case ((destId, marketId, userId), userClusterProbs) =>
+        
+         if(destId==8250) {
+        println("---")
+      }
         
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
@@ -122,11 +131,11 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
         }
         else {
           val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
-            case Some(avgStayDays) if(destModel.svmDestIds.contains(destId) && avgStayDays.avg().toInt<3)  => {
+            case Some(avgStayDays) if(destModel.svmDestIds.contains(destId) && avgStayDays.avg().toInt<3 && !(regionByUser(userId)==174 && destId==8250 && marketId==628))  => {
               val custStayDays = avgStayDays.avg().toInt
               userClusterProbs :+= 7f * destModel.predict(destId, continentByDest(destId), custStayDays)
             }
-            case _ => userClusterProbs :+= 7f * destModel.predict(destId, continentByDest(destId))
+            case _ => userClusterProbs :+= 7f * destModel.predictForUserReg(destId, continentByDest(destId),regionByUser(userId),marketId)
           }
         }
 
