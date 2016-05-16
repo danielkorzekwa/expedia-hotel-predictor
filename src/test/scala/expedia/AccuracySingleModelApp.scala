@@ -34,7 +34,7 @@ object AccuracySingleModelApp extends LazyLogging {
  
      val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().
-    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0 && c.userLoc == 24103 && c.marketId == 365 && c.destId==8254 }.
+    zipWithIndex.filter{ case (c,index) => clusterDistPred(index,0)==0  }.
     map(_._1)
     //.filter(c => c.userLoc == 24103 && c.marketId == 628)
     //

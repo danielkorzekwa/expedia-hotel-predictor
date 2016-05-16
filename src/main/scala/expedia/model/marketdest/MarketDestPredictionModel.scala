@@ -25,20 +25,21 @@ case class MarketDestPredictionModel(
     clusterDistProxModel: ClusterDistProxModel,
     userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]]) extends LazyLogging {
 
-  val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist1000/userLocMarketList.csv"), skipLines = 1)
+  val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/userLocMarketList.csv"), skipLines = 1)
 
-  //key - (userLoc,market), val Map[dist,clusterProbs]]
-  val svmDistPredictionsByLocMarket: Map[Tuple2[Int, Int], Map[Double, DenseVector[Float]]] = (0 until userLocMarketList.rows).
+  //key - (userLoc,market,destId), val Map[dist,clusterProbs]]
+  val svmDistPredictionsByLocMarketDist: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Float]]] = (0 until userLocMarketList.rows).
     filter { row =>
       val userLoc = userLocMarketList(row, 0).toInt
       val marketId = userLocMarketList(row, 1).toInt
-      new File("c:/perforce/daniel/ex/svm/svm_dist1000/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)).exists()
+      val destId = userLocMarketList(row, 2).toInt
+      new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
     }.
     map { row =>
       val userLoc = userLocMarketList(row, 0).toInt
       val marketId = userLocMarketList(row, 1).toInt
-
-      val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dist1000/svm_predictions_loc_%d_market_%d.csv".format(userLoc, marketId)), skipLines = 1)
+      val destId = userLocMarketList(row, 2).toInt
+      val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)), skipLines = 1)
 
       val svmMap = try {
         loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData)
@@ -48,9 +49,10 @@ case class MarketDestPredictionModel(
         }
       }
 
-      (userLoc, marketId) -> svmMap
+      (userLoc, marketId,destId) -> svmMap
     }.filter(_._2.size > 0).toMap
-  println(svmDistPredictionsByLocMarket.size)
+    
+   
   /**
    * @param data [user_id,dest]
    * @param hotelCluster
@@ -74,19 +76,23 @@ case class MarketDestPredictionModel(
     val clusterDistProxProbs = clusterDistProxModel.predict(click)
 
     if (click.dist > -1) {
-      val svmDistPrediction = svmDistPredictionsByLocMarket.get((click.userLoc, click.marketId))
+      val svmDistPrediction = svmDistPredictionsByLocMarketDist.get((click.userLoc, click.marketId,click.destId))
       svmDistPrediction match {
         case Some(svmDistPrediction) => {
+
+          logger.info(" svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
           val probVec = svmDistPrediction(click.dist)
 
           probVec.foreachPair { (index, prob) =>
-            if (prob < 0.008 && prob > 0) clusterProb(index) = prob
-//clusterProb(index) = prob
+          //       if (prob < 0.008 && prob > 0) clusterProb(index) = prob
+            clusterProb(index) = prob
           }
         }
         case None => //do nothing
       }
     }
+    
+
 
     clusterDistProxProbs.foreachPair { (index, prob) =>
 

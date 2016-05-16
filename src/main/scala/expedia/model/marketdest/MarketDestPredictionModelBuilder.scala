@@ -73,11 +73,11 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     val destCustAvgStayDays = avgDaysStayByDestCust.getOrElseUpdate((click.destId, click.userId), OnlineAvg())
     destCustAvgStayDays.add(click.stayDays)
 
-//    val key = (click.destId, click.marketId, click.userId)
-//    if (clusterHistByDestMarketUser.getMap.contains(key)) {
-//      if (click.isBooking == 1) clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster)
-//      else clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0.6f)
-//    }
+    val key = (click.destId, click.marketId, click.userId)
+    if (clusterHistByDestMarketUser.getMap.contains(key)) {
+      if (click.isBooking == 1) clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster)
+      else clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0.6f)
+    }
 
     userCounterMap.add(click.userId)
   }
