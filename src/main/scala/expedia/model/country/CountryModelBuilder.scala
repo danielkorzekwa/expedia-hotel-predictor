@@ -2,7 +2,6 @@ package expedia.model.country
 
 import expedia.data.Click
 import expedia.stats.MulticlassHistByKey
-import expedia.stats.calcVectorMapProbsMutable
 import scala.collection._
 
 case class CountryModelBuilder(testClicks: Seq[Click]) {
@@ -27,10 +26,10 @@ case class CountryModelBuilder(testClicks: Seq[Click]) {
 
   def create(): CountryModel = {
 
-    calcVectorMapProbsMutable(clusterHistByContinent.getMap.toMap)
+   clusterHistByContinent.normalise()
 
     clusterHistByCountry.getMap.foreach { case (countryId, clusterCounts) => clusterCounts :+= clusterHistByContinent.getMap(continentByCountry(countryId)) }
-    calcVectorMapProbsMutable(clusterHistByCountry.getMap.toMap)
+   clusterHistByCountry.normalise()
 
     CountryModel(clusterHistByCountry)
   }

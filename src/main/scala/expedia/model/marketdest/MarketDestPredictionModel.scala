@@ -2,11 +2,8 @@ package expedia.model.marketdest
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.collection._
-
 import com.typesafe.scalalogging.slf4j.LazyLogging
-
 import breeze.linalg._
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
@@ -17,13 +14,14 @@ import expedia.model.svm.loadClusterProbsByKeyMap2
 import expedia.stats.CounterMap
 import expedia.stats.CounterMap
 import expedia.stats.CounterMap
+import expedia.model.regdest.RegDestModel
 
 case class MarketDestPredictionModel(
     destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
     clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
-    clusterDistProxModel: ClusterDistProxModel,
-    userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]]) extends LazyLogging {
+    userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+    regDestModel:RegDestModel) extends LazyLogging {
 
   val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/userLocMarketList.csv"), skipLines = 1)
 
@@ -69,11 +67,11 @@ case class MarketDestPredictionModel(
       if (!userCounterMap.contains(click.userId) && destModel.svmDestIds.contains(click.destId) && click.stayDays < 3
         && !(destMarketCounts < 300 || destCounts / destMarketCounts > 1.5)) {
         destModel.predict(click.destId, click.continentId, click.stayDays)
-      } else {
+      } 
+      else {
         clusterHistByDestMarketUser((click.destId, click.marketId, click.userId))
       }
     clusterProb = clusterProb.copy
-    val clusterDistProxProbs = clusterDistProxModel.predict(click)
 
     if (click.dist > -1) {
       val svmDistPrediction = svmDistPredictionsByLocMarketDist.get((click.userLoc, click.marketId,click.destId))
@@ -94,13 +92,6 @@ case class MarketDestPredictionModel(
     
 
 
-    clusterDistProxProbs.foreachPair { (index, prob) =>
-
-      if (prob < 0.005) {
-
-        //  clusterProb(index) = prob
-      }
-    }
 
     clusterProb
   }

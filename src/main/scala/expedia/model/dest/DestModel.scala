@@ -13,9 +13,10 @@ import expedia.data.ExDataSource
 import expedia.model.country.CountryModelBuilder
 import expedia.model.svm.loadClusterProbsByKeyMap
 import expedia.stats.MulticlassHistByKey
+import scala.collection._
 
 case class DestModel(
-    clusterHistByDest: MulticlassHistByKey[Int], clusterHistByDestReg174: MulticlassHistByKey[Int]) {
+    clusterHistByDest: MulticlassHistByKey[Int]) {
 
   val svmDestIds = List(8250, 8267, 8253, 8279, 12206, 8745, 8268, 8230, 8791, 8260, 8254)
   //  val svmDestIds = Set(8250, 8267,  8253,  8279, 12206,  8745,  8268,  8230,  8791,  8260,  8254 , 8291 , 7635, 8223 , 8746 , 8220,  8788,  8242 , 8278 , 8819 ,468 ,26022 , 8281 , 8213, 669 , 8288 , 8282 , 8287 ,11353 , 8739 ,12603 , 8747, 11439 , 8266 ,12233 , 8818 , 8255, 12175)
@@ -30,20 +31,17 @@ case class DestModel(
 
   def predict(destId: Int, continentId: Int, stayDays: Int): DenseVector[Float] = {
 
-    val clusterProbs = clusterProbsByStaydays(destId).getOrElse(stayDays, clusterHistByDest.getMap(destId))
+   val clusterProbs = clusterProbsByStaydays(destId).getOrElse(stayDays, clusterHistByDest.getMap(destId))
+   
     clusterProbs
+    
+    // clusterHistByDest.getMap(destId)
 
   }
 
   def predictForUserReg(destId:Int,continentId:Int,userReg:Int,marketId:Int): DenseVector[Float] = {
-
-    if (userReg == 174 && destId==8250 && marketId==628) {
-      clusterHistByDestReg174.getMap(destId)
-    } else {
-      clusterHistByDest.getMap(destId)
-    }
     
-  //   clusterHistByDest.getMap(destId)
+     clusterHistByDest.getMap(destId)
 
   }
 }

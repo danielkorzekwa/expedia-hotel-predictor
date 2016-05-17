@@ -10,8 +10,10 @@ geom_histogram(aes(col='91',x=ud2$orig_destination_distance),binwidth=0.1,alpha=
 scale_x_continuous(breaks=seq(0,50,5)) +
 coord_cartesian(xlim=c(0,50))
 
-s <- subset(pp , user_location_region==174 & srch_destination_id==8250 & hotel_market==628 )
+
+s <- subset(train_13 , user_location_region== 340 & srch_destination_id==8250)
 sqldf('select hotel_cluster,count(*) as c from s group by hotel_cluster order by c desc limit 10')
+
 
 
 

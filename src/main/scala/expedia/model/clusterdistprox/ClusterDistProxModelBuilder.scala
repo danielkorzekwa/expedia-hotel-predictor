@@ -2,11 +2,10 @@ package expedia.model.clusterdistprox
 
 import expedia.data.Click
 import expedia.stats.MulticlassHistByKey
-import expedia.stats.calcVectorMapProbsMutable
-import expedia.stats.calcVectorProbsMutable
 import scala.collection._
 import breeze.linalg.DenseVector
 import breeze.numerics._
+import expedia.stats.calcVectorProbsMutable
 
 case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
 
