@@ -32,7 +32,7 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
   def foreach(onClick: (Click) => Unit) = {
 
     logger.info("Processing %s...".format(dsName))
-    val df = new SimpleDateFormat("yyyy-MM-dd")
+    val df = new SimpleDateFormat("\"yyyy-MM-dd\"")
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
 
     var i = 0
