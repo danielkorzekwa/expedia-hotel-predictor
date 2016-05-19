@@ -56,7 +56,6 @@ object combineClusterPredictions extends LazyLogging {
           prioritizedVotes.insert(prioritizedVotes.indexOf(worseVote.get), vote)
         } else prioritizedVotes += vote
         
-//       prioritizedVotes += vote
       }
 
       //fill clusterDistPredProx

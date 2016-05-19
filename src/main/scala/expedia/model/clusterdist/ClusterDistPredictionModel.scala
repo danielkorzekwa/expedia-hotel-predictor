@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * @param clusterByDistMap Map[(userLoc,dist,market),[all clusters for the key]]
  */
-case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int,Int,Int], DenseVector[Int]]) extends LazyLogging {
+case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int, Int, Int], DenseVector[Int]]) extends LazyLogging {
 
   logger.info("DistClusterMap size=%d".format(topClusterByDistMap.size))
 
@@ -18,9 +18,8 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int,Int,In
   val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
   val similarClustersMatrix = calcSimilarClustersMap(clusterCoExistMat)
 
-  
-   def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
-      val i = new AtomicInteger(0)
+  def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
+    val i = new AtomicInteger(0)
     val predictionRecords = clicks.par.map { click =>
       val predicted = predict(click.userLoc, click.dist, click.marketId)
       predicted
@@ -28,10 +27,10 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int,Int,In
 
     val predictionMatrix = DenseVector.horzcat(predictionRecords: _*).t
     predictionMatrix
-   }
-  
+  }
+
   def predictTop5(clicks: Seq[Click]): DenseMatrix[Double] = {
-     val i = new AtomicInteger(0)
+    val i = new AtomicInteger(0)
     val predictionRecordsClusterDist = clicks.par.map { click =>
       val predicted = predict(click.userLoc, click.dist, click.marketId)
 
@@ -40,8 +39,6 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int,Int,In
       val predictionProbs = predictedProbTuples.map(_._1.toDouble)
       val predictionRanks = predictedProbTuples.map(_._2.toDouble)
 
-  
-      
       if (i.incrementAndGet() % 5000000 == 0) logger.info("Predicting clusters: %d".format(i.get))
 
       val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
@@ -49,9 +46,9 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int,Int,In
     }.toList
 
     val predictionMatrixClusterDist = DenseVector.horzcat(predictionRecordsClusterDist: _*).t
-predictionMatrixClusterDist
+    predictionMatrixClusterDist
   }
-  
+
   def predict(userLoc: Int, dist: Double, market: Int): DenseVector[Float] = {
 
     val clusterProbs = DenseVector.tabulate[Float](100) { hotelCluster =>
@@ -63,7 +60,7 @@ predictionMatrixClusterDist
           val clusterIndex = clusterVec.toArray.toList.indexOf(hotelCluster)
           val prob = if (clusterIndex == -1d) {
 
-            if (clusterVec.size > 0 && clusterVec.size <= 2) {
+            if (clusterVec.size > 0 && clusterVec.size <= 4) {
               val topCluster = clusterVec(0)
 
               if (hotelCluster == similarClustersMatrix(topCluster.toInt, 1)) {
@@ -74,23 +71,18 @@ predictionMatrixClusterDist
                 0.5f - 0.02
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 4)) {
                 0.5f - 0.03
-              } else 0f//Double.NaN
-            } else 0f//Double.NaN
+              } else 0f
+            } else 0f
           } else 1f - 0.01 * clusterIndex
           prob.toFloat
         }
-        case None => {
-        //  if(userLoc==24103 && market==628 && dist>227.2 && dist<227.8) {
-        //    println(key)
-        //  }
-          0f//Double.NaN
-        }
+        case None => 0f
       }
 
       prob2
 
     }
 
-    clusterProbs 
+    clusterProbs
   }
 }
