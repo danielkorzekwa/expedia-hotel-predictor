@@ -8,16 +8,24 @@ import breeze.numerics._
 import dk.gp.gpr.predict
 import dk.gp.cov.CovSEiso
 import dk.gp.gpr.gpr
+import expedia.data.ExDataSource
 
 object GpTestApp {
 
   def main(args: Array[String]): Unit = {
 
+    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == 23 || c.cluster == 21) && c.checkinMonth > -1 }
+
+    val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
+    val dataY = DenseVector(filteredClicks.map(c => if (c.cluster == 23) 1.0 else 0).toArray)
+
     val data = csvread(new File("src/test/resources/gptest/gp_19_vs_21.csv"), skipLines = 1)
 
-    val dataX = data(::, 0 to 0)
-    val dataY = data(::, 1)
+    //  val dataX = data(::, 0 to 0)
+    //   val dataY = data(::, 1)
 
+    println("trainning set size = " + dataX.rows)
     val covFunc = CovSEiso()
     val covFuncParams = DenseVector[Double](log(1), log(1))
     val noiseLogStdDev = log(0.5d)
@@ -26,9 +34,9 @@ object GpTestApp {
 
     val model = gpr(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev, mean)
 
-    val xTest = DenseVector.rangeD(1d,13,1).toDenseMatrix.t
+    val xTest = DenseVector.rangeD(1d, 13, 1).toDenseMatrix.t
     val predicted = predict(xTest, model)
 
-    println(DenseMatrix.horzcat(xTest,predicted))
+    println(DenseMatrix.horzcat(xTest, predicted))
   }
 }

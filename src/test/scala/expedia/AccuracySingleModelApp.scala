@@ -38,9 +38,9 @@ object AccuracySingleModelApp extends LazyLogging {
     // val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val expediaTestFile = "c:/perforce/daniel/ex/segments/dest_12217/test_2013_dest12217_booked_only.csv"
 
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().filter { c => c.cluster == 19 || c.cluster == 21 }
+    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks()//.filter { c => c.cluster == 19 || c.cluster == 21 }
 
-    val model = DestModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
     val top5predictions = model.predictTop5(testClicks)
 
     //  val predictedMat = model.predict(testClicks)

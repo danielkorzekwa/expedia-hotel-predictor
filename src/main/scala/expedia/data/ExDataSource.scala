@@ -5,6 +5,7 @@ import scala.io.Source
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.text.SimpleDateFormat
 import java.util.TimeZone
+import org.joda.time.LocalDate
 
 case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => Boolean = (click) => true) extends LazyLogging {
 
@@ -53,6 +54,8 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
     val userLoc = lArray(5).toInt
     val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
     val userId = lArray(7).toInt
+
+    val checkinDate = if (lArray(11).size > 2) Some(df.parse(lArray(11))) else None
     val checkin = if (lArray(11).size > 2) df.parse(lArray(11)).getTime else 0
     val checkout = if (lArray(12).size > 2) df.parse(lArray(12)).getTime else 0
     val destId = lArray(16).toInt
@@ -63,7 +66,8 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
     val cluster = if (lArray.size == 24) lArray(23).toInt else -1
 
     val stayDays = ((checkout - checkin) / (1000L * 60 * 60 * 24)).toInt
-    val click = Click(userRegion, userLoc, dist, userId, destId, isBooking, hotelContinent, countryId, market, stayDays, cluster)
+    val checkinMonth = if (checkinDate.isDefined) new LocalDate(checkinDate.get).getMonthOfYear else -1
+    val click = Click(userRegion, userLoc, dist, userId, destId, isBooking, hotelContinent, countryId, market, stayDays, checkinMonth,cluster)
     click
   }
 }

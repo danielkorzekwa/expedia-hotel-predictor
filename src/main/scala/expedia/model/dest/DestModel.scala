@@ -15,6 +15,11 @@ import scala.collection._
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.util.getTop5Clusters
+import dk.gp.gpr.GprModel
+import breeze.numerics._
+import dk.gp.cov.CovSEiso
+import dk.gp.gpr.predict
+import dk.gp.gpr.gpr
 
 case class DestModel(
     clusterHistByDest: MulticlassHistByKey[Int]) extends LazyLogging {
@@ -47,17 +52,48 @@ case class DestModel(
   }
 
   def predictTop5(clicks: Seq[Click]): DenseMatrix[Double] = {
-    val i = new AtomicInteger(0)
-    val predictionRecords = clicks.par.map { click =>
-      val predicted = predict(click.destId)
 
+    val gpModel = buildGPModel()
+    var a = new AtomicInteger(0)
+    val i = new AtomicInteger(0)
+    val predictionRecords = clicks.map { click =>
+   
+      val predicted = predict(click.destId).copy
+       if(click.destId==12217) {
+      val predictedGP = dk.gp.gpr.predict(DenseMatrix(click.checkinMonth.toDouble), gpModel)(0, 0)
+
+      if (predictedGP < 0.5) {
+        val old19 = predicted(19)
+        val old21 = predicted(21)
+        predicted(21) = old19
+        predicted(19) = old21
+      }
+    }
       val record = getTop5Clusters(predicted)
+
       if (i.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(i.get))
       record
     }.toList
 
     val predictionMatrixMarketDest = DenseVector.horzcat(predictionRecords: _*).t
     predictionMatrixMarketDest
+  }
+
+  def buildGPModel(): GprModel = {
+    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == 19 || c.cluster == 21) && c.checkinMonth > -1 }
+
+    val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
+    val dataY = DenseVector(filteredClicks.map(c => if (c.cluster == 19) 1.0 else 0).toArray)
+
+
+    println("trainning set size = " + dataX.rows)
+    val covFunc = CovSEiso()
+    val covFuncParams = DenseVector[Double](log(1), log(1))
+    val noiseLogStdDev = log(0.5d)
+    val mean = 0
+    val model = gpr(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev, mean)
+    model
   }
 
 }
