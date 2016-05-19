@@ -1,20 +1,19 @@
 package expedia
 
-import expedia.data.ExDataSource
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.linalg.DenseMatrix
 import expedia.data.Click
-import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
-import com.typesafe.scalalogging.slf4j.LazyLogging
-import breeze.linalg.DenseVector
-import java.util.concurrent.atomic.AtomicInteger
-import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
-import expedia.model.marketdest.MarketDestPredictionModelBuilder
-import expedia.model.country.CountryModelBuilder
-import expedia.stats.CounterMap
-import expedia.model.dest.DestModelBuilder
+import expedia.data.ExDataSource
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
-import expedia.model.regdest.RegDestModelBuilder
+import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
+import expedia.model.country.CountryModelBuilder
+import expedia.model.dest.DestModelBuilder
+import expedia.model.marketdest.MarketDestPredictionModelBuilder
 import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.regdest.RegDestModelBuilder
+import expedia.stats.CounterMap
+import expedia.model.clusterdistbayes.ClusterDistBayesPredictionModel
+import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 
 object predictClusters extends LazyLogging {
 
@@ -23,7 +22,7 @@ object predictClusters extends LazyLogging {
    */
   def apply(trainDS: ExDataSource, testClicks: Seq[Click]): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
 
-    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder()
+    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks)
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
     val countryModelBuilder = CountryModelBuilder(testClicks)
@@ -58,11 +57,12 @@ object predictClusters extends LazyLogging {
     }
     trainDS.foreach { click => onClick(click) }
 
-    val clusterDistModel = clusterDistModelBuilder.create()
+   
     val clusterDistProxModel = clusterDistProxModelBuilder.create()
 
     val countryModel = countryModelBuilder.create()
       val marketModel = marketModelBuilder.create(countryModel)
+       val clusterDistModel = clusterDistModelBuilder.create(marketModel)
     val destModel = destModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
     val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,regDestModel,marketModel)

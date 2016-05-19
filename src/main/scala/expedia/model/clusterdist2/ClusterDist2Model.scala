@@ -7,10 +7,10 @@ import breeze.linalg.DenseVector
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.slf4j.LazyLogging
 
-case class ClusterDist2Model(clusterHistByKey: MulticlassHistByKey[Tuple3[Double, Double, Double]]) extends LazyLogging{
+case class ClusterDist2Model(clusterHistByKey: MulticlassHistByKey[Tuple3[Int, Int, Int]]) extends LazyLogging{
 
-  def predict(userLoc: Double, dist: Double, marketId: Double): DenseVector[Float] = {
-    val key = (userLoc.toDouble, dist, marketId)
+  def predict(userLoc: Int, dist: Double, marketId: Int): DenseVector[Float] = {
+    val key = (userLoc, (dist*10000).toInt, marketId)
     clusterHistByKey.getMap(key)
   }
 

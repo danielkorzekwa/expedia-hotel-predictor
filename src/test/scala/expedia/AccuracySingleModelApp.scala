@@ -21,6 +21,7 @@ import scala.collection.mutable.ListBuffer
 import expedia.model.dest.DestModelBuilder
 import expedia.model.regdest.RegDestModelBuilder
 import expedia.model.country.CountryModelBuilder
+import expedia.model.marketmodel.MarketModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -40,7 +41,7 @@ object AccuracySingleModelApp extends LazyLogging {
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().filter { c => c.destId == 12603}
     
 
-    val model =ClusterDist2ModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = ClusterDist2ModelBuilder.buildFromTrainingSet(trainDS, testClicks)
     val top5predictions = model.predictTop5(testClicks)
 
     //  val predictedMat = model.predict(testClicks)

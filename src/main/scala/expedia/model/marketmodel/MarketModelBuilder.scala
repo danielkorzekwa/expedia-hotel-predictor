@@ -12,7 +12,8 @@ import expedia.model.dest.DestModelBuilder
 case class MarketModelBuilder(testClicks: Seq[Click]) {
 
   private val clusterHistByMarket = MulticlassHistByKey[Int](100)
-  testClicks.foreach(click => clusterHistByMarket.add(click.marketId, click.cluster, value = 0))
+  testClicks.foreach{click => clusterHistByMarket.add(click.marketId, click.cluster, value = 0)
+    }
 
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)

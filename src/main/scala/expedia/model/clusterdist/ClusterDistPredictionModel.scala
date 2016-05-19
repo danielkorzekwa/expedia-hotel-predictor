@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * @param clusterByDistMap Map[(userLoc,dist,market),[all clusters for the key]]
  */
-case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Double, Double], DenseVector[Int]]) extends LazyLogging {
+case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int,Int,Int], DenseVector[Int]]) extends LazyLogging {
 
   logger.info("DistClusterMap size=%d".format(topClusterByDistMap.size))
 
@@ -52,11 +52,11 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Double, Do
 predictionMatrixClusterDist
   }
   
-  def predict(userLoc: Double, dist: Double, market: Double): DenseVector[Float] = {
+  def predict(userLoc: Int, dist: Double, market: Int): DenseVector[Float] = {
 
     val clusterProbs = DenseVector.tabulate[Float](100) { hotelCluster =>
 
-      val key = (userLoc, dist, market)
+      val key = (userLoc, (dist * 10000).toInt, market)
       val clusterVec = topClusterByDistMap.get(key)
       val prob2 = clusterVec match {
         case Some(clusterVec) => {

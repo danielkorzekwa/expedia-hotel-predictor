@@ -23,14 +23,15 @@ object AccuracyApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    // val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
-    val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
+    //val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
+      val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
     val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile)
 
-    val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
+   // val expediaTestFile = "c:/perforce/daniel/ex/segments/market_365/train_2014_market365_booked_only.csv"
+     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(c => c.dist != -1)
 
-     predictClustersAndSaveToFile(trainDS, testClicks)
+    predictClustersAndSaveToFile(trainDS, testClicks)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
     val top5predictions = loadPredictions()
@@ -42,7 +43,7 @@ object AccuracyApp extends LazyLogging {
 
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
     val apkVector = averagePrecision(top5predictions(::, 5 to 9), actual, k = 5)
-    println(top5predictions.toString(20, 320))
+     println(DenseMatrix.horzcat(actual.toDenseMatrix.t, top5predictions).toString(20, 320))
 
     val mapk = mean(apkVector)
     println("mapk=%.8f, test size=%d".format(mapk, top5predictions.rows))
@@ -56,12 +57,12 @@ object AccuracyApp extends LazyLogging {
     logger.info("Load clusterPredictions...")
     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
     val marketDestPred = csvread(new File("target/marketDestPred_test.csv"), skipLines = 1)
-      val marketDestPredNoUser = csvread(new File("target/marketDestPred_no_user_test.csv"), skipLines = 1)
+    val marketDestPredNoUser = csvread(new File("target/marketDestPred_no_user_test.csv"), skipLines = 1)
     val clusterDistProxPred = csvread(new File("target/clusterDistProxPred_test.csv"), skipLines = 1)
 
     logger.info("combineClusterPredictions...")
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
-    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred,marketDestPredNoUser)
+    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred, marketDestPredNoUser)
     top5predictions
   }
 
