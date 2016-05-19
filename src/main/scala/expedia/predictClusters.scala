@@ -14,6 +14,7 @@ import expedia.stats.CounterMap
 import expedia.model.dest.DestModelBuilder
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
 import expedia.model.regdest.RegDestModelBuilder
+import expedia.model.marketmodel.MarketModelBuilder
 
 object predictClusters extends LazyLogging {
 
@@ -26,6 +27,7 @@ object predictClusters extends LazyLogging {
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
     val countryModelBuilder = CountryModelBuilder(testClicks)
+      val marketModelBuilder = MarketModelBuilder(testClicks)
     val destModelBuilder = DestModelBuilder(testClicks)
     val regDestModelBuilder = RegDestModelBuilder()
     
@@ -40,6 +42,7 @@ object predictClusters extends LazyLogging {
       clusterDistProxModelBuilder.processCluster(click)
 
       countryModelBuilder.processCluster(click)
+       marketModelBuilder.processCluster(click)
       destModelBuilder.processCluster(click)
       regDestModelBuilder.processCluster(click)
       marketDestPredictBuilder.processCluster(click)
@@ -59,9 +62,10 @@ object predictClusters extends LazyLogging {
     val clusterDistProxModel = clusterDistProxModelBuilder.create()
 
     val countryModel = countryModelBuilder.create()
+      val marketModel = marketModelBuilder.create(countryModel)
     val destModel = destModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
-    val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,regDestModel)
+    val marketDestPredict = marketDestPredictBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,regDestModel,marketModel)
 
     /**
      * Cluster dist

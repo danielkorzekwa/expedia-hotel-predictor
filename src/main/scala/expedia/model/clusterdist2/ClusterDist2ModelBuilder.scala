@@ -10,6 +10,10 @@ import scala.collection.mutable.ListBuffer
 import expedia.model.clusterdist.calcClusterCoExistMatrix
 import breeze.linalg._
 import expedia.util.calcTopNClusters
+import expedia.util.getTop5Clusters
+import expedia.model.dest.DestModel
+import expedia.model.dest.DestModelBuilder
+import expedia.model.country.CountryModelBuilder
 
 case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 
@@ -28,7 +32,7 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
     }
   }
 
-  def create(): ClusterDist2Model = {
+  def create(destModel: DestModel): ClusterDist2Model = {
 
     val topClustersByKey: Map[Tuple3[Double, Double, Double], DenseVector[Int]] = clusterHistByKey.getMap.map { case (key, clusterProbs) => key -> calcTopNClusters(clusterProbs, 100, minProb = Some(0)) }
 
@@ -39,38 +43,57 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 
     val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
 
-    clusterHistByKey.getMap.foreach {
-      case (key, clusterCounts) =>
+    //    clusterHistByKey.getMap.foreach {
+    //      case (key, clusterCounts) =>
+    //
+    //        val clusterVec = topClustersByKey.get(key)
+    //
+    //        clusterVec match {
+    //          case Some(clusterVec) if (clusterVec.size > 0) => {
+    //            val topCluster = clusterVec(0)
+    //            val prior = clusterCoExistMat(topCluster, ::).t.copy
+    //            val Z = sum(prior)
+    //            if(Z>0) prior :/= Z
+    //
+    //            clusterCounts :+= prior.map(x => x.toFloat)
+    //          }
+    //          case _ => 
+    //        }
+    //
+    //    }
 
-        val clusterVec = topClustersByKey.get(key)
-
-        clusterVec match {
-          case Some(clusterVec) if (clusterVec.size > 0) => {
-            val topCluster = clusterVec(0)
-            val prior = clusterCoExistMat(topCluster, ::).t.copy
-            val Z = sum(prior)
-            if(Z>0) prior :/= Z
-
-            clusterCounts :+= prior.map(x => x.toFloat)
-          }
-          case _ => 
-        }
-
-    }
-
+  //   clusterHistByKey.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= 1f*destModel.predict() }
+    
     clusterHistByKey.normalise()
+    //    
+    //     clusterHistByKey.getMap.foreach {case (key, clusterCounts) =>
+    //
+    //        if (clusterCounts.toArray.filter(x => x==0.5).size>0) {
+    //  
+    //    println(clusterCounts)
+    //  }
+    //    }
+
     ClusterDist2Model(clusterHistByKey)
   }
 }
 
 object ClusterDist2ModelBuilder {
   def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click]): ClusterDist2Model = {
+    val countryModelBuilder = CountryModelBuilder(testClicks)
+    val destModelBuilder = DestModelBuilder(testClicks)
     val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
 
-    def onClick(click: Click) = clusterDistModelBuilder.processCluster(click)
+    def onClick(click: Click) = {
+      countryModelBuilder.processCluster(click)
+      destModelBuilder.processCluster(click)
+      clusterDistModelBuilder.processCluster(click)
+    }
     trainDS.foreach { click => onClick(click) }
 
-    val clusterDistModel = clusterDistModelBuilder.create()
+    val countryModel = countryModelBuilder.create()
+    val destModel = destModelBuilder.create(countryModel)
+    val clusterDistModel = clusterDistModelBuilder.create(destModel)
     clusterDistModel
   }
 }

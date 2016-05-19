@@ -18,6 +18,9 @@ import expedia.data.ExDataSource
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
 import dk.bayes.math.accuracy.loglik
 import scala.collection.mutable.ListBuffer
+import expedia.model.dest.DestModelBuilder
+import expedia.model.regdest.RegDestModelBuilder
+import expedia.model.country.CountryModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -27,41 +30,38 @@ object AccuracySingleModelApp extends LazyLogging {
 
     def filter(click: Click) = true
 
-    //val expediaTrainFile = "c:/perforce/daniel/ex/data_500K/train_500K_2013.csv"
-    val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv", filter)
+    val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
+    //val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
+    val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile, filter)
 
-    val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
- 
-     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks()//.
-   // zipWithIndex.filter{ case (c,index) => c.marketId == 628 && c.destId==8250 && c.userRegion==354}.
-  //  map(_._1)
-    //.filter(c => c.userLoc == 24103 && c.marketId == 628)
-    //
+    // val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
+    val expediaTestFile = "c:/perforce/daniel/ex/segments/market_365/train_2014_market365_booked_only.csv"
 
-    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks().filter { c => c.destId == 12603}
+    
+
+    val model =ClusterDist2ModelBuilder.buildFromTrainingSet(trainDS, testClicks)
     val top5predictions = model.predictTop5(testClicks)
 
-  //  val predictedMat = model.predict(testClicks)
-
-    println(top5predictions.toString(20, 320))
+    //  val predictedMat = model.predict(testClicks)
 
     logger.info("Compute mapk..")
 
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
+    println(DenseMatrix.horzcat(actual.toDenseMatrix.t, top5predictions).toString(20, 320))
 
     val apkVector = averagePrecision(top5predictions(::, 5 to 9), actual, k = 5)
     val mapk = mean(apkVector)
 
-    val loglikValue = Double.NaN//loglik(predictedMat.map(x => x.toDouble), actual)
+    val loglikValue = Double.NaN //loglik(predictedMat.map(x => x.toDouble), actual)
 
     println("mapk=%.8f, loglik=%6f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
 
-  //  val calibrationData = computeCalibrationData(top5predictions, actual)
-  //  logger.info("Calibration rows:" + calibrationData.rows)
-  //  csvwrite("target/calibration.csv", calibrationData, header = "p,actual")
+    //  val calibrationData = computeCalibrationData(top5predictions, actual)
+    //  logger.info("Calibration rows:" + calibrationData.rows)
+    //  csvwrite("target/calibration.csv", calibrationData, header = "p,actual")
 
     // csvwrite("target/marketDestPred_no_user_test.csv", top5predictions, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
 

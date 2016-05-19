@@ -1,23 +1,21 @@
-train_13_all <- fread('data_all/train_all_2013.csv')
-train_13 <- subset(train_13_all,is_booking > -1)
+train_13 <- fread('data_all/train_all_2013.csv')
 
-ud1 <- subset(train_13, user_location_region==346 & hotel_market==628 & hotel_cluster==54)
-ud2 <- subset(train_13, user_location_region==346 & hotel_market==628 &  hotel_cluster==91)
-
-ggplot() + 
-geom_histogram(aes(col='54',x=ud1$orig_destination_distance),binwidth=0.1,alpha=0.5) +
-geom_histogram(aes(col='91',x=ud2$orig_destination_distance),binwidth=0.1,alpha=0.5) + 
-scale_x_continuous(breaks=seq(0,50,5)) +
-coord_cartesian(xlim=c(0,50))
-
-
-s <- subset(train_13 , user_location_region== 340 & srch_destination_id==8250)
-sqldf('select hotel_cluster,count(*) as c from s group by hotel_cluster order by c desc limit 10')
+s <- subset(pp, r1==91)
+sqldf('select hotel_cluster,count(*) as c from s group by hotel_cluster order by c desc limit 20' )
 
 
 
 
-# correlated clusters in test by cluster_dist, choose the higest prediction across all clicks for that dist in test
-head(subset(pp, p1<1 & user_location_city==24103 & hotel_market==628 & srch_destination_id==8250 & hotel_cluster==49),50)
-head(subset(pp, p1<1 & user_location_city==24103 & hotel_market==628 & srch_destination_id==8250 & mapk>0),50)
-subset(pp, user_id==1143331 & hotel_market==628)
+
+d <- sqldf('select srch_destination_id,avg(mapk1) mapk1,avg(mapk1000) mapk1000,count(*) c from test group by srch_destination_id')
+subset(d,c>100 & mapk1000-mapk1   > 0.1)
+
+
+s61 <- subset(train_13,    hotel_cluster== 4 & hotel_continent==2 & is_booking==1 )
+s81 <- subset(train_13,   hotel_cluster==6 & hotel_continent==2 & is_booking==1)
+
+ggplot() + geom_freqpoly(aes(col='s61',x=as.Date(s61$srch_ci)),binwidth = 7,alpha=0.5) +
+  geom_freqpoly(aes(col='s81',x=as.Date(s81$srch_ci)),binwidth = 7,alpha=0.5) 
+
+s <- subset(pp,r1==4 & hotel_cluster==6 & p1==1 )
+ggplot() + geom_freqpoly(aes(col='s61',x=as.Date(s$srch_ci)),binwidth = 7,alpha=0.5) 

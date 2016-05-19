@@ -12,6 +12,8 @@ import expedia.model.svm.loadClusterProbsByKeyMap
 import expedia.stats.MulticlassHistByKey
 import breeze.linalg._
 import java.io.File
+import expedia.model.country.CountryModelBuilder
+import expedia.data.ExDataSource
 
 case class DestModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
 
@@ -34,10 +36,31 @@ case class DestModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
 
   def create(countryModel: CountryModel): DestModel = {
 
-    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= countryModel.predict(countryByDest(destId)) }
+    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= 1f*countryModel.predict(countryByDest(destId)) }
     clusterHistByDest.normalise()
 
     DestModel(clusterHistByDest)
   }
 
+}
+
+object DestModelBuilder {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): DestModel = {
+
+    val destModelBuilder = DestModelBuilder(testClicks)
+    val countryModelBuilder = CountryModelBuilder(testClicks)
+
+    def onClick(click: Click) = {
+
+      destModelBuilder.processCluster(click)
+      countryModelBuilder.processCluster(click)
+    }
+    trainDatasource.foreach { click => onClick(click) }
+
+    val countryModel = countryModelBuilder.create()
+
+    val destModel = destModelBuilder.create(countryModel)
+
+    destModel
+  }
 }

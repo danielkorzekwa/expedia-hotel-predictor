@@ -5,6 +5,7 @@ import expedia.stats.MulticlassHistByKey
 import breeze.linalg._
 import java.io.File
 import expedia.model.dest.DestModel
+import expedia.data.ExDataSource
 
 case class RegDestModelBuilder() {
 
@@ -16,7 +17,7 @@ case class RegDestModelBuilder() {
     val userReg = countsByRegDest(r, 0).toInt
     val destId = countsByRegDest(r, 1).toInt
     val counts = countsByRegDest(r, 2).toInt
-    if (destId == 8250 && counts>50000) clusterHistByRegDest.add((userReg, destId), classId = 0, value = 0)
+    if (destId == 8250 && counts > 10000) clusterHistByRegDest.add((userReg, destId), classId = 0, value = 0)
   }
 
   def processCluster(click: Click) = {
@@ -25,7 +26,7 @@ case class RegDestModelBuilder() {
     if (clusterHistByRegDest.getMap.contains(key)) {
 
       if (click.isBooking == 1) clusterHistByRegDest.add(key, click.cluster)
-      else clusterHistByRegDest.add(key, click.cluster, value = 0.05f)
+      else clusterHistByRegDest.add(key, click.cluster, value = 1f)
 
     }
   }
@@ -34,5 +35,22 @@ case class RegDestModelBuilder() {
 
     clusterHistByRegDest.normalise()
     RegDestModel(clusterHistByRegDest)
+  }
+}
+
+object RegDestModelBuilder {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): RegDestModel = {
+
+    val regDestModelBuilder = RegDestModelBuilder()
+
+    def onClick(click: Click) = {
+
+      regDestModelBuilder.processCluster(click)
+    }
+    trainDatasource.foreach { click => onClick(click) }
+
+    val regDestModel = regDestModelBuilder.create()
+
+    regDestModel
   }
 }
