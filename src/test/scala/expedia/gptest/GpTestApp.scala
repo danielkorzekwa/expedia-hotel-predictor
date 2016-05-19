@@ -14,11 +14,14 @@ object GpTestApp {
 
   def main(args: Array[String]): Unit = {
 
+    val cluster1 = 59
+    val cluster2 = 19
+    
     val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == 23 || c.cluster == 21) && c.checkinMonth > -1 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.checkinMonth > -1 }
 
     val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
-    val dataY = DenseVector(filteredClicks.map(c => if (c.cluster == 23) 1.0 else 0).toArray)
+    val dataY = DenseVector(filteredClicks.map(c => if (c.cluster == cluster1) 1.0 else 0).toArray)
 
     val data = csvread(new File("src/test/resources/gptest/gp_19_vs_21.csv"), skipLines = 1)
 
