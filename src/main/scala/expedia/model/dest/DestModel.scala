@@ -54,7 +54,7 @@ case class DestModel(
 
   }
 
-  def predictTop5(clicks: Seq[Click], trainClicks: Seq[Click], destMonthModelsMap: Map[Int, DestMonthModel]): DenseMatrix[Double] = {
+  def predictTop5(clicks: Seq[Click], destMonthModelsMap: Map[Int, DestMonthModel]): DenseMatrix[Double] = {
 
     val i = new AtomicInteger(0)
     val predictionRecords = clicks.map { click =>
@@ -74,7 +74,7 @@ case class DestModel(
 
       if (i.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(i.get))
       probsAndRanksVec
-
+    
     }.toList
 
     val predictionMatrixMarketDest = DenseVector.horzcat(predictionRecords: _*).t
