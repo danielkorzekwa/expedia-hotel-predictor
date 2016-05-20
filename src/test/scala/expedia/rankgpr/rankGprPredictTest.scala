@@ -11,7 +11,7 @@ class rankGprPredictTest {
   @Test def test_two_classes = {
 
     val cluster1 = 19
-    val cluster2 = 21
+    val cluster2 = 23
 
     val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
     val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.checkinMonth > -1 }

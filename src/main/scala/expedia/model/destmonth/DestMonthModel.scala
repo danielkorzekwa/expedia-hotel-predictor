@@ -28,7 +28,7 @@ object DestMonthModel {
 
     val destIds = csvread(new File("c:/perforce/daniel/ex/segments/destmonthdata/destIds.csv"), skipLines = 1).toDenseVector
 
-    val destMonthModelMap = (0 until destIds.size).map { r =>
+    val destMonthModelMap = (0 until destIds.size).par.map { r =>
       val destId = destIds(r).toInt
 
       val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/segments/destmonthdata/train_2013_dest%d_booked_only.csv".format(destId))
@@ -47,7 +47,7 @@ object DestMonthModel {
       val rankGprPredict = RankGprPredict(model)
 
       destId -> DestMonthModel(rankGprPredict)
-    }.toMap
+    }.toList.toMap
 
     destMonthModelMap
   }

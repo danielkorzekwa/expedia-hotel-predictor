@@ -1,6 +1,6 @@
 train_13 <- fread('data_all/train_all_2013.csv')
 
-s <- subset(train_13,  srch_destination_id==12218 & is_booking==1)
+s <- subset(train_13,  srch_destination_id==12217 & is_booking==1)
 sqldf('select hotel_cluster,count(*) as c from s group by hotel_cluster order by c desc limit 20' )
 
 

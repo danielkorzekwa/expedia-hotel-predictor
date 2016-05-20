@@ -10,13 +10,14 @@ import breeze.numerics._
 import dk.gp.cov.CovSEiso
 import dk.gp.gpr.gpr
 import dk.gp.gpr.predict
+import breeze.stats._
 
 case class RankGprPredict(model: RankGprModel) {
 
   private val classes = unique(model.y)
   private val oneToOnePairs = calcOneVsOnePairs(classes)
 
-  val gpModelsByoneToOnePair: Map[List[Double], GprModel] = oneToOnePairs.map {
+  val gpModelsByoneToOnePair: Map[List[Double], GprModel] = oneToOnePairs.par.map {
     case List(c1, c2) =>
 
       val classIdx = model.y.findAll { y => y == c1 || y == c2 }
@@ -25,12 +26,18 @@ case class RankGprPredict(model: RankGprModel) {
 
       val covFunc = CovSEiso()
       val covFuncParams = DenseVector[Double](log(1), log(1))
-      val noiseLogStdDev = log(0.5d)
-      val mean = 0
-      //   val gprModel = GprModel(classX, classY, covFunc, covFuncParams, noiseLogStdDev, mean)
-      val gprModel = gpr(classX, classY, covFunc, covFuncParams, noiseLogStdDev, mean)
+      val noiseLogStdDev = log(1d)
+      val gpMean = mean(classY)
+      val gprModel = try {
+        gpr(classX, classY, covFunc, covFuncParams, noiseLogStdDev, gpMean)
+      }
+      catch {
+        case e:Exception => {
+          throw e
+        }
+      }
       List(c1, c2) -> gprModel
-  }.toMap
+  }.toList.toMap
 
   /**
    * @param t test point [D], D - dimensionality of prediction vector
