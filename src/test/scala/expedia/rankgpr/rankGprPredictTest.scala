@@ -1,10 +1,11 @@
 package expedia.rankgpr
 
 import org.junit.Test
-
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import expedia.data.ExDataSource
+import breeze.numerics._
+import dk.gp.cov.CovSEiso
 
 class rankGprPredictTest {
 
@@ -19,7 +20,10 @@ class rankGprPredictTest {
     val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
-    val model = RankGprModel(dataX, dataY)
+      val covFunc = CovSEiso()
+      val covFuncParams = DenseVector[Double](log(1), log(1))
+      val noiseLogStdDev = log(1d)
+    val model = RankGprModel(dataX, dataY,covFunc,covFuncParams,noiseLogStdDev)
 
     val xTest = DenseVector.rangeD(1d, 13, 1).toDenseMatrix.t
     val predicted = RankGprPredict(model).predict(xTest)
@@ -38,7 +42,10 @@ class rankGprPredictTest {
     val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
-    val model = RankGprModel(dataX, dataY)
+      val covFunc = CovSEiso()
+      val covFuncParams = DenseVector[Double](log(1), log(1))
+      val noiseLogStdDev = log(1d)
+    val model = RankGprModel(dataX, dataY,covFunc,covFuncParams,noiseLogStdDev)
 
     val xTest = DenseVector.rangeD(1d, 13, 1).toDenseMatrix.t
     val predicted =  RankGprPredict(model).predict(xTest)
@@ -58,7 +65,10 @@ class rankGprPredictTest {
     val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
-    val model = RankGprModel(dataX, dataY)
+     val covFunc = CovSEiso()
+      val covFuncParams = DenseVector[Double](log(1), log(1))
+      val noiseLogStdDev = log(1d)
+    val model = RankGprModel(dataX, dataY,covFunc,covFuncParams,noiseLogStdDev)
 
     val xTest = DenseVector.rangeD(1d, 13, 1).toDenseMatrix.t
     val predicted =  RankGprPredict(model).predict(xTest)

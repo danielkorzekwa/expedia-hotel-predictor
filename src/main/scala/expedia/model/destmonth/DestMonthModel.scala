@@ -10,6 +10,10 @@ import java.io.File
 import expedia.data.ExDataSource
 import expedia.stats.MulticlassHist
 import expedia.util.calcTopNClusters
+import com.typesafe.scalalogging.slf4j.LazyLogging
+import breeze.numerics._
+
+import dk.gp.cov.CovSEiso
 
 case class DestMonthModel(rankGprPredict: RankGprPredict) {
 
@@ -19,7 +23,7 @@ case class DestMonthModel(rankGprPredict: RankGprPredict) {
   }
 }
 
-object DestMonthModel {
+object DestMonthModel extends LazyLogging {
 
   /**
    * key - destId
@@ -36,15 +40,26 @@ object DestMonthModel {
 
       val clusterHist = MulticlassHist(100)
       trainClicks.foreach(click => clusterHist.add(click.cluster))
-      val clusterSet = calcTopNClusters(clusterHist.getHistogram, n = 7).toArray.toSet
+      val clusterSet = calcTopNClusters(clusterHist.getHistogram, n = 5).toArray.toSet
 
       val filteredTrainClicks = trainClicks.filter { c => (clusterSet.contains(c.cluster)) && c.checkinMonth > -1 }
 
       val dataX = DenseVector(filteredTrainClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
       val dataY = DenseVector(filteredTrainClicks.map(c => c.cluster.toDouble).toArray)
 
-      val model = RankGprModel(dataX, dataY)
-      val rankGprPredict = RankGprPredict(model)
+        val covFunc = CovSEiso()
+      val covFuncParams = DenseVector[Double](log(1), log(1))
+      val noiseLogStdDev = log(1d)
+      
+      val model = RankGprModel(dataX, dataY,covFunc,covFuncParams,noiseLogStdDev)
+      val rankGprPredict = try {
+        RankGprPredict(model)
+      } catch {
+        case e: Exception => {
+          logger.error("Creating rankGprPredict model for destId=%d failed".format(destId))
+          throw e
+        }
+      }
 
       destId -> DestMonthModel(rankGprPredict)
     }.toList.toMap

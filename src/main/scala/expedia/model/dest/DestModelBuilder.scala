@@ -28,7 +28,7 @@ case class DestModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
     if (clusterHistByDest.getMap.contains(click.destId)) {
 
       if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
-     // else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
+      else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
 
     }
     countryByDest += click.destId -> click.countryId

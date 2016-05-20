@@ -1,6 +1,6 @@
 train_13 <- fread('data_all/train_all_2013.csv')
 
-s <- subset(train_13,  srch_destination_id==12217 & is_booking==1)
+s <- subset(train_13,  srch_destination_id==8824 & is_booking==1)
 sqldf('select hotel_cluster,count(*) as c from s group by hotel_cluster order by c desc limit 20' )
 
 
@@ -11,8 +11,8 @@ d <- sqldf('select srch_destination_id,avg(mapk1) mapk1,avg(mapk1000) mapk1000,c
 subset(d,c>100 & mapk1000-mapk1   > 0.1)
 
 
-s61 <- subset(train_13,    hotel_cluster== 19 & srch_destination_id==12218 & is_booking==1 )
-s81 <- subset(train_13,   hotel_cluster== 23 &  srch_destination_id==12218 & is_booking==1)
+s61 <- subset(train_13,    hotel_cluster==52 & srch_destination_id==8824 & is_booking > -1 )
+s81 <- subset(train_13,   hotel_cluster==44 &  srch_destination_id==8824 & is_booking > -1)
 
 ggplot() + geom_freqpoly(aes(col='s61',x=as.Date(s61$srch_ci)),binwidth = 30,alpha=0.5) +
   geom_freqpoly(aes(col='s81',x=as.Date(s81$srch_ci)),binwidth = 30,alpha=0.5) 

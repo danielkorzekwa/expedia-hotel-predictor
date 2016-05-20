@@ -28,14 +28,8 @@ case class RankGprPredict(model: RankGprModel) {
       val covFuncParams = DenseVector[Double](log(1), log(1))
       val noiseLogStdDev = log(1d)
       val gpMean = mean(classY)
-      val gprModel = try {
-        gpr(classX, classY, covFunc, covFuncParams, noiseLogStdDev, gpMean)
-      }
-      catch {
-        case e:Exception => {
-          throw e
-        }
-      }
+      val gprModel =gpr(classX, classY, covFunc, covFuncParams, noiseLogStdDev, gpMean)
+        
       List(c1, c2) -> gprModel
   }.toList.toMap
 
