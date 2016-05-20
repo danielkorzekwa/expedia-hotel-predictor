@@ -22,6 +22,7 @@ import expedia.model.dest.DestModelBuilder
 import expedia.model.regdest.RegDestModelBuilder
 import expedia.model.country.CountryModelBuilder
 import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.destmonth.DestMonthModel
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -29,19 +30,24 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    def filter(click: Click) = true
+    def filter(click: Click) = {
+      // destSet.contains(click.destId)
+      true
+    }
 
-    val expediaTrainFile = "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv"
-    //val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
+    val expediaTrainFile = "c:/perforce/daniel/ex/segments/dest_12218/train_2013_dest12218.csv"
+    //  val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
     val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile, filter)
 
-    // val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val expediaTestFile = "c:/perforce/daniel/ex/segments/dest_12217/test_2013_dest12217_booked_only.csv"
+    //  val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
+    val expediaTestFile = "c:/perforce/daniel/ex/segments/destmonthdata/train_2014_booked_only.csv"
 
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks()//.filter { c => c.cluster == 19 || c.cluster == 21 }
+    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks() //.filter { c => c.cluster == 19 || c.cluster == 21 }
+    val trainClicks = trainDS.getAllClicks()
+    val model = DestModelBuilder.buildFromTrainingSet(trainDS, testClicks)
 
-    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
-    val top5predictions = model.predictTop5(testClicks)
+    val destMonthModelMap = DestMonthModel.build(trainClicks)
+    val top5predictions = model.predictTop5(testClicks, trainClicks, destMonthModelMap)
 
     //  val predictedMat = model.predict(testClicks)
 

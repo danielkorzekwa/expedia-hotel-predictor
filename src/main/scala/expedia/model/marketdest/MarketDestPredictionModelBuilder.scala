@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
-import expedia.stats.CatStats
 import expedia.stats.calcVectorProbsMutable
 import expedia.stats.MulticlassHistByKey
 import expedia.data.Click
@@ -37,7 +36,6 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
   private val userIds = testClicks.map { c => c.userId }.distinct.toSet
 
-
   //key ((destId, marketId)
   private val clusterHistByDestMarket = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster, value = 0))
@@ -49,7 +47,6 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
   private val continentByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => continentByDest += click.destId -> click.continentId)
 
-
   private val regionByUser: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => regionByUser += click.userId -> click.userRegion)
 
@@ -59,10 +56,9 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
   def processCluster(click: Click) = {
 
-
     if (clusterHistByDestMarket.getMap.contains((click.destId, click.marketId))) {
       if (click.isBooking == 1) clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
-      else clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster, value = 0.50f)
+         else  clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster, value = 0.50f)
     }
 
     continentByDest += click.destId -> click.continentId
@@ -82,7 +78,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
   def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
              destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-             regDestModel: RegDestModel,marketModel:MarketModel): MarketDestPredictionModel = {
+             regDestModel: RegDestModel, marketModel: MarketModel): MarketDestPredictionModel = {
 
     logger.info("Add prior stats to clusterHistByDestMarket...")
     clusterHistByDestMarket.getMap.foreach {
@@ -137,7 +133,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
-    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap,  userCounterMap,
+    MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap, userCounterMap,
       destCounterMap, destMarketCounterMap, regDestModel)
   }
 
@@ -175,10 +171,10 @@ object MarketDestPredictionModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-     val marketModel = marketModelBuilder.create(countryModel)
+    val marketModel = marketModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
 
     val destModel = destModelBuilder.create(countryModel)
-    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,  regDestModel,marketModel)
+    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel)
   }
 }

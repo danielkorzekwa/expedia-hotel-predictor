@@ -36,7 +36,7 @@ case class DestModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
 
   def create(countryModel: CountryModel): DestModel = {
 
-    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= 1f*countryModel.predict(countryByDest(destId)) }
+    clusterHistByDest.getMap.foreach { case (destId, clusterCounts) => clusterCounts :+= 1f * countryModel.predict(countryByDest(destId)) }
     clusterHistByDest.normalise()
 
     DestModel(clusterHistByDest)

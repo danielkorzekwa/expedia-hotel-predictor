@@ -5,7 +5,7 @@ train_13 <- fread('c:/perforce/daniel/ex/data_all/train_all_2013.csv')
 
 
 source('calcClusterProbsSVM.r')
-train <- subset(train_13,srch_destination_id==12217 & is_booking==1 & (hotel_cluster==19 | hotel_cluster==21))
+train <- subset(train_13,srch_destination_id==12217 & is_booking==1 & (hotel_cluster==23 | hotel_cluster==21))
 train <- subset(train,as.Date(srch_ci)<as.Date('2014-01-01'))
 train$month <- month(as.Date(train$srch_ci))
 train$length <- as.Date(train$srch_co) - as.Date(train$srch_ci)
