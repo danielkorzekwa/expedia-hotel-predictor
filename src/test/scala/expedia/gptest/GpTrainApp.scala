@@ -18,14 +18,16 @@ import expedia.rankgpr.RankGprModel
 
 object GpTrainApp {
 
+   val DAY = (1000L * 3600 * 24).toDouble
+  
   def main(args: Array[String]): Unit = {
 
-    val clusterSet = Set(65,66,44,52,96)
-    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/destmonthdata/train_2013_dest8824_booked_only.csv").getAllClicks()
+    val clusterSet = Set(19, 21, 23)
+    val allClicks = ExDataSource(dsName = "test",  "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
 
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.checkinMonth > -1 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.checkinDate.getTime > 0 }
 
-    val dataX = DenseVector(filteredClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.checkinDate.getTime/DAY).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
     val covFunc = CovSEiso()

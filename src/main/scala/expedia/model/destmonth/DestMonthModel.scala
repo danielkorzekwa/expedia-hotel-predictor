@@ -12,18 +12,24 @@ import expedia.stats.MulticlassHist
 import expedia.util.calcTopNClusters
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.numerics._
-
 import dk.gp.cov.CovSEiso
+import expedia.rankgpr.rankGprTrain
+import java.util.Date
+import breeze.stats._
 
 case class DestMonthModel(rankGprPredict: RankGprPredict) {
 
-  def predictRankedClasses(checkInMonth: Int): DenseVector[Double] = {
-    val rankedClasses = rankGprPredict.predict(DenseVector(checkInMonth.toDouble))
+  val DAY = (1000L * 3600 * 24).toDouble
+
+  def predictRankedClasses(checkinDate: Date): DenseVector[Double] = {
+    val rankedClasses = rankGprPredict.predict(DenseVector(checkinDate.getTime / DAY))
     rankedClasses
   }
 }
 
 object DestMonthModel extends LazyLogging {
+
+  val DAY = (1000L * 3600 * 24).toDouble
 
   /**
    * key - destId
@@ -42,18 +48,19 @@ object DestMonthModel extends LazyLogging {
       trainClicks.foreach(click => clusterHist.add(click.cluster))
       val clusterSet = calcTopNClusters(clusterHist.getHistogram, n = 5).toArray.toSet
 
-      val filteredTrainClicks = trainClicks.filter { c => (clusterSet.contains(c.cluster)) && c.checkinMonth > -1 }
+      val filteredTrainClicks = trainClicks.filter { c => (clusterSet.contains(c.cluster)) && c.checkinDate.getTime > 0 }
 
-      val dataX = DenseVector(filteredTrainClicks.map(c => c.checkinMonth.toDouble).toArray).toDenseMatrix.t
+      val dataX = DenseVector(filteredTrainClicks.map(c => c.checkinDate.getTime / DAY).toArray).toDenseMatrix.t
       val dataY = DenseVector(filteredTrainClicks.map(c => c.cluster.toDouble).toArray)
 
-        val covFunc = CovSEiso()
-      val covFuncParams = DenseVector[Double](log(1), log(1))
+      val covFunc = CovSEiso()
+      val covFuncParams = DenseVector[Double](log(1),log(10000))
       val noiseLogStdDev = log(1d)
-      
-      val model = RankGprModel(dataX, dataY,covFunc,covFuncParams,noiseLogStdDev)
+      val model = RankGprModel(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev)
+      val trainedModel = rankGprTrain(model)
+      logger.info("Trained covFuncParams=" + trainedModel.covFuncParams)
       val rankGprPredict = try {
-        RankGprPredict(model)
+        RankGprPredict(trainedModel)
       } catch {
         case e: Exception => {
           logger.error("Creating rankGprPredict model for destId=%d failed".format(destId))

@@ -23,13 +23,10 @@ case class RankGprPredict(model: RankGprModel) {
       val classIdx = model.y.findAll { y => y == c1 || y == c2 }
       val classX = model.x(classIdx, ::).toDenseMatrix
       val classY = model.y(classIdx).map(y => if (y == c1) 1.0 else 0).toDenseVector
+val gpMean = mean(classY)
 
-      val covFunc = CovSEiso()
-      val covFuncParams = DenseVector[Double](log(1), log(1))
-      val noiseLogStdDev = log(1d)
-      val gpMean = mean(classY)
-      val gprModel =gpr(classX, classY, covFunc, covFuncParams, noiseLogStdDev, gpMean)
-        
+      val gprModel = GprModel(classX, classY, model.covFunc, model.covFuncParams, model.noiseLogStdDev, gpMean)
+
       List(c1, c2) -> gprModel
   }.toList.toMap
 
@@ -49,7 +46,6 @@ case class RankGprPredict(model: RankGprModel) {
         val gprModel = gpModelsByoneToOnePair(List(c1, c2))
         val probC1 = dk.gp.gpr.predict(t.toDenseMatrix.t, gprModel)(0, 0)
         val votedClass = if (probC1 > 0.5) c1 else c2
-
         val currClassVotes = votesMap(votedClass)
         votesMap += votedClass -> (currClassVotes + 1)
 

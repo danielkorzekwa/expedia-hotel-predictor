@@ -45,8 +45,8 @@ object AccuracySingleModelApp extends LazyLogging {
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks() //.filter { c => c.cluster == 19 || c.cluster == 21 }
     val model = DestModelBuilder.buildFromTrainingSet(trainDS, testClicks)
 
-   // val destMonthModelMap = DestMonthModel.build()
-     val destMonthModelMap = Map[Int, DestMonthModel]()
+    val destMonthModelMap = DestMonthModel.build()
+    // val destMonthModelMap = Map[Int, DestMonthModel]()
     val top5predictions = model.predictTop5(testClicks, destMonthModelMap)
 
     //  val predictedMat = model.predict(testClicks)
