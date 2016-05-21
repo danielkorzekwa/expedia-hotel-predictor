@@ -45,11 +45,13 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
   testClicks.foreach(click => clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0))
 
   //key ((marketId,userId)
-  private val clusterHistByMarketUser = MulticlassHistByKey[Tuple2[ Int, Int]](100)
+  private val clusterHistByMarketUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByMarketUser.add((click.marketId, click.userId), click.cluster, value = 0))
 
-  
-  
+  //key ((destId,userId)
+  private val clusterHistByDestUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
+  testClicks.foreach(click => clusterHistByDestUser.add((click.destId, click.userId), click.cluster, value = 0))
+
   private val continentByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => continentByDest += click.destId -> click.continentId)
 
@@ -64,7 +66,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
     if (clusterHistByDestMarket.getMap.contains((click.destId, click.marketId))) {
       if (click.isBooking == 1) clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster)
-         else  clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster, value = 0.50f)
+      else clusterHistByDestMarket.add((click.destId, click.marketId), click.cluster, value = 0.50f)
     }
 
     continentByDest += click.destId -> click.continentId
@@ -78,11 +80,17 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
       if (click.isBooking == 1) clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster)
       else clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0.6f)
     }
-    
-      val marketUserKey = (click.marketId, click.userId)
+
+    val marketUserKey = (click.marketId, click.userId)
     if (clusterHistByMarketUser.getMap.contains(marketUserKey)) {
       if (click.isBooking == 1) clusterHistByMarketUser.add(marketUserKey, click.cluster)
       else clusterHistByMarketUser.add(marketUserKey, click.cluster, value = 0.6f)
+    }
+
+    val destUserKey = (click.destId, click.userId)
+    if (clusterHistByDestUser.getMap.contains(destUserKey)) {
+      if (click.isBooking == 1) clusterHistByDestUser.add(destUserKey, click.cluster)
+      else clusterHistByDestUser.add(destUserKey, click.cluster, value = 0.6f)
     }
 
     userCounterMap.add(click.userId)
@@ -111,34 +119,22 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
     logger.info("Add prior stats to clusterHistByDestMarketUser...")
 
-   val i = new AtomicInteger(0)
+    val i = new AtomicInteger(0)
 
     clusterHistByDestMarketUser.getMap.foreach {
 
       case ((destId, marketId, userId), userClusterProbs) =>
 
-        if(sum(userClusterProbs)==0 && userCounterMap.getOrElse(userId, 0)>0) {
-       //   logger.info("User data exists:" + i.getAndIncrement + ":" + userId)
-        }
-        
-          
-
-        val marketCounts = marketCounterMap.getOrElse(marketId,0)
+        val marketCounts = marketCounterMap.getOrElse(marketId, 0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
         if (destMarketCounts < 300 || destCounts.toDouble / destMarketCounts > 1.3) {
 
-        //  println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
-          
-        //  userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
-          
-          if(sum(userClusterProbs)==0 && (destMarketCounts>0 && marketCounts/destMarketCounts<12)){
-            println("use prior")
-            userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId)) + clusterHistByMarketUser.getMap((marketId,userId))
-          }
-          else  userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
-             
+          if (sum(userClusterProbs) == 0 && (destMarketCounts > 0 && marketCounts / destMarketCounts < 12)) {
+            userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId)) + clusterHistByMarketUser.getMap((marketId, userId))
+          } else userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
+
         } else {
           val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
             case Some(avgStayDays) if (destModel.svmDestIds.contains(destId) && avgStayDays.avg().toInt < 3 && !(regionByUser(userId) == 174 && destId == 8250 && marketId == 628)) => {
@@ -149,10 +145,12 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
               if (regDestModel.predictionExists(regionByUser(userId), destId)) 7f * regDestModel.predict(regionByUser(userId), destId)
               else {
-                
-              //if(sum(userClusterProbs)>0)  7f * destModel.predict(destId) else  7f * destModel.predict(destId) +  clusterHistByMarketUser.getMap((marketId,userId))
-               7f * destModel.predict(destId) +  clusterHistByMarketUser.getMap((marketId,userId))
-             //   7f * destModel.predict(destId) 
+ // println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
+            //   if (sum(userClusterProbs) == 0)  7f * destModel.predict(destId) +  clusterHistByDestUser.getMap((destId,userId))
+             //   else 7f * destModel.predict(destId) 
+              
+                  7f * destModel.predict(destId) +  clusterHistByMarketUser.getMap((marketId,userId)) - userClusterProbs
+
               }
             }
           }
