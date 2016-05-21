@@ -14,3 +14,5 @@ ggplot() + geom_freqpoly(aes(col='s61',x=as.Date(s61$date_time)),binwidth = 30,a
 
 s <- subset(pp,r1==4 & hotel_cluster==6 & p1==1 & hotel_continent==2 & hotel_market==365 )
 ggplot() + geom_freqpoly(aes(col='s61',x=as.Date(s$srch_ci)),binwidth = 7,alpha=0.5) 
+
+train_13 <- subset(train_all,as.Date(date_time) < as.Date('2014-01-01'))
