@@ -17,9 +17,9 @@ class rankGprPredictTest {
     val cluster2 = 23
 
     val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.checkinDate.getTime > 0 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.dateTime.getTime > 0 }
 
-    val dataX = DenseVector(filteredClicks.map(c => c.checkinDate.getTime / DAY).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime / DAY).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
     val covFunc = CovSEiso()
@@ -40,9 +40,9 @@ class rankGprPredictTest {
     val clusterSet = Set(19, 21, 23)
 
     val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.checkinDate.getTime > 0 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 
-    val dataX = DenseVector(filteredClicks.map(c => c.checkinDate.getTime / DAY).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime / DAY).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
     val covFunc = CovSEiso()
@@ -63,9 +63,9 @@ class rankGprPredictTest {
     val clusterSet = Set(49, 4, 19, 59, 23, 13, 21)
 
     val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.checkinDate.getTime > 0 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 
-    val dataX = DenseVector(filteredClicks.map(c => c.checkinDate.getTime / DAY).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime / DAY).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
     val covFunc = CovSEiso()

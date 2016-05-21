@@ -19,17 +19,19 @@ import breeze.stats._
 
 case class DestMonthModel(rankGprPredict: RankGprPredict) {
 
-  val DAY = (1000L * 3600 * 24).toDouble
 
   def predictRankedClasses(checkinDate: Date): DenseVector[Double] = {
-    val rankedClasses = rankGprPredict.predict(DenseVector(checkinDate.getTime / DAY))
+    val rankedClasses = rankGprPredict.predict(DenseVector((DestMonthModel.getTimePeriod(checkinDate)).toDouble))
     rankedClasses
   }
 }
 
 object DestMonthModel extends LazyLogging {
 
-  val DAY = (1000L * 3600 * 24).toDouble
+   val W = 1000L * 3600 * 24*7
+  
+  def getTimePeriod(date:Date):Double = (date.getTime/W).toDouble
+ 
 
   /**
    * key - destId
@@ -48,13 +50,13 @@ object DestMonthModel extends LazyLogging {
       trainClicks.foreach(click => clusterHist.add(click.cluster))
       val clusterSet = calcTopNClusters(clusterHist.getHistogram, n = 5).toArray.toSet
 
-      val filteredTrainClicks = trainClicks.filter { c => (clusterSet.contains(c.cluster)) && c.checkinDate.getTime > 0 }
+      val filteredTrainClicks = trainClicks.filter { c => (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 
-      val dataX = DenseVector(filteredTrainClicks.map(c => c.checkinDate.getTime / DAY).toArray).toDenseMatrix.t
+      val dataX = DenseVector(filteredTrainClicks.map(c =>DestMonthModel.getTimePeriod(c.dateTime)).toArray).toDenseMatrix.t
       val dataY = DenseVector(filteredTrainClicks.map(c => c.cluster.toDouble).toArray)
 
       val covFunc = CovSEiso()
-      val covFuncParams = DenseVector[Double](log(1),log(10000))
+      val covFuncParams = DenseVector[Double](log(1),log(1))
       val noiseLogStdDev = log(1d)
       val model = RankGprModel(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev)
       val trainedModel = rankGprTrain(model)

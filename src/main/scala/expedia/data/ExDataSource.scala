@@ -34,8 +34,8 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
   def foreach(onClick: (Click) => Unit) = {
 
     logger.info("Processing %s...".format(dsName))
-    val df = new SimpleDateFormat("\"yyyy-MM-dd\"")
-    val df2 = new SimpleDateFormat("\"yyyy-MM-dd hh:mm:ss\"")
+    val df = new SimpleDateFormat("yyyy-MM-dd")
+    val df2 = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
 
     var i = 0
@@ -57,7 +57,7 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
     val dist = if (lArray(6).equals("NA") || lArray(6).isEmpty()) -1d else lArray(6).toDouble
     val userId = lArray(7).toInt
 
-    val dateTime = if (lArray(0).size > 2) Some(df2.parse(lArray(0))) else None
+    val dateTime = if (lArray(0).size > 2) df2.parse(lArray(0)) else new Date(0)
     val checkinDate = if (lArray(11).size > 2) df.parse(lArray(11)) else new Date(0)
     val checkin = if (lArray(11).size > 2) df.parse(lArray(11)).getTime else 0
     val checkout = if (lArray(12).size > 2) df.parse(lArray(12)).getTime else 0
@@ -69,7 +69,7 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
     val cluster = if (lArray.size == 24) lArray(23).toInt else -1
 
     val stayDays = ((checkout - checkin) / (1000L * 60 * 60 * 24)).toInt
-    val click = Click(userRegion, userLoc, dist, userId, destId, isBooking, hotelContinent, countryId, market, stayDays, checkinDate, cluster)
+    val click = Click(userRegion, userLoc, dist, userId, destId, isBooking, hotelContinent, countryId, market, stayDays, dateTime, cluster)
     click
   }
 }

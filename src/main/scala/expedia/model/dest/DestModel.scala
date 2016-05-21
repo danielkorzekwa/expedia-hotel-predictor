@@ -61,7 +61,7 @@ case class DestModel(
 
       val probsAndRanksVec = destMonthModelsMap.get(click.destId) match {
         case Some(destMonthModel) => {
-          val rankedClasses = destMonthModel.predictRankedClasses(click.checkinDate)(0 until 5)
+          val rankedClasses = destMonthModel.predictRankedClasses(click.dateTime)(0 until 5)
           val probsVec = DenseVector.fill(5)(Double.NaN)
           DenseVector.vertcat(probsVec, rankedClasses)
         }

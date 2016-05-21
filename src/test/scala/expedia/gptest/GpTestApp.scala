@@ -26,19 +26,19 @@ object GpTestApp {
 
     
     
-    val cluster1 = 18
-    val cluster2 = 95
-    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/destmonthdata/train_2013_dest12218_booked_only.csv").getAllClicks()
+    val cluster1 = 19
+    val cluster2 = 23
+    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
     
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.checkinDate.getTime > 0 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.dateTime.getTime > 0 }
 
-    val dataX = DenseVector(filteredClicks.map(c => c.checkinDate.getTime/DAY).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime/DAY).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => if (c.cluster == cluster1) 1.0 else 0).toArray)
 
     println("trainning set size = " + dataX.rows)
     val covFunc = CovSEiso()
-    val covFuncParams = DenseVector[Double](-0.6770088740246011, 0.000722419202977661)
-    val noiseLogStdDev = log(1)
+    val covFuncParams = DenseVector[Double](-1.5661650594032204, 0.2359353000844692)
+    val noiseLogStdDev = -0.8175984176360551
 
     val gpMean = mean(dataY)
     val model = GprModel(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev, gpMean)

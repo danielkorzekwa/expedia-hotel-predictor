@@ -23,7 +23,7 @@ case class RankGprPredict(model: RankGprModel) {
       val classIdx = model.y.findAll { y => y == c1 || y == c2 }
       val classX = model.x(classIdx, ::).toDenseMatrix
       val classY = model.y(classIdx).map(y => if (y == c1) 1.0 else 0).toDenseVector
-val gpMean = mean(classY)
+      val gpMean = mean(classY)
 
       val gprModel = GprModel(classX, classY, model.covFunc, model.covFuncParams, model.noiseLogStdDev, gpMean)
 

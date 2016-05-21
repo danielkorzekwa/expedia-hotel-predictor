@@ -18,30 +18,24 @@ object rankGprTrain {
     val classes = unique(model.y)
     val oneToOnePairs = calcOneVsOnePairs(classes)
 
-    val gpModelsByoneToOnePair: Map[List[Double], GprModel] = oneToOnePairs.par.map {
-      case List(c1, c2) =>
+    val classXSeq = oneToOnePairs.zipWithIndex.map {
+      case (List(c1, c2), index) =>
 
         val classIdx = model.y.findAll { y => y == c1 || y == c2 }
         val classX = model.x(classIdx, ::).toDenseMatrix
-        val classY = model.y(classIdx).map(y => if (y == c1) 1.0 else 0).toDenseVector
-
-        val gpMean = 0d
-        val gprModel = GprModel(classX, classY, model.covFunc, model.covFuncParams, model.noiseLogStdDev, gpMean)
-
-        List(c1, c2) -> gprModel
-    }.toList.toMap
-
-    val classXSeq = gpModelsByoneToOnePair.values.zipWithIndex.map {
-      case (model, index) =>
-
-        val x = model.x
-        val taskIdVec = DenseVector.fill[Double](x.rows)(index)
-
-        DenseMatrix.horzcat(taskIdVec.toDenseMatrix.t, x)
-    }.toList
+        val taskIdVec = DenseVector.fill[Double](classX.rows)(index)
+        DenseMatrix.horzcat(taskIdVec.toDenseMatrix.t, classX)
+    }
     val classXMat = DenseMatrix.vertcat(classXSeq: _*)
 
-    val classYSeq = gpModelsByoneToOnePair.map { case (key, model) => model.y }.toList
+    val classYSeq = oneToOnePairs.zipWithIndex.map {
+      case (List(c1, c2), index) =>
+
+        val classIdx = model.y.findAll { y => y == c1 || y == c2 }
+        val classY = model.y(classIdx).map(y => if (y == c1) 1.0 else 0).toDenseVector
+        val classYMean = mean(classY)
+        classY - classYMean
+    }
     val classYVec = DenseVector.vertcat(classYSeq: _*)
 
     val (newCovFuncParams, newLikNoiseLogStdDev) = learnMtGgHyperParams(classXMat, classYVec, model.covFunc, model.covFuncParams, model.noiseLogStdDev)

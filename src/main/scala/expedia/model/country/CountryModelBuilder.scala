@@ -32,10 +32,6 @@ case class CountryModelBuilder(testClicks: Seq[Click]) {
 
     clusterHistByCountry.getMap.foreach {
       case (countryId, clusterCounts) =>
-        if (countryId == 3) {
-          println(clusterCounts)
-          println(clusterHistByContinent.getMap(continentByCountry(countryId)).map(x => "%.4f".format(x)))
-        }
         clusterCounts :+= 1000f * clusterHistByContinent.getMap(continentByCountry(countryId))
     }
     clusterHistByCountry.normalise()

@@ -1,4 +1,9 @@
 not tested:
+marketUser prior + svmDist + userDist
+mapk=0.46431722, test size=1976304
+analysis time=187603
+
+not tested:
 svmDist + userDist
 mapk=0.46395856, test size=1976304
 analysis time=170675

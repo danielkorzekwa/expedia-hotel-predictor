@@ -25,9 +25,9 @@ object GpTrainApp {
     val clusterSet = Set(19, 21, 23)
     val allClicks = ExDataSource(dsName = "test",  "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
 
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.checkinDate.getTime > 0 }
+    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 
-    val dataX = DenseVector(filteredClicks.map(c => c.checkinDate.getTime/DAY).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime/DAY).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
     val covFunc = CovSEiso()
