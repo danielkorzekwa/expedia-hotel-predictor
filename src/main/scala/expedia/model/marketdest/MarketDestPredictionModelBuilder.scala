@@ -145,7 +145,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
               if (regDestModel.predictionExists(regionByUser(userId), destId)) 7f * regDestModel.predict(regionByUser(userId), destId)
               else {
- // println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
+  println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
             //   if (sum(userClusterProbs) == 0)  7f * destModel.predict(destId) +  clusterHistByDestUser.getMap((destId,userId))
              //   else 7f * destModel.predict(destId) 
               

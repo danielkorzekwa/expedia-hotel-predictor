@@ -35,7 +35,7 @@ object AccuracySingleModelApp extends LazyLogging {
       true
     }
 
-//  val expediaTrainFile = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.csv"
+ // val expediaTrainFile = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.csv"
         val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
     val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile, filter)
 
