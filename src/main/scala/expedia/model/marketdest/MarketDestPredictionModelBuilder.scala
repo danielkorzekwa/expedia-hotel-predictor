@@ -146,7 +146,11 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
         if (destMarketCounts < 300 || destCounts.toDouble / destMarketCounts > 1.3) {
 
           if (sum(userClusterProbs) == 0 && (destMarketCounts > 0 && marketCounts / destMarketCounts < 12)) {
-            userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId)) + clusterHistByMarketUser.getMap((marketId, userId))
+            
+              val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
+            
+               if (sum(marketUserCounts) == 0 && clusterHistByCountryUser.getMap.contains((countryByMarket(marketId), userId)))  userClusterProbs :+=  100f * clusterHistByDestMarket.getMap((destId, marketId)) + clusterHistByCountryUser.getMap((countryByMarket(marketId), userId)) 
+            userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId)) + marketUserCounts
           } else userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
 
         } else {
@@ -167,8 +171,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
                 val destUserCounts = clusterHistByDestUser.getMap((destId, userId))
                 if (sum(marketUserCounts) == 0) println(sum(marketUserCounts))
 
-                if (sum(marketUserCounts) > 0)   7f * destModel.predict(destId) + marketUserCounts - userClusterProbs
-                else if( clusterHistByCountryUser.getMap.contains((countryByMarket(marketId), userId))) 120f * destModel.predict(destId) + clusterHistByCountryUser.getMap((countryByMarket(marketId), userId)) - userClusterProbs
+                if (sum(marketUserCounts) == 0 && clusterHistByCountryUser.getMap.contains((countryByMarket(marketId), userId))) 120f * destModel.predict(destId) + clusterHistByCountryUser.getMap((countryByMarket(marketId), userId)) - userClusterProbs
                 else  7f * destModel.predict(destId) + marketUserCounts - userClusterProbs
               }
             }
