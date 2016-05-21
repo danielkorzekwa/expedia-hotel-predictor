@@ -2,7 +2,7 @@ rm(list=ls())
 train <- fread('c:/perforce/daniel/ex/data_all/train_all_2013.csv')
 test <- fread('c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv')
 
-s <- subset(train_13,  srch_destination_id==12217 & is_booking==1)
+s <- subset(train,  hotel_continent==3 & hotel_market==230 & srch_destination_id==8256 & is_booking==1)
 sqldf('select hotel_cluster,count(*) as c from s group by hotel_cluster order by c desc limit 20' )
 
 

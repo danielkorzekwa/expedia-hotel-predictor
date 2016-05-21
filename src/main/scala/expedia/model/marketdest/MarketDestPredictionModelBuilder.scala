@@ -123,13 +123,22 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
         
           
 
-        
+        val marketCounts = marketCounterMap.getOrElse(marketId,0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
         if (destMarketCounts < 300 || destCounts.toDouble / destMarketCounts > 1.3) {
 
-          userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
+        //  println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
+          
+        //  userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
+          
+          if(sum(userClusterProbs)==0 && (destMarketCounts>0 && marketCounts/destMarketCounts<12)){
+            println("use prior")
+            userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId)) + clusterHistByMarketUser.getMap((marketId,userId))
+          }
+          else  userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
+             
         } else {
           val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
             case Some(avgStayDays) if (destModel.svmDestIds.contains(destId) && avgStayDays.avg().toInt < 3 && !(regionByUser(userId) == 174 && destId == 8250 && marketId == 628)) => {
@@ -140,9 +149,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
               if (regDestModel.predictionExists(regionByUser(userId), destId)) 7f * regDestModel.predict(regionByUser(userId), destId)
               else {
-                  if(userId==442051 && marketId==230){
-              println("marketUserPrior:" + clusterHistByMarketUser.getMap((marketId,userId)))
-            }
+                
               //if(sum(userClusterProbs)>0)  7f * destModel.predict(destId) else  7f * destModel.predict(destId) +  clusterHistByMarketUser.getMap((marketId,userId))
                7f * destModel.predict(destId) +  clusterHistByMarketUser.getMap((marketId,userId))
              //   7f * destModel.predict(destId) 

@@ -13,9 +13,9 @@ case class ExDataSource(dsName: String, expediaFile: String, filter: (Click) => 
   def getAllClicks(): Seq[Click] = {
 
     logger.info("Processing %s...".format(dsName))
-    val df = new SimpleDateFormat("\"yyyy-MM-dd\"") // testing
+    val df = new SimpleDateFormat("yyyy-MM-dd") // testing
     //    val df = new SimpleDateFormat("yyyy-MM-dd") //submission
-    val df2 = new SimpleDateFormat("\"yyyy-MM-dd hh:mm:ss\"")
+    val df2 = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
 
     var i = 0

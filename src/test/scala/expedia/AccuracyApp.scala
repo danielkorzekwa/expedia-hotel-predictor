@@ -24,11 +24,11 @@ object AccuracyApp extends LazyLogging {
     val now = System.currentTimeMillis()
 
     //val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
-      val expediaTrainFile = "c:/perforce/daniel/ex/data_all/train_all_2013.csv"
+        val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
     val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile)
 
    // val expediaTestFile = "c:/perforce/daniel/ex/segments/market_365/train_2014_market365_booked_only.csv"
-     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
+     val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(c => c.dist != -1)
 
     predictClustersAndSaveToFile(trainDS, testClicks)
