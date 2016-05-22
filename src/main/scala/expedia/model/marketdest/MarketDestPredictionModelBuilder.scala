@@ -1,32 +1,30 @@
 package expedia.model.marketdest
 
-import breeze.linalg.DenseVector
-import breeze.linalg.DenseMatrix
-import breeze.linalg._
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection._
-import expedia.model.svm.loadClusterProbsByDestMap
-import expedia.model.svm.SVMPredictionModel
-import expedia.stats.MulticlassHistByKey
+
+import scala.collection.Seq
+import scala.collection.mutable
+
+import com.typesafe.scalalogging.slf4j.LazyLogging
+
+import breeze.linalg.InjectNumericOps
+import breeze.linalg.sum
 import expedia.data.Click
-import expedia.stats.MulticlassHistByKey
-import expedia.stats.CounterMap
-import expedia.model.dest.DestModel
-import expedia.model.country.CountryModel
-import expedia.stats.CounterMap
-import expedia.stats.OnlineAvg
-import expedia.model.clusterdist.ClusterDistPredictionModel
-import expedia.model.clusterdistprox.ClusterDistProxModel
-import expedia.model.country.CountryModelBuilder
 import expedia.data.ExDataSource
-import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
+import expedia.model.country.CountryModel
+import expedia.model.country.CountryModelBuilder
+import expedia.model.dest.DestModel
 import expedia.model.dest.DestModelBuilder
-import expedia.model.regdest.RegDestModel
-import expedia.model.regdest.RegDestModel
-import expedia.model.regdest.RegDestModelBuilder
 import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.regdest.RegDestModel
+import expedia.model.regdest.RegDestModelBuilder
+import expedia.stats.CounterMap
+import expedia.stats.MulticlassHistByKey
+import expedia.stats.OnlineAvg
+import expedia.model.countryuser.CountryUserModel
+import expedia.model.countryuser.CountryUserModelBuilder
+import expedia.model.countryuser.CountryUserModelBuilder
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -115,7 +113,8 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
 
   def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
              destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-             regDestModel: RegDestModel, marketModel: MarketModel): MarketDestPredictionModel = {
+             regDestModel: RegDestModel, marketModel: MarketModel,
+             countryUserModel: CountryUserModel): MarketDestPredictionModel = {
 
     logger.info("Add prior stats to clusterHistByDestMarket...")
     clusterHistByDestMarket.getMap.foreach {
@@ -213,6 +212,7 @@ object MarketDestPredictionModelBuilder {
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val regDestModelBuilder = RegDestModelBuilder()
 
+    val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
     val modelBuilder = MarketDestPredictionModelBuilder(testClicks)
 
     val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
@@ -225,6 +225,8 @@ object MarketDestPredictionModelBuilder {
       destModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
       regDestModelBuilder.processCluster(click)
+      countryUserModelBuilder.processCluster(click)
+
       modelBuilder.processCluster(click)
 
       if (click.isBooking == 1) {
@@ -238,8 +240,9 @@ object MarketDestPredictionModelBuilder {
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
+    val countryUserModel = countryUserModelBuilder.create(countryModel)
 
     val destModel = destModelBuilder.create(countryModel)
-    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel)
+    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, countryUserModel)
   }
 }
