@@ -1,7 +1,7 @@
 not tested:
 ... (1976304 total)
-mapk=0.46485382, test size=1976304
-analysis time=207617
+mapk=0.46478385, test size=1976304
+analysis time=200123
 
 not tested:
 svmDist + userDist
