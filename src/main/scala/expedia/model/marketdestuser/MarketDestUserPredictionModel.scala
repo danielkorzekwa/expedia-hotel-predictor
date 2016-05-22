@@ -1,4 +1,4 @@
-package expedia.model.marketdest
+package expedia.model.marketdestuser
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
@@ -18,10 +18,10 @@ import expedia.model.regdest.RegDestModel
 import expedia.util.calcTopNClusters
 import expedia.util.getTop5Clusters
 
-case class MarketDestPredictionModel(
+case class MarketDestUserPredictionModel(
     destModel: DestModel,
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
-    clusterProbsByDestMarket: Map[Tuple2[Int, Int], DenseVector[Float]],
+  
     userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
     regDestModel: RegDestModel) extends LazyLogging {
 
@@ -86,6 +86,8 @@ case class MarketDestPredictionModel(
       }
     }
 
+    val zeroProb = clusterProb.toArray.find(x => x==0)
+   
     clusterProb
   }
 

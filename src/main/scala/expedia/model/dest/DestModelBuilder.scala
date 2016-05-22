@@ -31,7 +31,6 @@ case class DestModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
       else clusterHistByDest.add(click.destId, click.cluster, value = 0.05f)
 
     }
-    countryByDest += click.destId -> click.countryId
   }
 
   def create(countryModel: CountryModel): DestModel = {

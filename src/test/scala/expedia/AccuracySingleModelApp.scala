@@ -10,9 +10,9 @@ import breeze.stats._
 import dk.gp.util.csvwrite
 import expedia.model.clusterdistprox.ClusterDistProxModel
 import expedia.data.ExDataSource
-import expedia.model.marketdest.MarketDestPredictionModel
+import expedia.model.marketdestuser.MarketDestUserPredictionModel
 import expedia.model.clusterdist.ClusterDistPredictionModel
-import expedia.model.marketdest.MarketDestPredictionModelBuilder
+import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExDataSource
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
@@ -44,12 +44,11 @@ object AccuracySingleModelApp extends LazyLogging {
   
 
     val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks() //.filter { c => c.marketId==1392 }
-    val model = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = MarketDestUserPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
 
     val top5predictions = model.predictTop5(testClicks)
 
-    //  val predictedMat = model.predict(testClicks)
-
+      val predictedMat =  model.predict(testClicks) +1e-10f
     logger.info("Compute mapk..")
 
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
@@ -58,9 +57,9 @@ object AccuracySingleModelApp extends LazyLogging {
     val apkVector = averagePrecision(top5predictions(::, 5 to 9), actual, k = 5)
     val mapk = mean(apkVector)
 
-    val loglikValue = Double.NaN //loglik(predictedMat.map(x => x.toDouble), actual)
+    val loglikValue = loglik(predictedMat.map(x => x.toDouble), actual)
 
-    println("mapk=%.8f, loglik=%6f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
+    println("mapk=%.8f, loglik=%.1f, test size=%d".format(mapk, loglikValue, top5predictions.rows))
 
     csvwrite("target/predictions.csv", DenseMatrix.horzcat(top5predictions, actual.toDenseMatrix.t, apkVector.toDenseMatrix.t), header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5,hotel_cluster,mapk")
 

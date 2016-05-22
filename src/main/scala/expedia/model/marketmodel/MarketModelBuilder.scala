@@ -22,7 +22,7 @@ case class MarketModelBuilder(testClicks: Seq[Click]) {
 
     if (clusterHistByMarket.getMap.contains(click.marketId)) {
       if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster)
-      else clusterHistByMarket.add(click.marketId, click.cluster, value = 0.40f)
+      else clusterHistByMarket.add(click.marketId, click.cluster, value = 0.05f)
     }
   }
 

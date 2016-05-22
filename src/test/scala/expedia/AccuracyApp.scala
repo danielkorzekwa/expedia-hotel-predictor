@@ -10,9 +10,7 @@ import breeze.stats._
 import dk.gp.util.csvwrite
 import expedia.model.clusterdistprox.ClusterDistProxModel
 import expedia.data.ExDataSource
-import expedia.model.marketdest.MarketDestPredictionModel
 import expedia.model.clusterdist.ClusterDistPredictionModel
-import expedia.model.marketdest.MarketDestPredictionModelBuilder
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExDataSource
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
