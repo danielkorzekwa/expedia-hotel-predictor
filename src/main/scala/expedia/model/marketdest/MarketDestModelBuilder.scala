@@ -8,7 +8,9 @@ import expedia.stats.CounterMap
 import expedia.model.marketmodel.MarketModel
 import expedia.model.dest.DestModel
 
-case class MarketDestModelBuilder(testClicks: Seq[Click],clickWeight:Float) {
+case class MarketDestModelBuilder(testClicks: Seq[Click],
+                                  destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+                                  destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]) {
 
   //key ((marketId,destId)
   private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -18,6 +20,15 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],clickWeight:Float) {
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
 
   def processCluster(click: Click) = {
+
+    val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
+    val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
+    val destCounts = destCounterMap.getOrElse(click.destId, 0)
+    val clickWeight =
+      if (destMarketCounts < 300) 0.5f
+      else if (destMarketCounts < 500) 0.1f
+      else 0.05f
+
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
       if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster)
       else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = clickWeight)

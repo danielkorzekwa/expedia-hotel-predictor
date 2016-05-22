@@ -25,6 +25,25 @@ object predictClusters extends LazyLogging {
    */
   def apply(trainDS: ExDataSource, testClicks: Seq[Click]): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
 
+    /**
+     * Create counters
+     */
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
+    val marketCounterMap = CounterMap[Int]()
+    def onClickCounters(click: Click) = {
+      if (click.isBooking == 1) {
+        destMarketCounterMap.add((click.destId, click.marketId))
+        destCounterMap.add(click.destId)
+        marketCounterMap.add(click.marketId)
+      }
+    }
+    trainDS.foreach { click => onClickCounters(click) }
+
+    /**
+     * Create models
+     */
+
     val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks)
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
@@ -34,14 +53,8 @@ object predictClusters extends LazyLogging {
     val regDestModelBuilder = RegDestModelBuilder()
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
 
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-    val userCounterMap = CounterMap[Int]()
-    
-     val marketDestModelBuilder = MarketDestModelBuilder(testClicks,clickWeight=0.05f)
-      val marketDestModelBuilder05 = MarketDestModelBuilder(testClicks,clickWeight=0.5f)
-     
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks,  destMarketCounterMap, destCounterMap, marketCounterMap)
+
     val marketDestUserPredictBuilder = MarketDestUserPredictionModelBuilder(testClicks)
 
     def onClick(click: Click) = {
@@ -55,16 +68,6 @@ object predictClusters extends LazyLogging {
       marketDestUserPredictBuilder.processCluster(click)
       countryUserModelBuilder.processCluster(click)
       marketDestModelBuilder.processCluster(click)
-      marketDestModelBuilder05.processCluster(click)
-
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-
-      userCounterMap.add(click.userId)
-
     }
     trainDS.foreach { click => onClick(click) }
 
@@ -76,10 +79,9 @@ object predictClusters extends LazyLogging {
     val destModel = destModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
     val countryUserModel = countryUserModelBuilder.create(countryModel)
-    val marketDestModel = marketDestModelBuilder.create(destModel,marketModel,countryModel,destMarketCounterMap,destCounterMap,marketCounterMap)
-      val marketDestModel05 = marketDestModelBuilder05.create(destModel,marketModel,countryModel,destMarketCounterMap,destCounterMap,marketCounterMap)
+    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
     val marketDestUserPredict = marketDestUserPredictBuilder.create(
-        destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, countryUserModel,marketDestModel,marketDestModel05)
+      destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, countryUserModel, marketDestModel)
 
     /**
      * Cluster dist
