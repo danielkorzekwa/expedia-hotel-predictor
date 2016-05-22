@@ -5,7 +5,7 @@ import expedia.stats.MulticlassHistByKey
 import scala.collection._
 import breeze.linalg.DenseVector
 import breeze.numerics._
-import expedia.stats.calcVectorProbsMutable
+import breeze.linalg._
 
 case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
 
@@ -14,8 +14,8 @@ case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
 
   testClicks.foreach { click =>
 
-      val distClusterProbs = clusterHistByKey.getOrElseUpdate((click.userLoc, click.marketId), mutable.Map())
-      distClusterProbs.getOrElseUpdate(click.dist, DenseVector.fill(100)(1f))
+    val distClusterProbs = clusterHistByKey.getOrElseUpdate((click.userLoc, click.marketId), mutable.Map())
+    distClusterProbs.getOrElseUpdate(click.dist, DenseVector.fill(100)(1f))
   }
 
   def processCluster(click: Click) = {
@@ -45,7 +45,8 @@ case class ClusterDistProxModelBuilder(testClicks: Seq[Click]) {
         distProbs.foreach {
           case (dist, clusterProbs) =>
 
-            calcVectorProbsMutable(clusterProbs)
+            val Z = sum(clusterProbs)
+            clusterProbs :/= Z
         }
     }
     ClusterDistProxModel(clusterHistByKey)

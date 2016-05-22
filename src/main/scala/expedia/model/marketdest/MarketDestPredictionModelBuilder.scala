@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
 import expedia.model.svm.loadClusterProbsByDestMap
 import expedia.model.svm.SVMPredictionModel
-import expedia.stats.calcVectorProbsMutable
 import expedia.stats.MulticlassHistByKey
 import expedia.data.Click
 import expedia.stats.MulticlassHistByKey
@@ -134,7 +133,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     logger.info("Add prior stats to clusterHistByDestMarket...done")
 
     logger.info("Normalise clusterHistByDestMarket...")
-    clusterHistByDestMarket.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+   clusterHistByDestMarket.normalise()
     logger.info("Normalise clusterHistByDestMarket...done")
 
     logger.info("Add prior stats to clusterHistByDestMarketUser...")
@@ -193,7 +192,7 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
     logger.info("Normalise clusterHistByDestMarketUser...")
-    clusterHistByDestMarketUser.getMap.foreach { case (key, stats) => calcVectorProbsMutable(stats) }
+    clusterHistByDestMarketUser.normalise()
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
     MarketDestPredictionModel(destModel, clusterHistByDestMarketUser.getMap, clusterHistByDestMarket.getMap, userCounterMap,
