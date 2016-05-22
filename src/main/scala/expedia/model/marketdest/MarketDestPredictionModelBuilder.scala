@@ -144,7 +144,8 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
           if (sum(userClusterProbs) == 0 && (destMarketCounts > 0 && marketCounts / destMarketCounts < 12)) {
 
             val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
-            if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) userClusterProbs :+= 20f * clusterHistByDestMarket.getMap((destId, marketId)) + countryUserModel.predict(countryByMarket(marketId),userId)
+            val beta=0.95f
+            if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) userClusterProbs :+= beta * clusterHistByDestMarket.getMap((destId, marketId)) + (1-beta) * countryUserModel.predict(countryByMarket(marketId),userId)
             else userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId)) + marketUserCounts
           } else userClusterProbs :+= 4f * clusterHistByDestMarket.getMap((destId, marketId))
 
@@ -154,13 +155,14 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
               val custStayDays = avgStayDays.avg().toInt
 
               userClusterProbs :+= {
-                if (true) {
+               
                   val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
                   val destUserCounts = clusterHistByDestUser.getMap((destId, userId))
 
-                  if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) 20f * destModel.predict(destId, continentByDest(destId), custStayDays) + countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
+                  val beta=0.95f
+                  if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) beta * destModel.predict(destId, continentByDest(destId), custStayDays) + (1-beta)*countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
                   else 7f * destModel.predict(destId, continentByDest(destId), custStayDays) + marketUserCounts - userClusterProbs
-                } else 7f * destModel.predict(destId, continentByDest(destId), custStayDays)
+               
               }
             }
             case _ => userClusterProbs :+= {
@@ -171,7 +173,8 @@ case class MarketDestPredictionModelBuilder(testClicks: Seq[Click]) extends Lazy
                 val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
                 val destUserCounts = clusterHistByDestUser.getMap((destId, userId))
 
-                if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) 15f * destModel.predict(destId) + countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
+                val beta=0.95f
+                if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) beta * destModel.predict(destId) + (1-beta)*countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
                 else 7f * destModel.predict(destId) + marketUserCounts - userClusterProbs
               }
             }
