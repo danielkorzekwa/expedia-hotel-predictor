@@ -113,8 +113,22 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
             val beta = 0.95f
             if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) userClusterProbs :+= beta * marketDestModel.predict(marketId, destId) + (1 - beta) * countryUserModel.predict(countryByMarket(marketId), userId)
-            else userClusterProbs :+= 4f * marketDestModel.predict(marketId, destId) + marketUserCounts
-          } else userClusterProbs :+= 4f * marketDestModel.predict(marketId, destId) + userClusterProbs
+            else userClusterProbs :+= {
+               val m = marketUserCounts.copy
+               m :+= marketModel.predict(marketId)
+                  m :/= sum(m)
+                (2f * marketDestModel.predict(marketId, destId) + m) 
+              //4f * marketDestModel.predict(marketId, destId) + marketUserCounts
+            }
+          } else userClusterProbs :+= {
+           
+                val m = marketUserCounts.copy
+                  m :+= marketModel.predict(marketId)
+                  m :/= sum(m)
+                 10f*(2f * marketDestModel.predict(marketId, destId) + m) 
+            
+            // 4f * marketDestModel.predict(marketId, destId) //+ userClusterProbs
+          }
 
         } else {
 
@@ -135,8 +149,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
                    val m = marketUserCounts.copy
                   m :+= marketModel.predict(marketId)
                   m :/= sum(m)
-                 14f*(2f * marketDestModel.predict(marketId, destId) + m)// - userClusterProbs
-                  //7f * destModel.predict(destId, continentByDest(destId), custStayDays) + marketUserCounts - userClusterProbs
+                 14f*(2f * marketDestModel.predict(marketId, destId) + m)
                 }
 
               }
@@ -155,7 +168,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
                   val m = marketUserCounts.copy
                   m :+= marketModel.predict(marketId)
                   m :/= sum(m)
-                  14f*(2f * marketDestModel.predict(marketId, destId) + m)// - userClusterProbs
+                  14f*(2f * marketDestModel.predict(marketId, destId) + m)
                 }
               }
             }
