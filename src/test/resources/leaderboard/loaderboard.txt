@@ -1,6 +1,8 @@
-not tested:
+-------------------------------------------------------------------------------------
+submission: 0.51174
+linear priors
 ... (1976304 total)
-mapk=0.46520427, test size=1976304
+mapk=0.46520453, test size=1976304
 
 not tested:
 svmDist + userDist
