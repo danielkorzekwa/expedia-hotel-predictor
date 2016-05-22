@@ -78,9 +78,9 @@ case class MarketDestUserPredictionModel(
       svmDistPrediction match {
         case Some(svmDistPrediction) => {
        //   logger.info(" svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
-          val probVec = svmDistPrediction(click.dist)
+          val probVec = svmDistPrediction.get(click.dist)
 
-          probVec.foreachPair { (index, prob) => clusterProb(index) = prob }
+         if(probVec.isDefined) probVec.get.foreachPair { (index, prob) => clusterProb(index) = prob }
         }
         case None => //do nothing
       }

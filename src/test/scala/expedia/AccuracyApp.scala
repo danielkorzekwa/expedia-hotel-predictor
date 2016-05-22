@@ -34,8 +34,6 @@ object AccuracyApp extends LazyLogging {
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
     val top5predictions = loadPredictions()
 
-    //   val top5predictions = MarketDestPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
-    //  val top5predictions = ClusterDist2ModelBuilder.buildFromTrainingSet(trainDS, testClicks).predictTop5(testClicks)
 
     logger.info("Compute mapk..")
 
@@ -55,12 +53,11 @@ object AccuracyApp extends LazyLogging {
     logger.info("Load clusterPredictions...")
     val clusterDistPred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)
     val marketDestPred = csvread(new File("target/marketDestPred_test.csv"), skipLines = 1)
-    val marketDestPredNoUser = csvread(new File("target/marketDestPred_no_user_test.csv"), skipLines = 1)
     val clusterDistProxPred = csvread(new File("target/clusterDistProxPred_test.csv"), skipLines = 1)
 
     logger.info("combineClusterPredictions...")
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
-    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred, marketDestPredNoUser)
+    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred)
     top5predictions
   }
 

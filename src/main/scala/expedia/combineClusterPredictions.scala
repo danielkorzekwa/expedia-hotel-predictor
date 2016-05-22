@@ -16,8 +16,7 @@ object combineClusterPredictions extends LazyLogging {
    *
    * @return Top 5 predictions  [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(clusterDistPred: DenseMatrix[Double], marketDestPred: DenseMatrix[Double], clusterDistProxPred: DenseMatrix[Double],
-            marketDestPredNoUser: DenseMatrix[Double]): DenseMatrix[Double] = {
+  def apply(clusterDistPred: DenseMatrix[Double], marketDestPred: DenseMatrix[Double], clusterDistProxPred: DenseMatrix[Double]): DenseMatrix[Double] = {
 
     val i = new AtomicInteger(0)
     val top5ClustersSeq = (0 until clusterDistPred.rows).map { r =>
@@ -45,9 +44,16 @@ object combineClusterPredictions extends LazyLogging {
         val vote = marketDestVotes(i)
         
            val worseVote = prioritizedVotes.find{otherVote =>
+            
             if (otherVote._2==1 && vote._2>0.9) {true}
-              else if (otherVote._2<0.995 && vote._2>0.7) {true}
-             else if (otherVote._2<0.51 && vote._2>0.5) {true}
+              else if (otherVote._2>0.985 && otherVote._2<0.995 && vote._2>0.8) {true}
+              else if (otherVote._2>0.975 && otherVote._2<0.985 && vote._2>0.8) {true}
+             else if (otherVote._2>0.965 && otherVote._2<0.975 && vote._2>0.8) {true}
+             else if (otherVote._2>0.955 && otherVote._2<0.965 && vote._2>0.8) {true}
+             else if (otherVote._2>0.495 && otherVote._2<0.505 && vote._2>0.5) {true}
+             else if (otherVote._2>0.485 && otherVote._2<0.495 && vote._2>0.5) {true}
+             else if (otherVote._2>0.475 && otherVote._2<0.485 && vote._2>0.5) {true}
+             else if (otherVote._2>0.465 && otherVote._2<0.475 && vote._2>0.5) {true}
              else false
           }
      
