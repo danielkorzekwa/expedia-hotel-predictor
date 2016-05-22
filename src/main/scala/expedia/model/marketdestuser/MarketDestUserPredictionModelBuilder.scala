@@ -131,7 +131,13 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
                 val beta = 0.95f
                 if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) beta * destModel.predict(destId, continentByDest(destId), custStayDays) + (1 - beta) * countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
-                else 7f * destModel.predict(destId, continentByDest(destId), custStayDays) + marketUserCounts - userClusterProbs
+                else {
+                   val m = marketUserCounts.copy
+                  m :+= marketModel.predict(marketId)
+                  m :/= sum(m)
+                 14f*(2f * marketDestModel.predict(marketId, destId) + m)// - userClusterProbs
+                  //7f * destModel.predict(destId, continentByDest(destId), custStayDays) + marketUserCounts - userClusterProbs
+                }
 
               }
             }
@@ -149,7 +155,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
                   val m = marketUserCounts.copy
                   m :+= marketModel.predict(marketId)
                   m :/= sum(m)
-                  2f * marketDestModel.predict(marketId, destId) + m - userClusterProbs
+                  14f*(2f * marketDestModel.predict(marketId, destId) + m)// - userClusterProbs
                 }
               }
             }
