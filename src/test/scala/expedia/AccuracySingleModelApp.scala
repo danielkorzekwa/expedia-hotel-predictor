@@ -37,16 +37,14 @@ object AccuracySingleModelApp extends LazyLogging {
       true
     }
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
     //      val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
-    //  val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile, filter)
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filter)
 
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
     //      val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
 
-    // val testClicks = ExDataSource(dsName = "testDS", expediaTestFile, filter).getAllClicks() //.filter { c => c.marketId==1392 }
-    val testClicks = loadObject[List[Click]](expediaTestFileKryo)
+    val testClicks = ExKryoDataSource(dsName = "trainDS", expediaTestFileKryo, filter).getAllClicks()
     val model = MarketDestUserPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
 
     val top5predictions = model.predictTop5(testClicks)

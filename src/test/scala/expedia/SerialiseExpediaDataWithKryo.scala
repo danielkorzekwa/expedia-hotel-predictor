@@ -3,23 +3,19 @@ package expedia
 import dk.gp.util.loadObject
 import dk.gp.util.saveObject
 import expedia.data.Click
-import expedia.data.ExDataSource
 import expedia.data.ExCSVDataSource
 
 object SerialiseExpediaDataWithKryo {
 
   def main(args: Array[String]): Unit = {
 
-    val expediaTestFile = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.csv"
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
-
-    val now = System.currentTimeMillis()
-    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks().toList
-    println("Loading from csv file time=" + (System.currentTimeMillis() - now))
-
-    saveObject(testClicks, expediaTestFileKryo)
-    val now2 = System.currentTimeMillis()
-    val testClicks2 = loadObject[List[Click]](expediaTestFileKryo)
-    println("Loading from kryo file time=" + (System.currentTimeMillis() - now2 + ":" + testClicks2.size))
+    val expediaTrainFile = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2"
+    val trainClicks = ExCSVDataSource(dsName = "testDS", expediaTrainFile + ".csv").getAllClicks().toList
+    saveObject(trainClicks, expediaTrainFile + ".kryo")
+    
+     val expediaTestFile = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only"
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile + ".csv").getAllClicks().toList
+    saveObject(testClicks, expediaTestFile + ".kryo")
+   
   }
 }
