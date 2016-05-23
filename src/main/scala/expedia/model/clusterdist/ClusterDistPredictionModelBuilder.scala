@@ -20,11 +20,20 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click]) {
     clusterHistByKey.add(key, click.cluster, value = 0)
   }
 
+  private val clusterHistByKey2 = MulticlassHistByKey[Tuple4[Int, Int, Int, Int]](100)
+  testClicks.foreach { click =>
+    val key = (click.userLoc, (click.dist * 10000).toInt, click.marketId, click.destId)
+    clusterHistByKey2.add(key, click.cluster, value = 0)
+  }
+
   def processCluster(click: Click) = {
 
     if (click.dist != -1) {
       val key = (click.userLoc, (click.dist * 10000).toInt, click.marketId)
       if (clusterHistByKey.getMap.contains(key)) clusterHistByKey.add(key, click.cluster)
+
+      val key2 = (click.userLoc, (click.dist * 10000).toInt, click.marketId, click.destId)
+      if (clusterHistByKey2.getMap.contains(key2)) clusterHistByKey2.add(key2, click.cluster)
     }
 
   }
@@ -41,8 +50,11 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click]) {
         clusterCounts :+= 1f * prior
     }
 
-    val topClustersByKey: Map[Tuple3[Int, Int, Int], DenseVector[Int]] =
-      clusterHistByKey.getMap.map { case (key, clusterProbs) => key -> calcTopNClusters(clusterProbs, 100, minProb = Some(0)) }
+    clusterHistByKey.normalise()
+    clusterHistByKey2.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= 7f * clusterHistByKey.getMap((key._1, key._2, key._3)) }
+
+    val topClustersByKey: Map[Tuple4[Int, Int, Int, Int], DenseVector[Int]] =
+      clusterHistByKey2.getMap.map { case (key, clusterProbs) => key -> calcTopNClusters(clusterProbs, 100, minProb = Some(0)) }
 
     ClusterDistPredictionModel(topClustersByKey)
   }

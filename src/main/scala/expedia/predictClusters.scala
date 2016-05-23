@@ -17,6 +17,7 @@ import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.model.countryuser.CountryUserModelBuilder
 import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.marketdest.MarketDestModelBuilder
+import expedia.model.destbydist.DestByDistModelBuilder
 
 object predictClusters extends LazyLogging {
 
@@ -53,6 +54,8 @@ object predictClusters extends LazyLogging {
     val regDestModelBuilder = RegDestModelBuilder()
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
 
+     val destByDistModelBuilder = DestByDistModelBuilder(testClicks)
+    
     val marketDestModelBuilder = MarketDestModelBuilder(testClicks,  destMarketCounterMap, destCounterMap, marketCounterMap)
 
     val marketDestUserPredictBuilder = MarketDestUserPredictionModelBuilder(testClicks)
@@ -67,6 +70,8 @@ object predictClusters extends LazyLogging {
       regDestModelBuilder.processCluster(click)
       marketDestUserPredictBuilder.processCluster(click)
       countryUserModelBuilder.processCluster(click)
+        destByDistModelBuilder.processCluster(click)
+      
       marketDestModelBuilder.processCluster(click)
     }
     trainDS.foreach { click => onClick(click) }
@@ -80,8 +85,11 @@ object predictClusters extends LazyLogging {
     val regDestModel = regDestModelBuilder.create()
     val countryUserModel = countryUserModelBuilder.create(countryModel)
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+   val destByDistModel = destByDistModelBuilder.create()
+    
     val marketDestUserPredict = marketDestUserPredictBuilder.create(
-      destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, countryUserModel, marketDestModel)
+      destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, 
+      countryUserModel, marketDestModel,clusterDistProxModel,destByDistModel)
 
     /**
      * Cluster dist

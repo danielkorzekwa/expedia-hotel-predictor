@@ -1,3 +1,9 @@
+not tested:
+(userLoc,market,dist,dest)
+... (1976304 total)
+mapk=0.46522820, test size=1976304
+analysis time=282141
+
 -------------------------------------------------------------------------------------
 submission: 0.51174
 linear priors

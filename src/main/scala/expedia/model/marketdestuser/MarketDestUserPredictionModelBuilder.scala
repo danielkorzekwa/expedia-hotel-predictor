@@ -24,6 +24,11 @@ import expedia.stats.OnlineAvg
 import expedia.model.marketdest.MarketDestModel
 import expedia.model.marketdest.MarketDestModelBuilder
 import dk.bayes.math.linear.isIdentical
+import expedia.model.clusterdistprox.ClusterDistProxModel
+import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
+import expedia.model.destbydist.DestByDistModel
+import expedia.model.destbydist.DestByDistModelBuilder
+import expedia.model.destbydist.DestByDistModelBuilder
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -103,7 +108,9 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
   def create(destModel: DestModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
              destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
              regDestModel: RegDestModel, marketModel: MarketModel,
-             countryUserModel: CountryUserModel, marketDestModel: MarketDestModel): MarketDestUserPredictionModel = {
+             countryUserModel: CountryUserModel, marketDestModel: MarketDestModel,
+             clusterDistProxModel:ClusterDistProxModel,
+             destByDistModel:DestByDistModel): MarketDestUserPredictionModel = {
 
     logger.info("Add prior stats to clusterHistByDestMarketUser...")
 
@@ -194,7 +201,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
     logger.info("Normalise clusterHistByDestMarketUser...done")
 
     MarketDestUserPredictionModel(destModel, clusterHistByDestMarketUser.getMap, userCounterMap,
-      destCounterMap, destMarketCounterMap, regDestModel)
+      destCounterMap, destMarketCounterMap, regDestModel,clusterDistProxModel,destByDistModel)
   }
 
 }
@@ -226,31 +233,43 @@ object MarketDestUserPredictionModelBuilder {
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val regDestModelBuilder = RegDestModelBuilder()
 
+      val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
+    
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
 
+    val destByDistModelBuilder = DestByDistModelBuilder(testClicks)
+    
     val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
     val modelBuilder = MarketDestUserPredictionModelBuilder(testClicks)
 
     def onClick(click: Click) = {
 
+        clusterDistProxModelBuilder.processCluster(click)
+      
       marketModelBuilder.processCluster(click)
       destModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
       regDestModelBuilder.processCluster(click)
       countryUserModelBuilder.processCluster(click)
       marketDestModelBuilder.processCluster(click)
+      destByDistModelBuilder.processCluster(click)
       modelBuilder.processCluster(click)
 
     }
     trainDatasource.foreach { click => onClick(click) }
-
+    
+val clusterDistProxModel = clusterDistProxModelBuilder.create()
+    
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
     val countryUserModel = countryUserModelBuilder.create(countryModel)
     val destModel = destModelBuilder.create(countryModel)
+    val destByDistModel = destByDistModelBuilder.create()
+    
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
-    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, countryUserModel, marketDestModel)
+    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, 
+        countryUserModel, marketDestModel,clusterDistProxModel,destByDistModel)
 
   }
 }

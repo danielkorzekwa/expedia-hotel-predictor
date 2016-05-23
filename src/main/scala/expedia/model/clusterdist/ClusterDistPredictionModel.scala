@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * @param clusterByDistMap Map[(userLoc,dist,market),[all clusters for the key]]
  */
-case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int, Int, Int], DenseVector[Int]]) extends LazyLogging {
+case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple4[Int,Int, Int, Int], DenseVector[Int]]) extends LazyLogging {
 
   logger.info("DistClusterMap size=%d".format(topClusterByDistMap.size))
 
@@ -21,7 +21,7 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int, Int, 
   def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
     val i = new AtomicInteger(0)
     val predictionRecords = clicks.par.map { click =>
-      val predicted = predict(click.userLoc, click.dist, click.marketId)
+      val predicted = predict(click.userLoc, click.dist, click.marketId,click.destId)
       predicted
     }.toList
 
@@ -32,7 +32,7 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int, Int, 
   def predictTop5(clicks: Seq[Click]): DenseMatrix[Double] = {
     val i = new AtomicInteger(0)
     val predictionRecordsClusterDist = clicks.par.map { click =>
-      val predicted = predict(click.userLoc, click.dist, click.marketId)
+      val predicted = predict(click.userLoc, click.dist, click.marketId,click.destId)
 
       val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
 
@@ -49,11 +49,11 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple3[Int, Int, 
     predictionMatrixClusterDist
   }
 
-  def predict(userLoc: Int, dist: Double, market: Int): DenseVector[Float] = {
+  def predict(userLoc: Int, dist: Double, market: Int,destId:Int): DenseVector[Float] = {
 
     val clusterProbs = DenseVector.tabulate[Float](100) { hotelCluster =>
 
-      val key = (userLoc, (dist * 10000).toInt, market)
+      val key = (userLoc, (dist * 10000).toInt, market,destId)
       val clusterVec = topClusterByDistMap.get(key)
       val prob2 = clusterVec match {
         case Some(clusterVec) => {

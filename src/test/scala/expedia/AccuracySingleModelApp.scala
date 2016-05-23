@@ -11,7 +11,6 @@ import dk.gp.util.csvwrite
 import expedia.model.clusterdistprox.ClusterDistProxModel
 import expedia.data.ExDataSource
 import expedia.model.marketdestuser.MarketDestUserPredictionModel
-import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExDataSource
