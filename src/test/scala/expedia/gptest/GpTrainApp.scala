@@ -15,6 +15,8 @@ import dk.gp.gpc.gpcTrain
 import dk.gp.gpc.gpcPredict
 import expedia.rankgpr.rankGprTrain
 import expedia.rankgpr.RankGprModel
+import expedia.data.ExDataSource
+import expedia.data.ExCSVDataSource
 
 object GpTrainApp {
 
@@ -23,7 +25,7 @@ object GpTrainApp {
   def main(args: Array[String]): Unit = {
 
     val clusterSet = Set(19, 21, 23)
-    val allClicks = ExDataSource(dsName = "test",  "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val allClicks = ExCSVDataSource(dsName = "test",  "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
 
     val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 

@@ -5,17 +5,18 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.data.ExDataSource
 import org.apache.commons.io.FileUtils
 import java.io.File
+import expedia.data.ExCSVDataSource
 
 object SubmissionApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
 
     val expediaTrainFile = "c:/perforce/daniel/ex/orig_data/train.csv"
-    val trainDataSource = ExDataSource(dsName = "trainDS", expediaTrainFile)
+    val trainDataSource = ExCSVDataSource(dsName = "trainDS", expediaTrainFile)
 
     logger.info("Loading test data...")
     val expediaTestFile = "c:/perforce/daniel/ex/data_test/test_all_all_cols.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
 
     val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClusters(trainDataSource, testClicks)
 

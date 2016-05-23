@@ -16,6 +16,7 @@ import dk.gp.cov.CovSEiso
 import expedia.rankgpr.rankGprTrain
 import java.util.Date
 import breeze.stats._
+import expedia.data.ExCSVDataSource
 
 case class DestMonthModel(rankGprPredict: RankGprPredict) {
 
@@ -43,7 +44,7 @@ object DestMonthModel extends LazyLogging {
     val destMonthModelMap = (0 until destIds.size).par.map { r =>
       val destId = destIds(r).toInt
 
-      val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/segments/destmonthdata/train_2013_dest%d_booked_only.csv".format(destId))
+      val trainDS = ExCSVDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/segments/destmonthdata/train_2013_dest%d_booked_only.csv".format(destId))
       val trainClicks = trainDS.getAllClicks()
 
       val clusterHist = MulticlassHist(100)

@@ -11,15 +11,16 @@ import expedia.model.marketdestuser.MarketDestUserPredictionModel
 import dk.gp.util.averagePrecision
 import breeze.stats._
 import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
+import expedia.data.ExCSVDataSource
 
 object TrainModelParamsApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
 
-    val trainDS = ExDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
+    val trainDS = ExCSVDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/data_all/train_all_2013.csv")
 
     val paramValues = 0d to 0.005 by 0.0005
     logger.info("paramValues=" + paramValues)

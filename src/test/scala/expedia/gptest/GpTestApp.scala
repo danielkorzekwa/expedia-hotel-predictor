@@ -16,6 +16,7 @@ import dk.gp.gpc.gpcPredict
 import org.joda.time.LocalTime
 import java.text.SimpleDateFormat
 import org.joda.time.LocalDate
+import expedia.data.ExCSVDataSource
 
 object GpTestApp {
 
@@ -28,7 +29,7 @@ object GpTestApp {
     
     val cluster1 = 19
     val cluster2 = 23
-    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val allClicks = ExCSVDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
     
     val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.dateTime.getTime > 0 }
 

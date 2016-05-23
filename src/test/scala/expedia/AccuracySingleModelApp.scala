@@ -24,6 +24,7 @@ import expedia.model.country.CountryModelBuilder
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.destmonth.DestMonthModel
 import dk.gp.util.loadObject
+import expedia.data.ExKryoDataSource
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -36,11 +37,11 @@ object AccuracySingleModelApp extends LazyLogging {
       true
     }
 
-    val expediaTrainFile = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.csv"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
     //      val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
-    val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile, filter)
+    //  val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile, filter)
+    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filter)
 
-    val expediaTestFile = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.csv"
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
     //      val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
 

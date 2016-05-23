@@ -14,6 +14,8 @@ import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExDataSource
 import expedia.model.clusterdist2.ClusterDist2ModelBuilder
+import expedia.data.ExCSVDataSource
+import expedia.data.ExDataSource
 
 object AccuracyApp extends LazyLogging {
 
@@ -23,11 +25,11 @@ object AccuracyApp extends LazyLogging {
 
     //val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
         val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
-    val trainDS = ExDataSource(dsName = "trainDS", expediaTrainFile)
+    val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainFile)
 
    // val expediaTestFile = "c:/perforce/daniel/ex/segments/market_365/train_2014_market365_booked_only.csv"
      val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(c => c.dist != -1)
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(c => c.dist != -1)
 
     predictClustersAndSaveToFile(trainDS, testClicks)
 

@@ -23,6 +23,7 @@ import dk.gp.gpr.gpr
 import expedia.rankgpr.RankGprModel
 import expedia.rankgpr.RankGprPredict
 import expedia.model.destmonth.DestMonthModel
+import expedia.data.ExCSVDataSource
 
 case class DestModel(
     clusterHistByDest: MulticlassHistByKey[Int]) extends LazyLogging {
@@ -96,7 +97,7 @@ object DestModel {
       destModelBuilder.processCluster(click)
 
     }
-    ExDataSource(dsName = "trainDS", expediaTrainFile).foreach { click => onClick(click) }
+    ExCSVDataSource(dsName = "trainDS", expediaTrainFile).foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
     val destModel = destModelBuilder.create(countryModel)

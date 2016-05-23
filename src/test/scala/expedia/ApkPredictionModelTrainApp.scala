@@ -9,6 +9,7 @@ import expedia.model.svm.libsvm.svr.svrTrain
 import expedia.model.svm.libsvm.svr.svrPredict
 import breeze.linalg.DenseMatrix
 import expedia.model.svm.libsvm.svr.SvrModel
+import expedia.data.ExCSVDataSource
 
 object ApkPredictionModelTrainApp {
 
@@ -17,7 +18,7 @@ object ApkPredictionModelTrainApp {
     val n = 1000
 
     val expediaTestFile = "c:/perforce/daniel/ex/data_booked/train_booked_2014_all_cols.csv"
-    val testClicks = ExDataSource(dsName = "testDS", expediaTestFile).getAllClicks().take(n)
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks().take(n)
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
 
     val clusterDistTop5Pred = csvread(new File("target/clusterDistPred_test.csv"), skipLines = 1)(0 until n, ::)

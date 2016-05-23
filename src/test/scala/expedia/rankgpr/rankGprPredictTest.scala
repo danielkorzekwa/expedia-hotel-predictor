@@ -7,6 +7,7 @@ import expedia.data.ExDataSource
 import breeze.numerics._
 import dk.gp.cov.CovSEiso
 import breeze.stats._
+import expedia.data.ExCSVDataSource
 class rankGprPredictTest {
 
   val DAY = (1000L * 3600 * 24).toDouble
@@ -16,7 +17,7 @@ class rankGprPredictTest {
     val cluster1 = 19
     val cluster2 = 23
 
-    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val allClicks = ExCSVDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
     val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) && c.dateTime.getTime > 0 }
 
     val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime / DAY).toArray).toDenseMatrix.t
@@ -39,7 +40,7 @@ class rankGprPredictTest {
 
     val clusterSet = Set(19, 21, 23)
 
-    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val allClicks = ExCSVDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
     val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 
     val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime / DAY).toArray).toDenseMatrix.t
@@ -62,7 +63,7 @@ class rankGprPredictTest {
 
     val clusterSet = Set(49, 4, 19, 59, 23, 13, 21)
 
-    val allClicks = ExDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val allClicks = ExCSVDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
     val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
 
     val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime / DAY).toArray).toDenseMatrix.t
