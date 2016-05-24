@@ -122,7 +122,12 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
     val i = new AtomicInteger(0)
 
-    clusterHistByMarketUser2.getMap.foreach { case ((marketId, userId), clusterCounts) => clusterCounts :+= 1f * marketModel.predict(marketId) }
+    //clusterHistByMarketUser2.getMap.foreach { case ((marketId, userId), clusterCounts) => clusterCounts :+= 1f * marketModel.predict(marketId) }
+    
+    val beta3 = 1f
+     clusterHistByMarketUser2.getMap.foreach { case ((marketId, userId), clusterCounts) => 
+       clusterCounts :+= 1f * marketModel.predict(marketId) 
+       }
     clusterHistByMarketUser2.normalise()
 
     clusterHistByDestMarketUser.getMap.foreach {
@@ -145,12 +150,12 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
               val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
              
-              (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
+              8f*(beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
             }
           } else userClusterProbs :+= {
 
             val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
-            (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
+           8f* (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
 
           }
 
@@ -158,6 +163,8 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
           // println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
 
+           val beta2 = 0.8f
+          
           val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
             case Some(avgStayDays) if (destModel.svmDestIds.contains(destId) && avgStayDays.avg().toInt < 3 && !(regionByUser(userId) == 174 && destId == 8250 && marketId == 628)) => {
               val custStayDays = avgStayDays.avg().toInt
@@ -174,7 +181,8 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
                   val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
 
-                  14f * (2f * marketDestModel.predict(marketId, destId) + m2)
+                   14f* (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
+                  //14f * (2f * marketDestModel.predict(marketId, destId) + m2)
                 }
 
               }
@@ -193,7 +201,8 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
                   val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
 
-                  14f * (2f * marketDestModel.predict(marketId, destId) + m2)
+                    14f* (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
+                //  14f * (2f * marketDestModel.predict(marketId, destId) + m2)
                 }
               }
             }
