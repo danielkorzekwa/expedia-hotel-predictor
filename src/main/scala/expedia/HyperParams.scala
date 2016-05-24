@@ -55,6 +55,7 @@ case class HyperParams(paramsMap: Map[String, Double]) {
     val newParamMap = paramsMap + (param -> newValue)
     HyperParams(newParamMap)
   }
+  
 }
 
 object HyperParams {
