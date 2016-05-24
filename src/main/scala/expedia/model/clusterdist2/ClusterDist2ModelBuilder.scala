@@ -17,6 +17,7 @@ import expedia.model.country.CountryModelBuilder
 import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 import scala.util.Random
+import expedia.HyperParams
 
 case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 
@@ -92,9 +93,9 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 }
 
 object ClusterDist2ModelBuilder {
-  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click]): ClusterDist2Model = {
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val marketModelBuilder = MarketModelBuilder(testClicks)
+  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): ClusterDist2Model = {
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
     val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
 
     def onClick(click: Click) = {

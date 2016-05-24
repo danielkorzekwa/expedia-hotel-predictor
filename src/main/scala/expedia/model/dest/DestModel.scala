@@ -24,6 +24,7 @@ import expedia.rankgpr.RankGprModel
 import expedia.rankgpr.RankGprPredict
 import expedia.model.destmonth.DestMonthModel
 import expedia.data.ExCSVDataSource
+import expedia.HyperParams
 
 case class DestModel(
     clusterHistByDest: MulticlassHistByKey[Int]) extends LazyLogging {
@@ -87,10 +88,10 @@ case class DestModel(
 
 object DestModel {
 
-  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click]): DestModel = {
+  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click],hyperParams:HyperParams): DestModel = {
 
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val destModelBuilder = DestModelBuilder(testClicks)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val destModelBuilder = DestModelBuilder(testClicks,hyperParams)
 
     def onClick(click: Click) = {
       countryModelBuilder.processCluster(click)

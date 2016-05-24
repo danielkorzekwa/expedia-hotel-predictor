@@ -35,8 +35,10 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
+     val hyperParams = HyperParams.createBest()
+    
    //val marketIds = Set(628, 675,365,1230,637,701)
-   val marketIds = Set(628)
+   val marketIds = Set(663)
     
     def filterTrain(click: Click) = {
  true//marketIds.contains(click.marketId) 
@@ -49,8 +51,8 @@ object AccuracySingleModelApp extends LazyLogging {
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
     //      val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
 
-    val testClicks = ExKryoDataSource(dsName = "trainDS", expediaTestFileKryo).getAllClicks()//.filter(click =>  marketIds.contains(click.marketId))
-    val model = MdpuModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click =>  marketIds.contains(click.marketId))
+    val model = MdpuModelBuilder.buildFromTrainingSet(trainDS, testClicks,hyperParams)
 
     val top5predictions = model.predictTop5(testClicks)
 

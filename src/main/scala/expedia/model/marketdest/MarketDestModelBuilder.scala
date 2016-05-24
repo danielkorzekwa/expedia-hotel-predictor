@@ -1,20 +1,25 @@
 package expedia.model.marketdest
 
+import scala.collection.Seq
+import scala.collection.mutable
+
+import breeze.linalg.InjectNumericOps
+import expedia.HyperParams
 import expedia.data.Click
-import expedia.stats.MulticlassHistByKey
-import expedia.model.country.CountryModel
-import scala.collection._
-import expedia.stats.CounterMap
-import expedia.model.marketmodel.MarketModel
-import expedia.model.dest.DestModel
 import expedia.data.ExDataSource
-import expedia.model.dest.DestModelBuilder
-import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.country.CountryModel
 import expedia.model.country.CountryModelBuilder
+import expedia.model.dest.DestModel
+import expedia.model.dest.DestModelBuilder
+import expedia.model.marketmodel.MarketModel
+import expedia.model.marketmodel.MarketModelBuilder
+import expedia.stats.CounterMap
+import expedia.stats.MulticlassHistByKey
 
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-                                  destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]) {
+                                  destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
+                                  hyperParams: HyperParams) {
 
   //key ((marketId,destId)
   private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -25,15 +30,25 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
 
+  private val destMarketCountsThreshold1 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThreshold1").toFloat
+  private val destMarketCountsThresholdClickWeight1 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight1").toFloat
+  private val destMarketCountsThreshold2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThreshold2").toFloat
+  private val destMarketCountsThresholdClickWeight2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight2").toFloat
+  private val destMarketCountsDefaultWeight = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsDefaultWeight").toFloat
+
+  private val beta1 = hyperParams.getParamValue("expedia.model.marketdest.beta1").toFloat
+  private val beta2 = hyperParams.getParamValue("expedia.model.marketdest.beta2").toFloat
+  private val beta3 = hyperParams.getParamValue("expedia.model.marketdest.beta3").toFloat
+
   def processCluster(click: Click) = {
 
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
     val destCounts = destCounterMap.getOrElse(click.destId, 0)
     val clickWeight =
-      if (destMarketCounts < 300) 0.5f
-      else if (destMarketCounts < 500) 0.1f
-      else 0.05f
+      if (destMarketCounts < destMarketCountsThreshold1) destMarketCountsThresholdClickWeight1
+      else if (destMarketCounts < destMarketCountsThreshold2) destMarketCountsThresholdClickWeight2
+      else destMarketCountsDefaultWeight
 
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
       if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster)
@@ -52,9 +67,9 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         val destCounts = destCounterMap.getOrElse(destId, 0)
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
-        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= 1f * marketModel.predict(marketId)
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= 5f * destModel.predict(destId)
-        else clusterCounts :+= 1f * marketModel.predict(marketId)
+        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta1 * marketModel.predict(marketId)
+        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta2 * destModel.predict(destId)
+        else clusterCounts :+= beta3 * marketModel.predict(marketId)
 
     }
     clusterHistByMarketDest.normalise()
@@ -64,7 +79,7 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 }
 
 object MarketDestModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): MarketDestModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketDestModel = {
 
     /**
      * Create counters
@@ -81,10 +96,10 @@ object MarketDestModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val destModelBuilder = DestModelBuilder(testClicks)
-    val marketModelBuilder = MarketModelBuilder(testClicks)
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val destModelBuilder = DestModelBuilder(testClicks,hyperParams)
+    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams)
 
     def onClick(click: Click) = {
       destModelBuilder.processCluster(click)

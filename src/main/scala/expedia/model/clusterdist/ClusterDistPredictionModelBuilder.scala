@@ -12,7 +12,8 @@ import expedia.data.ExDataSource
 import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.country.CountryModelBuilder
-case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click]) {
+import expedia.HyperParams
+case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click],hyperParams:HyperParams) {
 
   private val clusterHistByKey = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
   testClicks.foreach { click =>
@@ -26,6 +27,9 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click]) {
     clusterHistByKey2.add(key, click.cluster, value = 0)
   }
 
+   private val beta1 = hyperParams.getParamValue("expedia.model.clusterdist.beta1").toFloat
+    private val beta2 = hyperParams.getParamValue("expedia.model.clusterdist.beta2").toFloat
+  
   def processCluster(click: Click) = {
 
     if (click.dist != -1) {
@@ -47,11 +51,11 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click]) {
 
         }
 
-        clusterCounts :+= 1f * prior
+        clusterCounts :+= beta1 * prior
     }
 
     clusterHistByKey.normalise()
-    clusterHistByKey2.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= 7f * clusterHistByKey.getMap((key._1, key._2, key._3)) }
+    clusterHistByKey2.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= beta2 * clusterHistByKey.getMap((key._1, key._2, key._3)) }
 
     val topClustersByKey: Map[Tuple4[Int, Int, Int, Int], DenseVector[Int]] =
       clusterHistByKey2.getMap.map { case (key, clusterProbs) => key -> calcTopNClusters(clusterProbs, 100, minProb = Some(0)) }
@@ -61,10 +65,10 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click]) {
 }
 
 object ClusterDistPredictionModelBuilder {
-  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click]): ClusterDistPredictionModel = {
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val marketModelBuilder = MarketModelBuilder(testClicks)
-    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks)
+  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): ClusterDistPredictionModel = {
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
+    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks,hyperParams)
 
     def onClick(click: Click) = {
       countryModelBuilder.processCluster(click)

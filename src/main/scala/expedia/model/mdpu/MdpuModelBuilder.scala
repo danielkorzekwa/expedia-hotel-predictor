@@ -18,8 +18,9 @@ import expedia.model.marketdest.MarketDestModel
 import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder
 import expedia.model.dest.DestModel
+import expedia.HyperParams
 
-case class MdpuModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
+case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) extends LazyLogging {
 
   //key ((marketId,destId,isPackage,userId)
   private val clusterHistByMDPU = MulticlassHistByKey[Tuple4[Int, Int, Int, Int]](100)
@@ -28,42 +29,44 @@ case class MdpuModelBuilder(testClicks: Seq[Click]) extends LazyLogging {
     clusterHistByMDPU.add(key, click.cluster, value = 0)
   }
 
-   private val userCounterMap = CounterMap[Int]()
-  
+  private val userCounterMap = CounterMap[Int]()
+
+  private val beta1 = hyperParams.getParamValue("expedia.model.mdpu.beta1").toFloat
+  private val beta2 = hyperParams.getParamValue("expedia.model.mdpu.beta2").toFloat
+
   def processCluster(click: Click) = {
 
     val key = (click.marketId, click.destId, click.isPackage, click.userId)
     if (clusterHistByMDPU.getMap.contains(key)) {
       if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster)
-      else clusterHistByMDPU.add(key, click.cluster, value = 0.6f)
+      else clusterHistByMDPU.add(key, click.cluster, value = beta1)
     }
-    
-      userCounterMap.add(click.userId)
+
+    userCounterMap.add(click.userId)
   }
 
   def create(marketDestUserModel: MarketDestUserPredictionModel, marketDestModel: MarketDestModel, mdpModel: MdpModel,
-       destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-      destModel: DestModel): MdpuModel = {
+             destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+             destModel: DestModel): MdpuModel = {
 
     logger.info("Add prior stats to clusterHistByMDPU...")
-    val beta = 0.1f
     clusterHistByMDPU.getMap.foreach {
 
       case ((marketId, destId, isPackage, userId), userClusterProbs) =>
-        userClusterProbs :+= 150f * (beta * mdpModel.predict(marketId, destId, isPackage) + (1 - beta) * marketDestUserModel.predict(marketId, destId, userId))
+        userClusterProbs :+= 150f * (beta2 * mdpModel.predict(marketId, destId, isPackage) + (1 - beta2) * marketDestUserModel.predict(marketId, destId, userId))
 
     }
     clusterHistByMDPU.normalise()
     logger.info("Add prior stats to clusterHistByMDPU...done")
 
-    MdpuModel(clusterHistByMDPU,userCounterMap,destCounterMap,destMarketCounterMap,destModel)
+    MdpuModel(clusterHistByMDPU, userCounterMap, destCounterMap, destMarketCounterMap, destModel)
   }
 
 }
 
 object MdpuModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): MdpuModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MdpuModel = {
 
     /**
      * Create counters
@@ -80,33 +83,29 @@ object MdpuModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
-    
-    
     /**
      * Create models
      */
-    val marketModelBuilder = MarketModelBuilder(testClicks)
-    val destModelBuilder = DestModelBuilder(testClicks)
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val regDestModelBuilder = RegDestModelBuilder()
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams)
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
 
-    val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
+    val countryUserModelBuilder = CountryUserModelBuilder(testClicks,hyperParams)
 
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams)
 
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks)
-    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams)
+    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams)
 
-    val markerDestUserBuilder = MarketDestUserPredictionModelBuilder(testClicks)
+    val markerDestUserBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams)
 
-    val mdpuModelBuilder = MdpuModelBuilder(testClicks)
+    val mdpuModelBuilder = MdpuModelBuilder(testClicks, hyperParams)
 
     def onClick(click: Click) = {
 
       marketModelBuilder.processCluster(click)
       destModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
-      regDestModelBuilder.processCluster(click)
       countryUserModelBuilder.processCluster(click)
       marketDestModelBuilder.processCluster(click)
       marketUserModelBuilder.processCluster(click)
@@ -119,7 +118,6 @@ object MdpuModelBuilder {
 
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
-    val regDestModel = regDestModelBuilder.create()
     val countryUserModel = countryUserModelBuilder.create(countryModel)
     val destModel = destModelBuilder.create(countryModel)
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
@@ -128,10 +126,10 @@ object MdpuModelBuilder {
 
     val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
 
-    val marketDestUserModel = markerDestUserBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel,
+    val marketDestUserModel = markerDestUserBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel,
       countryUserModel, marketDestModel, marketUserModel)
 
-    val mdpuModel = mdpuModelBuilder.create(marketDestUserModel, marketDestModel, mdpModel,destCounterMap,destMarketCounterMap,destModel)
+    val mdpuModel = mdpuModelBuilder.create(marketDestUserModel, marketDestModel, mdpModel, destCounterMap, destMarketCounterMap, destModel)
     mdpuModel
 
   }

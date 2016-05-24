@@ -10,42 +10,47 @@ import expedia.model.country.CountryModelBuilder
 import expedia.data.ExDataSource
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.dest.DestModelBuilder
+import expedia.HyperParams
 
 case class MdpModelBuilder(testClicks: Seq[Click],
-                      destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-                      destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]) {
+                           destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+                           destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int], hyperParams: HyperParams) {
 
-  
   //key ((marketId,destId,isPackage)
-  private val clusterHistByMDP = MulticlassHistByKey[Tuple3[Int,Int, Int]](100)
+  private val clusterHistByMDP = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
   testClicks.foreach { click =>
-    clusterHistByMDP.add((click.marketId, click.destId,click.isPackage), click.cluster, value = 0)
+    clusterHistByMDP.add((click.marketId, click.destId, click.isPackage), click.cluster, value = 0)
   }
 
-  
+  private val beta1 = hyperParams.getParamValue("expedia.model.mdp.beta1").toFloat
+  private val beta2 = hyperParams.getParamValue("expedia.model.mdp.beta2").toFloat
+  private val beta3 = hyperParams.getParamValue("expedia.model.mdp.beta3").toFloat
+  private val beta4 = hyperParams.getParamValue("expedia.model.mdp.beta4").toFloat
+  private val beta5 = hyperParams.getParamValue("expedia.model.mdp.beta5").toFloat
+
   def processCluster(click: Click) = {
 
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
     val destCounts = destCounterMap.getOrElse(click.destId, 0)
     val clickWeight =
-      if (destMarketCounts < 300) 0.5f
-      else if (destMarketCounts < 500) 0.1f
-      else 0.05f
+      if (destMarketCounts < beta1) beta2
+      else if (destMarketCounts < beta3) beta4
+      else beta5
 
-      val key = (click.marketId, click.destId,click.isPackage)
+    val key = (click.marketId, click.destId, click.isPackage)
     if (clusterHistByMDP.getMap.contains(key)) {
       if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster)
       else clusterHistByMDP.add(key, click.cluster, value = clickWeight)
     }
 
   }
-  
-   def create(destModel: DestModel, marketModel: MarketModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+
+  def create(destModel: DestModel, marketModel: MarketModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
              destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MdpModel = {
 
     clusterHistByMDP.getMap.foreach {
-      case ((marketId, destId,isPackage), clusterCounts) =>
+      case ((marketId, destId, isPackage), clusterCounts) =>
 
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
@@ -63,8 +68,8 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 }
 
 object MdpModelBuilder {
-  
-   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): MdpModel = {
+
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click],hyperParams: HyperParams): MdpModel = {
 
     /**
      * Create counters
@@ -81,10 +86,10 @@ object MdpModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
-    val countryModelBuilder = CountryModelBuilder(testClicks)
-    val destModelBuilder = DestModelBuilder(testClicks)
-    val marketModelBuilder = MarketModelBuilder(testClicks)
-    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val destModelBuilder = DestModelBuilder(testClicks,hyperParams)
+    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
+    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap,hyperParams)
 
     def onClick(click: Click) = {
       destModelBuilder.processCluster(click)
@@ -102,6 +107,5 @@ object MdpModelBuilder {
 
     mdpModel
   }
-  
-  
+
 }

@@ -4,8 +4,9 @@ import expedia.data.Click
 import expedia.stats.MulticlassHistByKey
 import scala.collection._
 import expedia.data.ExDataSource
+import expedia.HyperParams
 
-case class CountryModelBuilder(testClicks: Seq[Click]) {
+case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
 
   private val clusterHistByContinent = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
@@ -16,12 +17,15 @@ case class CountryModelBuilder(testClicks: Seq[Click]) {
   private val continentByCountry: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => continentByCountry += click.countryId -> click.continentId)
 
+  private val beta1 = hyperParams.getParamValue("expedia.model.country.beta1").toFloat
+  private val beta2 = hyperParams.getParamValue("expedia.model.country.beta2").toFloat
+
   def processCluster(click: Click) = {
 
     clusterHistByContinent.add(click.continentId, click.cluster)
 
     if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster)
-    else clusterHistByCountry.add(click.countryId, click.cluster, value = 0.05f)
+    else clusterHistByCountry.add(click.countryId, click.cluster, value = beta1)
 
     continentByCountry += click.countryId -> click.continentId
   }
@@ -32,7 +36,7 @@ case class CountryModelBuilder(testClicks: Seq[Click]) {
 
     clusterHistByCountry.getMap.foreach {
       case (countryId, clusterCounts) =>
-        clusterCounts :+= 1000f * clusterHistByContinent.getMap(continentByCountry(countryId))
+        clusterCounts :+= beta2 * clusterHistByContinent.getMap(continentByCountry(countryId))
     }
     clusterHistByCountry.normalise()
 
@@ -41,9 +45,9 @@ case class CountryModelBuilder(testClicks: Seq[Click]) {
 }
 
 object CountryModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): CountryModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): CountryModel = {
 
-    val countryModelBuilder = CountryModelBuilder(testClicks)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
 
     def onClick(click: Click) = {
       countryModelBuilder.processCluster(click)
