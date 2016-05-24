@@ -32,9 +32,10 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
+   val marketIds = Set(628, 675,365,1230,637,701)
+    
     def filterTrain(click: Click) = {
-   //  click.countryId==50 //&&  click.isPackage==1
-      true
+  true//marketIds.contains(click.marketId)
     }
 
     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
@@ -44,7 +45,7 @@ object AccuracySingleModelApp extends LazyLogging {
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
     //      val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
 
-    val testClicks = ExKryoDataSource(dsName = "trainDS", expediaTestFileKryo).getAllClicks()//.filter(c =>   c.countryId==50 &&  c.isPackage==1)
+    val testClicks = ExKryoDataSource(dsName = "trainDS", expediaTestFileKryo).getAllClicks()//.filter(click =>  marketIds.contains(click.marketId))
     val model = MarketDestUserPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
 
     val top5predictions = model.predictTop5(testClicks)

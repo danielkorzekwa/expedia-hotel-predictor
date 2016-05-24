@@ -39,10 +39,10 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
   //key ((destId, marketId,userId)
   private val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
-  testClicks.foreach{click => 
+  testClicks.foreach { click =>
     clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0)
-  if(click.marketId==628)    clusterHistByDestMarketUser.add((12208, click.marketId, click.userId), click.cluster, value = 0)
-  if(click.marketId==628)    clusterHistByDestMarketUser.add((12206, click.marketId, click.userId), click.cluster, value = 0)
+    if (click.marketId == 628) clusterHistByDestMarketUser.add((12208, click.marketId, click.userId), click.cluster, value = 0)
+    if (click.marketId == 628) clusterHistByDestMarketUser.add((12206, click.marketId, click.userId), click.cluster, value = 0)
   }
 
   //key ((marketId,userId)
@@ -54,10 +54,10 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
   //key ((destId,userId)
   private val clusterHistByDestUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
-  testClicks.foreach{click => 
+  testClicks.foreach { click =>
     clusterHistByDestUser.add((click.destId, click.userId), click.cluster, value = 0)
-    clusterHistByDestUser.add((12208, click.userId), click.cluster, value = 0)  
-     clusterHistByDestUser.add((12206, click.userId), click.cluster, value = 0)  
+    clusterHistByDestUser.add((12208, click.userId), click.cluster, value = 0)
+    clusterHistByDestUser.add((12206, click.userId), click.cluster, value = 0)
   }
 
   private val continentByDest: mutable.Map[Int, Int] = mutable.Map()
@@ -123,11 +123,15 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
     val i = new AtomicInteger(0)
 
     //clusterHistByMarketUser2.getMap.foreach { case ((marketId, userId), clusterCounts) => clusterCounts :+= 1f * marketModel.predict(marketId) }
-    
-    val beta3 = 1f
-     clusterHistByMarketUser2.getMap.foreach { case ((marketId, userId), clusterCounts) => 
-       clusterCounts :+= 1f * marketModel.predict(marketId) 
-       }
+
+    val beta3 = 0.70f
+    clusterHistByMarketUser2.getMap.foreach {
+      case ((marketId, userId), clusterCounts) =>
+         if (countryUserModel.predictionExists(countryByMarket(marketId), userId))  {
+           clusterCounts :+= 1f*(beta3 * marketModel.predict(marketId) + (1-beta3)*countryUserModel.predict(countryByMarket(marketId), userId))
+         }
+        else clusterCounts :+= marketModel.predict(marketId) 
+    }
     clusterHistByMarketUser2.normalise()
 
     clusterHistByDestMarketUser.getMap.foreach {
@@ -138,75 +142,22 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
-          val beta2 = 0.8f
-        if (destMarketCounts < 300 || destCounts.toDouble / destMarketCounts > 1.3) {
+        val beta2 = 0.8f
+        val beta = 0.95f
+         val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
           val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
-          if (sum(userClusterProbs) == 0 && (destMarketCounts > 0 && marketCounts / destMarketCounts < 12)) {
-
-            val beta = 0.95f
-          
-            if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) userClusterProbs :+= beta * marketDestModel.predict(marketId, destId) + (1 - beta) * countryUserModel.predict(countryByMarket(marketId), userId)
-            else userClusterProbs :+= {
-
-              val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
-             
-              8f*(beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
-            }
-          } else userClusterProbs :+= {
-
-            val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
-           8f* (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
-
-          }
+        if (destMarketCounts < 300 ) {
+ 
+         userClusterProbs :+=  8f * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * m2)
 
         } else {
 
-          // println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
-
-           val beta2 = 0.8f
-          
-          val avgStayDays = avgDaysStayByDestCust.get((destId, userId)) match {
-            case Some(avgStayDays) if (destModel.svmDestIds.contains(destId) && avgStayDays.avg().toInt < 3 && !(regionByUser(userId) == 174 && destId == 8250 && marketId == 628)) => {
-              val custStayDays = avgStayDays.avg().toInt
-
-              userClusterProbs :+= {
-
-                val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
-                val destUserCounts = clusterHistByDestUser.getMap((destId, userId))
-
-                val beta = 0.95f
-                if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) beta * destModel.predict(destId, continentByDest(destId), custStayDays) + (1 - beta) * countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
-                else {
-                  val m = marketUserCounts.copy
-
-                  val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
-
-                   14f* (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
-                  //14f * (2f * marketDestModel.predict(marketId, destId) + m2)
-                }
-
-              }
-            }
-            case _ => userClusterProbs :+= {
-
-              if (regDestModel.predictionExists(regionByUser(userId), destId)) 7f * regDestModel.predict(regionByUser(userId), destId)
-              else {
-
-                val marketUserCounts = clusterHistByMarketUser.getMap((marketId, userId))
-                val destUserCounts = clusterHistByDestUser.getMap((destId, userId))
-
-                val beta = 0.95f
-                if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) beta * marketDestModel.predict(marketId, destId) + (1 - beta) * countryUserModel.predict(countryByMarket(marketId), userId) - userClusterProbs
-                else {
-
-                  val m2 = clusterHistByMarketUser2.getMap((marketId, userId))
-
-                    14f* (beta2 * marketDestModel.predict(marketId, destId) + (1-beta2)*m2)
-                //  14f * (2f * marketDestModel.predict(marketId, destId) + m2)
-                }
-              }
-            }
+          if (sum(marketUserCounts) == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+            userClusterProbs :+= beta * marketDestModel.predict(marketId, destId) + (1 - beta) * countryUserModel.predict(countryByMarket(marketId), userId)
+          } else {
+            userClusterProbs :+= 14f * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * m2)
           }
+
         }
 
     }
@@ -250,16 +201,13 @@ object MarketDestUserPredictionModelBuilder {
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val regDestModelBuilder = RegDestModelBuilder()
 
-    
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
 
-    
     val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
     val modelBuilder = MarketDestUserPredictionModelBuilder(testClicks)
 
     def onClick(click: Click) = {
 
-      
       marketModelBuilder.processCluster(click)
       destModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
@@ -270,17 +218,16 @@ object MarketDestUserPredictionModelBuilder {
 
     }
     trainDatasource.foreach { click => onClick(click) }
-    
-    
+
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val regDestModel = regDestModelBuilder.create()
     val countryUserModel = countryUserModelBuilder.create(countryModel)
     val destModel = destModelBuilder.create(countryModel)
-    
+
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
-    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, 
-        countryUserModel, marketDestModel)
+    modelBuilder.create(destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel,
+      countryUserModel, marketDestModel)
 
   }
 }
