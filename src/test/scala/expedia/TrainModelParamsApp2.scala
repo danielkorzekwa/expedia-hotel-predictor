@@ -37,7 +37,7 @@ object TrainModelParamsApp2 extends LazyLogging {
 
   private def learn(trainDS: ExDataSource, testClicks: Seq[Click]) = {
 
-    val initialHyperParams = HyperParams.createBest()
+    val initialHyperParams = HyperParams.createBestParams2()
 
     val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks)
     var bestMapk = -1d //initialMapk
@@ -47,7 +47,7 @@ object TrainModelParamsApp2 extends LazyLogging {
     logger.info("Number of hyper params:" + params.size)
 
     for (i <- 1 to 100) {
-      params.zipWithIndex.foreach {
+       Random.shuffle(params).zipWithIndex.foreach {
         case (param, paramIndex) =>
 
           val paramValues = initialHyperParams.getParamValues(param)
