@@ -25,6 +25,9 @@ import expedia.model.destmonth.DestMonthModel
 import dk.gp.util.loadObject
 import expedia.data.ExKryoDataSource
 import expedia.model.marketdest.MarketDestModelBuilder
+import expedia.model.mdpu.MdpuModelBuilder
+import expedia.model.mdpu.MdpuModel
+import expedia.model.mdp.MdpModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -32,10 +35,11 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-   val marketIds = Set(628, 675,365,1230,637,701)
+   //val marketIds = Set(628, 675,365,1230,637,701)
+   val marketIds = Set(628)
     
     def filterTrain(click: Click) = {
-  true//marketIds.contains(click.marketId)
+ true//marketIds.contains(click.marketId) 
     }
 
     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
@@ -46,7 +50,7 @@ object AccuracySingleModelApp extends LazyLogging {
     //      val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
 
     val testClicks = ExKryoDataSource(dsName = "trainDS", expediaTestFileKryo).getAllClicks()//.filter(click =>  marketIds.contains(click.marketId))
-    val model = MarketDestUserPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks)
+    val model = MdpuModelBuilder.buildFromTrainingSet(trainDS, testClicks)
 
     val top5predictions = model.predictTop5(testClicks)
 

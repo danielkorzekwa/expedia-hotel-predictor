@@ -32,6 +32,7 @@ import expedia.model.destbydist.DestByDistModelBuilder
 import expedia.model.marketuser.MarketUserModel
 import expedia.model.marketuser.MarketUserModelBuilder
 import expedia.model.marketuser.MarketUserModelBuilder
+import expedia.model.ClusterModel
 
 /**
  * @param trainData mat[userId,dest,cluster]
@@ -44,12 +45,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
     clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0)
   }
 
-  private val continentByDest: mutable.Map[Int, Int] = mutable.Map()
-  testClicks.foreach(click => continentByDest += click.destId -> click.continentId)
-
-  private val regionByUser: mutable.Map[Int, Int] = mutable.Map()
-  testClicks.foreach(click => regionByUser += click.userId -> click.userRegion)
-
+ 
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
@@ -60,8 +56,8 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
     val key = (click.destId, click.marketId, click.userId)
     if (clusterHistByDestMarketUser.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster)
-      else clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0.6f)
+      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster)
+      else clusterHistByDestMarketUser.add(key, click.cluster, value = 0.6f)
     }
 
     userCounterMap.add(click.userId)
@@ -103,7 +99,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
     }
     clusterHistByDestMarketUser.normalise()
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
-
+  
     MarketDestUserPredictionModel(destModel, clusterHistByDestMarketUser.getMap, userCounterMap,
       destCounterMap, destMarketCounterMap, regDestModel)
   }

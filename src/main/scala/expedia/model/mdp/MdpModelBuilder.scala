@@ -1,30 +1,28 @@
-package expedia.model.marketdest
+package expedia.model.mdp
 
 import expedia.data.Click
-import expedia.stats.MulticlassHistByKey
-import expedia.model.country.CountryModel
-import scala.collection._
 import expedia.stats.CounterMap
-import expedia.model.marketmodel.MarketModel
+import expedia.stats.MulticlassHistByKey
 import expedia.model.dest.DestModel
-import expedia.data.ExDataSource
-import expedia.model.dest.DestModelBuilder
-import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.marketmodel.MarketModel
+import expedia.model.country.CountryModel
 import expedia.model.country.CountryModelBuilder
+import expedia.data.ExDataSource
+import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.dest.DestModelBuilder
 
-case class MarketDestModelBuilder(testClicks: Seq[Click],
-                                  destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-                                  destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]) {
+case class MdpModelBuilder(testClicks: Seq[Click],
+                      destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+                      destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]) {
 
-  //key ((marketId,destId)
-  private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
+  
+  //key ((marketId,destId,isPackage)
+  private val clusterHistByMDP = MulticlassHistByKey[Tuple3[Int,Int, Int]](100)
   testClicks.foreach { click =>
-    clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = 0)
+    clusterHistByMDP.add((click.marketId, click.destId,click.isPackage), click.cluster, value = 0)
   }
 
-  private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
-  testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
-
+  
   def processCluster(click: Click) = {
 
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
@@ -35,18 +33,19 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
       else if (destMarketCounts < 500) 0.1f
       else 0.05f
 
-    if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
-      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster)
-      else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = clickWeight)
+      val key = (click.marketId, click.destId,click.isPackage)
+    if (clusterHistByMDP.getMap.contains(key)) {
+      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster)
+      else clusterHistByMDP.add(key, click.cluster, value = clickWeight)
     }
 
   }
+  
+   def create(destModel: DestModel, marketModel: MarketModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+             destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MdpModel = {
 
-  def create(destModel: DestModel, marketModel: MarketModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-             destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int]): MarketDestModel = {
-
-    clusterHistByMarketDest.getMap.foreach {
-      case ((marketId, destId), clusterCounts) =>
+    clusterHistByMDP.getMap.foreach {
+      case ((marketId, destId,isPackage), clusterCounts) =>
 
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
@@ -57,14 +56,15 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         else clusterCounts :+= 1f * marketModel.predict(marketId)
 
     }
-    clusterHistByMarketDest.normalise()
+    clusterHistByMDP.normalise()
 
-    MarketDestModel(clusterHistByMarketDest)
+    MdpModel(clusterHistByMDP)
   }
 }
 
-object MarketDestModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): MarketDestModel = {
+object MdpModelBuilder {
+  
+   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]): MdpModel = {
 
     /**
      * Create counters
@@ -84,13 +84,13 @@ object MarketDestModelBuilder {
     val countryModelBuilder = CountryModelBuilder(testClicks)
     val destModelBuilder = DestModelBuilder(testClicks)
     val marketModelBuilder = MarketModelBuilder(testClicks)
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
 
     def onClick(click: Click) = {
       destModelBuilder.processCluster(click)
       marketModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
-      marketDestModelBuilder.processCluster(click)
+      mdpModelBuilder.processCluster(click)
     }
     trainDatasource.foreach { click => onClick(click) }
 
@@ -98,8 +98,10 @@ object MarketDestModelBuilder {
     val destModel = destModelBuilder.create(countryModel)
 
     val marketModel = marketModelBuilder.create(countryModel)
-    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
 
-    marketDestModel
+    mdpModel
   }
+  
+  
 }

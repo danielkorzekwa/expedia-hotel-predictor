@@ -19,6 +19,8 @@ import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.destbydist.DestByDistModelBuilder
 import expedia.model.marketuser.MarketUserModelBuilder
+import expedia.model.mdpu.MdpuModelBuilder
+import expedia.model.mdp.MdpModelBuilder
 
 object predictClusters extends LazyLogging {
 
@@ -55,11 +57,11 @@ object predictClusters extends LazyLogging {
     val regDestModelBuilder = RegDestModelBuilder()
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks)
 
-    
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks,  destMarketCounterMap, destCounterMap, marketCounterMap)
- val marketUserModelBuilder = MarketUserModelBuilder(testClicks)
-    
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks)
+    val mdpModelBuilder = MdpModelBuilder(testClicks,destMarketCounterMap, destCounterMap, marketCounterMap)
     val marketDestUserPredictBuilder = MarketDestUserPredictionModelBuilder(testClicks)
+    val mdpuModelBuilder = MdpuModelBuilder(testClicks)
 
     def onClick(click: Click) = {
       clusterDistModelBuilder.processCluster(click)
@@ -71,9 +73,11 @@ object predictClusters extends LazyLogging {
       regDestModelBuilder.processCluster(click)
       marketDestUserPredictBuilder.processCluster(click)
       countryUserModelBuilder.processCluster(click)
-      
+
       marketDestModelBuilder.processCluster(click)
-       marketUserModelBuilder.processCluster(click)
+      mdpModelBuilder.processCluster(click)
+      marketUserModelBuilder.processCluster(click)
+      mdpuModelBuilder.processCluster(click)
     }
     trainDS.foreach { click => onClick(click) }
 
@@ -86,13 +90,15 @@ object predictClusters extends LazyLogging {
     val regDestModel = regDestModelBuilder.create()
     val countryUserModel = countryUserModelBuilder.create(countryModel)
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
-    
+
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
-    
-    
-    val marketDestUserPredict = marketDestUserPredictBuilder.create(
-      destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel, 
-      countryUserModel, marketDestModel,marketUserModel)
+
+    val marketDestUserModel = marketDestUserPredictBuilder.create(
+      destModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, regDestModel, marketModel,
+      countryUserModel, marketDestModel, marketUserModel)
+
+      val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val mdpuModel = mdpuModelBuilder.create(marketDestUserModel, marketDestModel, mdpModel, destCounterMap, destMarketCounterMap, destModel)
 
     /**
      * Cluster dist
@@ -107,7 +113,7 @@ object predictClusters extends LazyLogging {
     /**
      * Market dest
      */
-    val predictionMatrixMarketDest = marketDestUserPredict.predictTop5(testClicks)
+    val predictionMatrixMarketDest = mdpuModel.predictTop5(testClicks)
 
     (predictionMatrixClusterDist, predictionMatrixMarketDest, predictionMatrixClusterDistProx)
   }
