@@ -39,7 +39,11 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
   //key ((destId, marketId,userId)
   private val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
-  testClicks.foreach(click => clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0))
+  testClicks.foreach{click => 
+    clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0)
+  if(click.marketId==628)    clusterHistByDestMarketUser.add((12208, click.marketId, click.userId), click.cluster, value = 0)
+  if(click.marketId==628)    clusterHistByDestMarketUser.add((12206, click.marketId, click.userId), click.cluster, value = 0)
+  }
 
   //key ((marketId,userId)
   private val clusterHistByMarketUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -50,7 +54,11 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click]) extends 
 
   //key ((destId,userId)
   private val clusterHistByDestUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
-  testClicks.foreach(click => clusterHistByDestUser.add((click.destId, click.userId), click.cluster, value = 0))
+  testClicks.foreach{click => 
+    clusterHistByDestUser.add((click.destId, click.userId), click.cluster, value = 0)
+    clusterHistByDestUser.add((12208, click.userId), click.cluster, value = 0)  
+     clusterHistByDestUser.add((12206, click.userId), click.cluster, value = 0)  
+  }
 
   private val continentByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => continentByDest += click.destId -> click.continentId)

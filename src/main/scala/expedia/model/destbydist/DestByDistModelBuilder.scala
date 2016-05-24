@@ -24,7 +24,7 @@ case class DestByDistModelBuilder(testClicks: Seq[Click]) {
 
           distDestIds.foreach {
             case (dist, distDestIds) =>
-              if (abs(click.dist - dist) == 0.0) {
+              if (abs(click.dist - dist) < 0.2) {
                 distDestIds += click.destId
               }
           }

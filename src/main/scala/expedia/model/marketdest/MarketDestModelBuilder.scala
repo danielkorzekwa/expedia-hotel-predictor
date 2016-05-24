@@ -14,7 +14,11 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 
   //key ((marketId,destId)
   private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
-  testClicks.foreach(click => clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = 0))
+  testClicks.foreach{click => 
+    clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = 0)
+   if(click.marketId==628)  clusterHistByMarketDest.add((click.marketId,12208), click.cluster, value = 0)
+    if(click.marketId==628)  clusterHistByMarketDest.add((click.marketId,12206), click.cluster, value = 0)
+  }
 
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
