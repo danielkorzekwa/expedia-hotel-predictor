@@ -25,8 +25,7 @@ case class MarketDestUserPredictionModel(
     clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
 
     userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-    regDestModel: RegDestModel, clusterDistProxModel: ClusterDistProxModel,
-    destByDistModel: DestByDistModel) extends LazyLogging {
+    regDestModel: RegDestModel) extends LazyLogging {
 
   val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/userLocMarketList.csv"), skipLines = 1)
 
@@ -90,10 +89,10 @@ case class MarketDestUserPredictionModel(
 
   def predict(click: Click): DenseVector[Float] = {
 
-    val destId = if (click.destId == 8250) {
-      val destIds = destByDistModel.predict(click)
-      if (destIds.contains(12206)) 12206 else click.destId
-    } else click.destId
+//    val destId = if (click.destId == 8250) {
+//      val destIds = destByDistModel.predict(click)
+//      if (destIds.contains(12206)) 12206 else click.destId
+//    } else click.destId
 
     val destCounts = destCounterMap.getOrElse(click.destId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)

@@ -7,6 +7,7 @@ import scala.collection._
 import expedia.stats.CounterMap
 import expedia.model.marketmodel.MarketModel
 import expedia.model.dest.DestModel
+import expedia.data.ExDataSource
 
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
@@ -60,3 +61,37 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
     MarketDestModel(clusterHistByMarketDest)
   }
 }
+
+//object MarketDestModelBuilder {
+//   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click]):  MarketDestModel = {
+//
+//     
+//    /**
+//     * Create counters
+//     */
+//    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+//    val destCounterMap = CounterMap[Int]()
+//    val marketCounterMap = CounterMap[Int]()
+//    def onClickCounters(click: Click) = {
+//      if (click.isBooking == 1) {
+//        destMarketCounterMap.add((click.destId, click.marketId))
+//        destCounterMap.add(click.destId)
+//        marketCounterMap.add(click.marketId)
+//      }
+//    }
+//    trainDatasource.foreach { click => onClickCounters(click) }
+//
+//     
+//    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap)
+//
+//    def onClick(click: Click) = {
+//
+//      marketDestModelBuilder.processCluster(click)
+//    }
+//    trainDatasource.foreach { click => onClick(click) }
+//
+//     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+//
+//    model
+//  }
+//}
