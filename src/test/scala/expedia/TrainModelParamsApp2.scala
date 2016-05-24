@@ -10,6 +10,7 @@ import expedia.data.ExDataSource
 import expedia.data.ExKryoDataSource
 import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.mdpu.MdpuModelBuilder
+import scala.util.Random
 
 object TrainModelParamsApp2 extends LazyLogging {
 
@@ -20,14 +21,14 @@ object TrainModelParamsApp2 extends LazyLogging {
 
     val destIds = Set(12208)
     def filterTrain(click: Click) = {
-   true //    destIds.contains(click.destId)
+      true //    destIds.contains(click.destId)
     }
 
     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
 
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => destIds.contains(click.destId))
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => destIds.contains(click.destId))
 
     learn(trainDS, testClicks)
 
@@ -39,32 +40,34 @@ object TrainModelParamsApp2 extends LazyLogging {
     val initialHyperParams = HyperParams.createBest()
 
     val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks)
-    var bestMapk = -1d//initialMapk
+    var bestMapk = -1d //initialMapk
     var bestHyperParams = initialHyperParams
 
     val params = initialHyperParams.getParams()
-    logger.info("Numer of hyper params:" + params.size)
-    params.zipWithIndex.foreach {
-      case (param, paramIndex) =>
+    logger.info("Number of hyper params:" + params.size)
 
-        val paramValues = initialHyperParams.getParamValues(param)
-        paramValues.foreach { paramValue =>
-          logger.info("Learning param %d/%d".format(paramIndex, params.size))
-          val currHyperParams = bestHyperParams.copy(param, paramValue)
+    for (i <- 1 to 100) {
+      params.zipWithIndex.foreach {
+        case (param, paramIndex) =>
 
-          val currMapk = computeMapk(currHyperParams, trainDS, testClicks)
+          val paramValues = initialHyperParams.getParamValues(param)
+          Random.shuffle(paramValues).foreach { paramValue =>
+            logger.info("Learning param %d/%d".format(paramIndex, params.size))
+            val currHyperParams = bestHyperParams.copy(param, paramValue)
 
-          if (currMapk > bestMapk) {
-            logger.info("Best!!!, curr=%.8f ,best=%.8f, initial=%.8f".format(currMapk, bestMapk, initialMapk))
-            bestMapk = currMapk
-            bestHyperParams = currHyperParams
-          } else logger.info("curr=%.8f ,best=%.8f, initial=%.8f".format(currMapk, bestMapk, initialMapk))
-          logger.info("Current hyperParams:" + currHyperParams)
-          logger.info("Best hyperParams:" + bestHyperParams)
+            val currMapk = computeMapk(currHyperParams, trainDS, testClicks)
 
-        }
+            if (currMapk > bestMapk) {
+              logger.info("Best!!!, curr=%.8f ,best=%.8f, initial=%.8f".format(currMapk, bestMapk, initialMapk))
+              bestMapk = currMapk
+              bestHyperParams = currHyperParams
+            } else logger.info("curr=%.8f ,best=%.8f, initial=%.8f".format(currMapk, bestMapk, initialMapk))
+            logger.info("Current hyperParams:" + currHyperParams)
+            logger.info("Best hyperParams:" + bestHyperParams)
+
+          }
+      }
     }
-
   }
 
   private def computeMapk(hyperParams: HyperParams, trainDS: ExDataSource, testClicks: Seq[Click]): Double = {
