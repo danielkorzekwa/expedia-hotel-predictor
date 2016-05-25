@@ -66,63 +66,6 @@ case class HyperParams(paramsMap: Map[String, Double]) {
 }
 
 object HyperParams {
-  def createBest(): HyperParams = {
-    HyperParams(
-      Map(
-        "timeDecay" -> -0.07,
-
-        "expedia.model.marketdest.destMarketCountsThreshold1" -> 300,
-        "expedia.model.marketdest.destMarketCountsThresholdClickWeight1" -> 0.5f,
-        "expedia.model.marketdest.destMarketCountsThreshold2" -> 500,
-        "expedia.model.marketdest.destMarketCountsThresholdClickWeight2" -> 0.1f,
-        "expedia.model.marketdest.destMarketCountsDefaultWeight" -> 0.05f,
-
-        "expedia.model.marketdest.beta1" -> 1,
-        "expedia.model.marketdest.beta2" -> 5,
-        "expedia.model.marketdest.beta3" -> 1,
-
-        "expedia.model.marketdestuser.beta1" -> 0.95f,
-        "expedia.model.marketdestuser.beta2" -> 0.8,
-        "expedia.model.marketdestuser.beta3" -> 300,
-        "expedia.model.marketdestuser.beta4" -> 8,
-        "expedia.model.marketdestuser.beta5" -> 14,
-        "expedia.model.marketdestuser.beta6" -> 0.6,
-
-        "expedia.model.mdp.beta1" -> 300,
-        "expedia.model.mdp.beta2" -> 0.5f,
-        "expedia.model.mdp.beta3" -> 500,
-        "expedia.model.mdp.beta4" -> 0.1f,
-        "expedia.model.mdp.beta5" -> 0.05f,
-        "expedia.model.mdp.beta6" -> 1f,
-        "expedia.model.mdp.beta7" -> 5f,
-        "expedia.model.mdp.beta8" -> 1f,
-
-        "expedia.model.dest.beta1" -> 0.05f,
-        "expedia.model.dest.beta2" -> 1,
-
-        "expedia.model.mdpu.beta1" -> 0.6,
-        "expedia.model.mdpu.beta2" -> 0.1,
-
-        "expedia.model.marketuser.beta1" -> 0.6f,
-        "expedia.model.marketuser.beta2" -> 0.70f,
-        "expedia.model.marketuser.beta3" -> 1,
-
-        "expedia.model.marketmodel.beta1" -> 0.05f,
-
-        "expedia.model.countryuser.beta1" -> 0.6,
-        "expedia.model.countryuser.beta2" -> 1,
-
-        "expedia.model.country.beta1" -> 0.05f,
-        "expedia.model.country.beta2" -> 1000,
-
-        "expedia.model.clusterdist.beta1" -> 1,
-        "expedia.model.clusterdist.beta2" -> 7))
-  }
-
-  def createBestParams2(): HyperParams = {
-    HyperParams(Map(   "expedia.model.marketdestuser.beta6" -> 0.6, "expedia.model.mdp.beta6" -> 1f,  "expedia.model.mdp.beta7" -> 5f, "expedia.model.mdp.beta8" -> 1f,"timeDecay" -> -0.07,"expedia.model.marketdest.beta2" -> 1.0, "expedia.model.marketuser.beta2" -> 0.6, "expedia.model.marketdest.destMarketCountsThreshold2" -> 400.0, "expedia.model.mdp.beta1" -> 600.0, "expedia.model.marketdestuser.beta1" -> 0.949999988079071, "expedia.model.countryuser.beta1" -> 0.3, "expedia.model.marketdest.destMarketCountsDefaultWeight" -> 0.05000000074505806, "expedia.model.marketdest.destMarketCountsThresholdClickWeight2" -> 0.10000000149011612, "expedia.model.marketdest.destMarketCountsThresholdClickWeight1" -> 0.8, "expedia.model.marketuser.beta1" -> 0.3, "expedia.model.mdp.beta4" -> 0.10000000149011612, "expedia.model.country.beta1" -> 0.05000000074505806, "expedia.model.mdpu.beta2" -> 0.1, "expedia.model.marketdestuser.beta4" -> 8.0, "expedia.model.clusterdist.beta1" -> 1.0, "expedia.model.mdp.beta3" -> 500.0, "expedia.model.marketdest.beta1" -> 4.0, "expedia.model.mdpu.beta1" -> 0.1, "expedia.model.dest.beta1" -> 0.05000000074505806, "expedia.model.country.beta2" -> 256.0, "expedia.model.marketdestuser.beta3" -> 200.0, "expedia.model.mdp.beta2" -> 0.4, "expedia.model.marketdest.destMarketCountsThreshold1" -> 300.0, "expedia.model.marketdest.beta3" -> 2.0, "expedia.model.marketuser.beta3" -> 1.0, "expedia.model.dest.beta2" -> 1.0, "expedia.model.marketdestuser.beta2" -> 0.8, "expedia.model.countryuser.beta2" -> 1.0, "expedia.model.mdp.beta5" -> 0.05000000074505806, "expedia.model.marketmodel.beta1" -> 0.05000000074505806, "expedia.model.marketdestuser.beta5" -> 14.0, "expedia.model.clusterdist.beta2" -> 7.0))
-
-  }
   
   def createBestParams3():HyperParams = {
     HyperParams(Map(

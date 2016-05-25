@@ -37,7 +37,7 @@ object TrainModelParamsApp2 extends LazyLogging {
 
   private def learn(trainDS: ExDataSource, testClicks: Seq[Click]) = {
 
-    val initialHyperParams = HyperParams.createBestParams2()
+    val initialHyperParams = HyperParams.createBestParams3()
 
     val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks)
     var bestMapk = -1d //initialMapk
