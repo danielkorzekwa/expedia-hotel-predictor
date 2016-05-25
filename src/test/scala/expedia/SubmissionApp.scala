@@ -11,7 +11,7 @@ object SubmissionApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
 
-    val hyperParams = HyperParams.createBest()
+    val hyperParams = HyperParams.createBestParams3()
     
     val expediaTrainFile = "c:/perforce/daniel/ex/orig_data/train.csv"
     val trainDataSource = ExCSVDataSource(dsName = "trainDS", expediaTrainFile)

@@ -39,7 +39,7 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-     val hyperParams = HyperParams.createBestParams2()
+     val hyperParams = HyperParams.createBestParams3()
     
    //val marketIds = Set(628, 675,365,1230,637,701)
    val marketIds = Set(663)

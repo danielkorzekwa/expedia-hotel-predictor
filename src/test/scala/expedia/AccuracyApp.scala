@@ -23,7 +23,7 @@ object AccuracyApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-     val hyperParams = HyperParams.createBestParams2()
+     val hyperParams = HyperParams.createBestParams3()
     
     //val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
         val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
