@@ -1,23 +1,20 @@
 package expedia.model.dest
 
-import scala.collection._
-import scala.collection._
-import com.typesafe.scalalogging.slf4j.LazyLogging
-import breeze.linalg.DenseMatrix
-import breeze.linalg.DenseVector
-import expedia.data.Click
-import expedia.model.country.CountryModel
-import expedia.model.svm.loadClusterProbsByDestMap
-import expedia.model.svm.loadClusterProbsByKeyMap
-import expedia.stats.MulticlassHistByKey
-import breeze.linalg._
-import java.io.File
-import expedia.model.country.CountryModelBuilder
-import expedia.data.ExDataSource
-import expedia.HyperParams
-import expedia.util.getTimeDecay
+import scala.collection.Seq
+import scala.collection.mutable
 
-case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) extends LazyLogging {
+import com.typesafe.scalalogging.slf4j.LazyLogging
+
+import breeze.linalg.InjectNumericOps
+import expedia.HyperParams
+import expedia.data.Click
+import expedia.data.ExDataSource
+import expedia.model.country.CountryModel
+import expedia.model.country.CountryModelBuilder
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
+
+case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService) extends LazyLogging {
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByDest.add(click.destId, click.cluster, value = 0))
@@ -30,7 +27,7 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) ex
 
   def processCluster(click: Click) = {
 
-       val w = getTimeDecay(click.dateTime)
+      val w = timeDecayService.getDecay(click.dateTime)
     
     if (clusterHistByDest.getMap.contains(click.destId)) {
 
@@ -53,8 +50,10 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) ex
 object DestModelBuilder {
   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): DestModel = {
 
-    val destModelBuilder = DestModelBuilder(testClicks, hyperParams)
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams,timeDecayService)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
 
     def onClick(click: Click) = {
 

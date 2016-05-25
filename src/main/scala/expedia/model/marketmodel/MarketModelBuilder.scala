@@ -1,17 +1,17 @@
 package expedia.model.marketmodel
 
-import expedia.data.Click
-import expedia.stats.MulticlassHistByKey
-import expedia.model.country.CountryModel
-import scala.collection._
-import expedia.model.country.CountryModelBuilder
-import expedia.data.ExDataSource
-import expedia.model.dest.DestModel
-import expedia.model.dest.DestModelBuilder
-import expedia.HyperParams
-import expedia.util.getTimeDecay
+import scala.collection.Seq
+import scala.collection.mutable
 
-case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
+import expedia.HyperParams
+import expedia.data.Click
+import expedia.data.ExDataSource
+import expedia.model.country.CountryModel
+import expedia.model.country.CountryModelBuilder
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
+
+case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService) {
 
   private val clusterHistByMarket = MulticlassHistByKey[Int](100)
   testClicks.foreach { click => clusterHistByMarket.add(click.marketId, click.cluster, value = 0)
@@ -24,7 +24,7 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) 
 
   def processCluster(click: Click) = {
 
-     val w = getTimeDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click.dateTime)
     
     if (clusterHistByMarket.getMap.contains(click.marketId)) {
       if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster,value=w)
@@ -44,8 +44,10 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) 
 object MarketModelBuilder {
   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketModel = {
 
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams)
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
 
     def onClick(click: Click) = {
 

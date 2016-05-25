@@ -1,14 +1,16 @@
 package expedia.model.country
 
-import expedia.data.Click
-import expedia.stats.MulticlassHistByKey
-import scala.collection._
-import expedia.data.ExDataSource
-import expedia.HyperParams
-import expedia.model.ClusterModel
-import expedia.util.getTimeDecay
+import scala.collection.Seq
+import scala.collection.mutable
 
-case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams){
+import breeze.linalg.InjectNumericOps
+import expedia.HyperParams
+import expedia.data.Click
+import expedia.data.ExDataSource
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
+
+case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService){
 
   private val clusterHistByContinent = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
@@ -24,7 +26,7 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams)
 
   def processCluster(click: Click) = {
 
-      val w = getTimeDecay(click.dateTime)
+       val w = timeDecayService.getDecay(click.dateTime)
     
     clusterHistByContinent.add(click.continentId, click.cluster)
 
@@ -51,7 +53,9 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams)
 object CountryModelBuilder {
   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): CountryModel = {
 
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
 
     def onClick(click: Click) = {
       countryModelBuilder.processCluster(click)

@@ -18,6 +18,7 @@ import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 import scala.util.Random
 import expedia.HyperParams
+import expedia.util.TimeDecayService
 
 case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 
@@ -94,8 +95,11 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 
 object ClusterDist2ModelBuilder {
   def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): ClusterDist2Model = {
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
-    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
+   
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams,timeDecayService)
     val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
 
     def onClick(click: Click) = {

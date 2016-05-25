@@ -5,16 +5,17 @@ import expedia.stats.MulticlassHistByKey
 import expedia.model.marketmodel.MarketModel
 import expedia.model.country.CountryModel
 import expedia.HyperParams
+import expedia.util.getTimeDecay
 
-case class CountryUserModelBuilder(testClicks: Seq[Click],hyperParams:HyperParams) {
+case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
 
   //key ((countryId,userId)
   private val clusterHistByCountryUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByCountryUser.add((click.countryId, click.userId), click.cluster, value = 0))
 
-   private val beta1 = hyperParams.getParamValue("expedia.model.countryuser.beta1").toFloat
-    private val beta2 = hyperParams.getParamValue("expedia.model.countryuser.beta2").toFloat
-  
+  private val beta1 = hyperParams.getParamValue("expedia.model.countryuser.beta1").toFloat
+  private val beta2 = hyperParams.getParamValue("expedia.model.countryuser.beta2").toFloat
+
   def processCluster(click: Click) = {
 
     val countryUserKey = (click.countryId, click.userId)

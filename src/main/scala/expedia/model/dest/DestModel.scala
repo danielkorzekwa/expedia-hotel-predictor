@@ -26,6 +26,7 @@ import expedia.model.destmonth.DestMonthModel
 import expedia.data.ExCSVDataSource
 import expedia.HyperParams
 import expedia.model.ClusterModel
+import expedia.util.TimeDecayService
 
 case class DestModel(
     clusterHistByDest: MulticlassHistByKey[Int]) extends ClusterModel with LazyLogging {
@@ -69,8 +70,10 @@ object DestModel {
 
   def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click],hyperParams:HyperParams): DestModel = {
 
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
-    val destModelBuilder = DestModelBuilder(testClicks,hyperParams)
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
+    val destModelBuilder = DestModelBuilder(testClicks,hyperParams,timeDecayService)
 
     def onClick(click: Click) = {
       countryModelBuilder.processCluster(click)

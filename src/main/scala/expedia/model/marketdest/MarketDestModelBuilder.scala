@@ -2,6 +2,7 @@ package expedia.model.marketdest
 
 import scala.collection.Seq
 import scala.collection.mutable
+
 import breeze.linalg.InjectNumericOps
 import expedia.HyperParams
 import expedia.data.Click
@@ -14,12 +15,12 @@ import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
-import expedia.util.getTimeDecay
+import expedia.util.TimeDecayService
 
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                   destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-                                  hyperParams: HyperParams) {
+                                  hyperParams: HyperParams,timeDecayService:TimeDecayService) {
 
   //key ((marketId,destId)
   private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -42,7 +43,7 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 
   def processCluster(click: Click) = {
 
-     val w = getTimeDecay(click.dateTime)
+     val w = timeDecayService.getDecay(click.dateTime)
     
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
@@ -98,10 +99,12 @@ object MarketDestModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
-    val destModelBuilder = DestModelBuilder(testClicks,hyperParams)
-    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams)
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
+    val destModelBuilder = DestModelBuilder(testClicks,hyperParams,timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams,timeDecayService)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
 
     def onClick(click: Click) = {
       destModelBuilder.processCluster(click)

@@ -1,47 +1,32 @@
 package expedia.model.marketdestuser
 
-import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.Seq
 import scala.collection.mutable
+
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg.InjectNumericOps
-import breeze.linalg.sum
+import expedia.HyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
 import expedia.model.country.CountryModelBuilder
 import expedia.model.countryuser.CountryUserModel
 import expedia.model.countryuser.CountryUserModelBuilder
-import expedia.model.dest.DestModel
 import expedia.model.dest.DestModelBuilder
-import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
-import expedia.model.regdest.RegDestModel
-import expedia.model.regdest.RegDestModelBuilder
-import expedia.stats.CounterMap
-import expedia.stats.MulticlassHistByKey
-import expedia.stats.OnlineAvg
 import expedia.model.marketdest.MarketDestModel
 import expedia.model.marketdest.MarketDestModelBuilder
-import dk.bayes.math.linear.isIdentical
-import expedia.model.clusterdistprox.ClusterDistProxModel
-import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
-import expedia.model.destbydist.DestByDistModel
-import expedia.model.destbydist.DestByDistModelBuilder
-import expedia.model.destbydist.DestByDistModelBuilder
+import expedia.model.marketmodel.MarketModel
+import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.marketuser.MarketUserModel
 import expedia.model.marketuser.MarketUserModelBuilder
-import expedia.model.marketuser.MarketUserModelBuilder
-import expedia.model.ClusterModel
-import expedia.HyperParams
-import java.text.SimpleDateFormat
-import breeze.numerics._
-import java.util.TimeZone
-import expedia.util.getTimeDecay
+import expedia.stats.CounterMap
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) extends LazyLogging {
+case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService) extends LazyLogging {
 
   //key ((destId, marketId,userId)
   private val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
@@ -62,16 +47,18 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
   private val beta3 = hyperParams.getParamValue("expedia.model.marketdestuser.beta3").toFloat
   private val beta4 = hyperParams.getParamValue("expedia.model.marketdestuser.beta4").toFloat
   private val beta5 = hyperParams.getParamValue("expedia.model.marketdestuser.beta5").toFloat
+  
+   private val beta6 = hyperParams.getParamValue("expedia.model.marketdestuser.beta6").toFloat
 
   def processCluster(click: Click) = {
 
    
-    val w = getTimeDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click.dateTime)
 
     val key = (click.destId, click.marketId, click.userId)
     if (clusterHistByDestMarketUser.getMap.contains(key)) {
       if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w)
-      else clusterHistByDestMarketUser.add(key, click.cluster, value = w * 0.6f)
+      else clusterHistByDestMarketUser.add(key, click.cluster, value = w * beta6)
     }
 
     userCounterMap.add(click.userId)
@@ -135,19 +122,21 @@ object MarketDestUserPredictionModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
     /**
      * Create models
      */
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams)
-    val destModelBuilder = DestModelBuilder(testClicks, hyperParams)
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams,timeDecayService)
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams,timeDecayService)
 
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
 
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
 
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams)
-    val modelBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams,timeDecayService)
+    val modelBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams,timeDecayService)
 
     def onClick(click: Click) = {
 

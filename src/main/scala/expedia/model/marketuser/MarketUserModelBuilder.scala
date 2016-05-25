@@ -1,20 +1,21 @@
 package expedia.model.marketuser
 
-import expedia.data.Click
-import expedia.stats.MulticlassHistByKey
-import scala.collection._
-import expedia.model.country.CountryModel
-import expedia.model.countryuser.CountryUserModel
-import expedia.model.marketmodel.MarketModel
-import expedia.HyperParams
-import expedia.data.ExDataSource
-import expedia.model.marketdest.MarketDestModelBuilder
-import expedia.model.country.CountryModelBuilder
-import expedia.model.marketmodel.MarketModelBuilder
-import expedia.model.countryuser.CountryUserModelBuilder
-import expedia.util.getTimeDecay
+import scala.collection.Seq
+import scala.collection.mutable
 
-case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
+import breeze.linalg.InjectNumericOps
+import expedia.HyperParams
+import expedia.data.Click
+import expedia.data.ExDataSource
+import expedia.model.country.CountryModelBuilder
+import expedia.model.countryuser.CountryUserModel
+import expedia.model.countryuser.CountryUserModelBuilder
+import expedia.model.marketmodel.MarketModel
+import expedia.model.marketmodel.MarketModelBuilder
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
+
+case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService) {
 
   private val clusterHistByMarketUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByMarketUser.add((click.marketId, click.userId), click.cluster, value = 0))
@@ -28,7 +29,7 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
 
   def processCluster(click: Click) = {
 
-      val w = getTimeDecay(click.dateTime)
+      val w = timeDecayService.getDecay(click.dateTime)
     
     val marketUserKey = (click.marketId, click.userId)
     if (clusterHistByMarketUser.getMap.contains(marketUserKey)) {
@@ -57,9 +58,11 @@ object MarketUserModelBuilder {
 
   def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketUserModel = {
 
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams)
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams)
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams)
+    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams,timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams,timeDecayService)
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
 
     def onClick(click: Click) = {
