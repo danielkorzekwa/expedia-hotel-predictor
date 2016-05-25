@@ -5,8 +5,10 @@ import expedia.stats.MulticlassHistByKey
 import scala.collection._
 import expedia.data.ExDataSource
 import expedia.HyperParams
+import expedia.model.ClusterModel
+import expedia.util.getTimeDecay
 
-case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
+case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams){
 
   private val clusterHistByContinent = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
@@ -22,10 +24,12 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams)
 
   def processCluster(click: Click) = {
 
+      val w = getTimeDecay(click.dateTime)
+    
     clusterHistByContinent.add(click.continentId, click.cluster)
 
-    if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster)
-    else clusterHistByCountry.add(click.countryId, click.cluster, value = beta1)
+    if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster,value=w)
+    else clusterHistByCountry.add(click.countryId, click.cluster, value = w*beta1)
 
     continentByCountry += click.countryId -> click.continentId
   }

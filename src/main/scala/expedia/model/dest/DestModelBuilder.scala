@@ -15,6 +15,7 @@ import java.io.File
 import expedia.model.country.CountryModelBuilder
 import expedia.data.ExDataSource
 import expedia.HyperParams
+import expedia.util.getTimeDecay
 
 case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) extends LazyLogging {
 
@@ -29,10 +30,12 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) ex
 
   def processCluster(click: Click) = {
 
+       val w = getTimeDecay(click.dateTime)
+    
     if (clusterHistByDest.getMap.contains(click.destId)) {
 
-      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster)
-      else clusterHistByDest.add(click.destId, click.cluster, value = beta1)
+      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster,value=w)
+      else clusterHistByDest.add(click.destId, click.cluster, value = w*beta1)
 
     }
   }

@@ -19,6 +19,7 @@ import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder
 import expedia.model.dest.DestModel
 import expedia.HyperParams
+import expedia.util.getTimeDecay
 
 case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) extends LazyLogging {
 
@@ -36,10 +37,12 @@ case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) ex
 
   def processCluster(click: Click) = {
 
+     val w = getTimeDecay(click.dateTime)
+    
     val key = (click.marketId, click.destId, click.isPackage, click.userId)
     if (clusterHistByMDPU.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster)
-      else clusterHistByMDPU.add(key, click.cluster, value = beta1)
+      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster,value=w)
+      else clusterHistByMDPU.add(key, click.cluster, value = w*beta1)
     }
 
     userCounterMap.add(click.userId)

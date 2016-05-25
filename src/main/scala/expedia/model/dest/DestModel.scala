@@ -25,9 +25,10 @@ import expedia.rankgpr.RankGprPredict
 import expedia.model.destmonth.DestMonthModel
 import expedia.data.ExCSVDataSource
 import expedia.HyperParams
+import expedia.model.ClusterModel
 
 case class DestModel(
-    clusterHistByDest: MulticlassHistByKey[Int]) extends LazyLogging {
+    clusterHistByDest: MulticlassHistByKey[Int]) extends ClusterModel with LazyLogging {
 
   val svmDestIds = List(8250, 8267, 8253, 8279, 12206, 8745, 8268, 8230, 8791, 8260, 8254)
   //  val svmDestIds = Set(8250, 8267,  8253,  8279, 12206,  8745,  8268,  8230,  8791,  8260,  8254 , 8291 , 7635, 8223 , 8746 , 8220,  8788,  8242 , 8278 , 8819 ,468 ,26022 , 8281 , 8213, 669 , 8288 , 8282 , 8287 ,11353 , 8739 ,12603 , 8747, 11439 , 8266 ,12233 , 8818 , 8255, 12175)
@@ -55,33 +56,11 @@ case class DestModel(
     clusterHistByDest.getMap(destId)
 
   }
+  
+   def predict(click:Click): DenseVector[Float] = {
 
-  def predictTop5(clicks: Seq[Click], destMonthModelsMap: Map[Int, DestMonthModel]): DenseMatrix[Double] = {
+    predict(click.destId)
 
-    val i = new AtomicInteger(0)
-    val predictionRecords = clicks.map { click =>
-
-      val probsAndRanksVec = destMonthModelsMap.get(click.destId) match {
-        case Some(destMonthModel) => {
-          val rankedClasses = destMonthModel.predictRankedClasses(click.dateTime)(0 until 5)
-          val probsVec = DenseVector.fill(5)(Double.NaN)
-          DenseVector.vertcat(probsVec, rankedClasses)
-        }
-        case _ => {
-          val predicted = predict(click.destId)
-          val record = getTop5Clusters(predicted)
-          record
-        }
-      }
-
-      if (i.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(i.get))
-      probsAndRanksVec
-    
-    }.toList
-
-    val predictionMatrixMarketDest = DenseVector.horzcat(predictionRecords: _*).t
-
-    predictionMatrixMarketDest
   }
 
 }

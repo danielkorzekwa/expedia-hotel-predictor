@@ -11,6 +11,11 @@ import expedia.data.ExDataSource
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.dest.DestModelBuilder
 import expedia.HyperParams
+import org.joda.time.LocalDate
+import java.text.SimpleDateFormat
+import java.util.TimeZone
+import breeze.numerics._
+import expedia.util.getTimeDecay
 
 case class MdpModelBuilder(testClicks: Seq[Click],
                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
@@ -28,7 +33,10 @@ case class MdpModelBuilder(testClicks: Seq[Click],
   private val beta4 = hyperParams.getParamValue("expedia.model.mdp.beta4").toFloat
   private val beta5 = hyperParams.getParamValue("expedia.model.mdp.beta5").toFloat
 
+  
   def processCluster(click: Click) = {
+
+   val w = getTimeDecay(click.dateTime)
 
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
@@ -40,8 +48,8 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 
     val key = (click.marketId, click.destId, click.isPackage)
     if (clusterHistByMDP.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster)
-      else clusterHistByMDP.add(key, click.cluster, value = clickWeight)
+      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster,value=w)
+      else clusterHistByMDP.add(key, click.cluster, value = w*clickWeight)
     }
 
   }

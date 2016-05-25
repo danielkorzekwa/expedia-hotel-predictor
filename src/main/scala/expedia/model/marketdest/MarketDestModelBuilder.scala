@@ -2,7 +2,6 @@ package expedia.model.marketdest
 
 import scala.collection.Seq
 import scala.collection.mutable
-
 import breeze.linalg.InjectNumericOps
 import expedia.HyperParams
 import expedia.data.Click
@@ -15,6 +14,7 @@ import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
+import expedia.util.getTimeDecay
 
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
@@ -42,6 +42,8 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 
   def processCluster(click: Click) = {
 
+     val w = getTimeDecay(click.dateTime)
+    
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
     val destCounts = destCounterMap.getOrElse(click.destId, 0)
@@ -51,8 +53,8 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
       else destMarketCountsDefaultWeight
 
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
-      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster)
-      else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = clickWeight)
+      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster,value=w)
+      else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w*clickWeight)
     }
 
   }

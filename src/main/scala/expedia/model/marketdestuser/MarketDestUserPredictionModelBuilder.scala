@@ -34,7 +34,10 @@ import expedia.model.marketuser.MarketUserModelBuilder
 import expedia.model.marketuser.MarketUserModelBuilder
 import expedia.model.ClusterModel
 import expedia.HyperParams
-
+import java.text.SimpleDateFormat
+import breeze.numerics._
+import java.util.TimeZone
+import expedia.util.getTimeDecay
 /**
  * @param trainData mat[userId,dest,cluster]
  */
@@ -52,18 +55,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
   private val marketUserCounterMap = CounterMap[Tuple2[Int, Int]]()
   private val userCounterMap = CounterMap[Int]()
 
-  def processCluster(click: Click) = {
-
-    val key = (click.destId, click.marketId, click.userId)
-    if (clusterHistByDestMarketUser.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster)
-      else clusterHistByDestMarketUser.add(key, click.cluster, value = 0.6f)
-    }
-
-    userCounterMap.add(click.userId)
-    marketUserCounterMap.add((click.marketId, click.userId))
-
-  }
+ 
 
   private val beta1 = hyperParams.getParamValue("expedia.model.marketdestuser.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.marketdestuser.beta2").toFloat
@@ -71,9 +63,25 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
   private val beta4 = hyperParams.getParamValue("expedia.model.marketdestuser.beta4").toFloat
   private val beta5 = hyperParams.getParamValue("expedia.model.marketdestuser.beta5").toFloat
 
-  def create( countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+  def processCluster(click: Click) = {
+
+   
+    val w = getTimeDecay(click.dateTime)
+
+    val key = (click.destId, click.marketId, click.userId)
+    if (clusterHistByDestMarketUser.getMap.contains(key)) {
+      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w)
+      else clusterHistByDestMarketUser.add(key, click.cluster, value = w * 0.6f)
+    }
+
+    userCounterMap.add(click.userId)
+    marketUserCounterMap.add((click.marketId, click.userId))
+
+  }
+
+  def create(countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
              destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-            marketModel: MarketModel,
+             marketModel: MarketModel,
              countryUserModel: CountryUserModel, marketDestModel: MarketDestModel,
              marketUserModel: MarketUserModel): MarketDestUserPredictionModel = {
 
@@ -86,7 +94,6 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
-
 
         if (destMarketCounts < beta3) {
           userClusterProbs :+= beta4 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
@@ -104,7 +111,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
     clusterHistByDestMarketUser.normalise()
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
-    MarketDestUserPredictionModel( clusterHistByDestMarketUser.getMap)
+    MarketDestUserPredictionModel(clusterHistByDestMarketUser.getMap)
   }
 
 }
@@ -131,15 +138,15 @@ object MarketDestUserPredictionModelBuilder {
     /**
      * Create models
      */
-    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams)
-    val destModelBuilder = DestModelBuilder(testClicks,hyperParams)
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams)
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams)
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams)
 
-    val countryUserModelBuilder = CountryUserModelBuilder(testClicks,hyperParams)
+    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
 
     val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams)
 
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks,hyperParams)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams)
     val modelBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams)
 
     def onClick(click: Click) = {
@@ -162,7 +169,7 @@ object MarketDestUserPredictionModelBuilder {
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
 
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
-    modelBuilder.create( countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,  marketModel,
+    modelBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel,
       countryUserModel, marketDestModel, marketUserModel)
 
   }

@@ -9,6 +9,7 @@ import expedia.data.ExDataSource
 import expedia.model.dest.DestModel
 import expedia.model.dest.DestModelBuilder
 import expedia.HyperParams
+import expedia.util.getTimeDecay
 
 case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
 
@@ -23,9 +24,11 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) 
 
   def processCluster(click: Click) = {
 
+     val w = getTimeDecay(click.dateTime)
+    
     if (clusterHistByMarket.getMap.contains(click.marketId)) {
-      if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster)
-      else clusterHistByMarket.add(click.marketId, click.cluster, value = beta1)
+      if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster,value=w)
+      else clusterHistByMarket.add(click.marketId, click.cluster, value = w*beta1)
     }
   }
 

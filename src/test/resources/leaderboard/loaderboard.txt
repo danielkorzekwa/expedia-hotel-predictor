@@ -1,4 +1,11 @@
 not tested:
+Time decay + hyper params tuning  + isPackage
+... (1976304 total)
+mapk=0.46654540, test size=1976304
+analysis time=265121
+
+not tested:
+Hyper params tuning + isPackage
 ... (1976304 total)
 mapk=0.46613877, test size=1976304
 analysis time=243680
