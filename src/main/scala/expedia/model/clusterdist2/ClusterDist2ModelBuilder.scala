@@ -3,7 +3,6 @@ package expedia.model.clusterdist2
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.stats.MulticlassHistByKey
-import expedia.stats.calcVectorProbsMutable
 import breeze.linalg.DenseVector
 import scala.collection._
 import scala.collection.mutable.ListBuffer

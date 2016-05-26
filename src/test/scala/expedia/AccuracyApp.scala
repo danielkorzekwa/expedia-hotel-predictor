@@ -23,7 +23,7 @@ object AccuracyApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-     val hyperParams = HyperParams.createBestParams3()
+     val hyperParams = HyperParams.createParamsCMU1()
     
     //val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
         val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
@@ -68,7 +68,7 @@ object AccuracyApp extends LazyLogging {
   private def predictClustersAndSaveToFile(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams) = {
     logger.info("predictClusters and save to files...")
 
-    val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClusters(trainDS, testClicks,hyperParams)
+    val (clusterDistPred, marketDestPred, clusterDistProxPred) = predictClustersCMU(trainDS, testClicks,hyperParams)
 
     csvwrite("target/clusterDistPred_test.csv", clusterDistPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
     csvwrite("target/marketDestPred_test.csv", marketDestPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")

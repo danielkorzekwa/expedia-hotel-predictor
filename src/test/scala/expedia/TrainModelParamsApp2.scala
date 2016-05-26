@@ -11,6 +11,7 @@ import expedia.data.ExKryoDataSource
 import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.mdpu.MdpuModelBuilder
 import scala.util.Random
+import expedia.model.cmu.CmuModelBuilder
 
 object TrainModelParamsApp2 extends LazyLogging {
 
@@ -71,7 +72,7 @@ object TrainModelParamsApp2 extends LazyLogging {
   }
 
   private def computeMapk(hyperParams: HyperParams, trainDS: ExDataSource, testClicks: Seq[Click]): Double = {
-    val top5predictions = MdpuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams).predictTop5(testClicks)
+    val top5predictions = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams).predictTop5(testClicks)
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
     val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))
     mapk
