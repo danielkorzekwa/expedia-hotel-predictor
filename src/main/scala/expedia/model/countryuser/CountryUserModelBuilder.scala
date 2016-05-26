@@ -5,7 +5,6 @@ import expedia.stats.MulticlassHistByKey
 import expedia.model.marketmodel.MarketModel
 import expedia.model.country.CountryModel
 import expedia.HyperParams
-import expedia.util.getTimeDecay
 
 case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
 

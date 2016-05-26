@@ -19,7 +19,6 @@ import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder
 import expedia.model.dest.DestModel
 import expedia.HyperParams
-import expedia.util.getTimeDecay
 import expedia.util.TimeDecayService
 import expedia.util.TimeDecayService
 
