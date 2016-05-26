@@ -3,7 +3,7 @@ package expedia.stats
 import breeze.linalg.sum
 import breeze.linalg.DenseVector
 
-object calcVectorProbsMutable {
+object normaliseMutable {
   
    /**
    * Compute item probabilities

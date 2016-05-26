@@ -56,6 +56,8 @@ case class MdpuModel(clusterHistByMDPU: MulticlassHistByKey[Tuple4[Int, Int, Int
   
    
   def predict(click: Click): DenseVector[Float] = {
+      
+      return  clusterHistByMDPU.getMap((click.marketId,click.destId, click.isPackage,click.userId))
 //    val destId = if (click.destId == 8250) {
 //      val destIds = destByDistModel.predict(click)
 //      if (destIds.contains(12206)) 12206 else click.destId
