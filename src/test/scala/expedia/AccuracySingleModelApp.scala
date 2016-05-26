@@ -13,6 +13,8 @@ import dk.bayes.math.accuracy.loglik
 import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.cmu.CmuModelBuilder
+import expedia.model.mdpu.MdpuModel
+import expedia.model.mdpu.MdpuModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 

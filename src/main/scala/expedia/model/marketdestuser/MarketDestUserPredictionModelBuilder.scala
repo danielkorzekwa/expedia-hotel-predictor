@@ -82,18 +82,17 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
-//        if (destMarketCounts < beta3) {
-//          userClusterProbs :+= beta4 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
-//        } else {
-//          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
-//          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
-//            userClusterProbs :+= beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
-//          } else {
-//            userClusterProbs :+= beta5 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
-//          }
-//
-//        }
-         userClusterProbs :+= beta5 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId)) - userClusterProbs
+        if (destMarketCounts < beta3) {
+          userClusterProbs :+= beta4 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+        } else {
+          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
+          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+            userClusterProbs :+= beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
+          } else {
+            userClusterProbs :+= beta5 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+          }
+
+        }
 
     }
     clusterHistByDestMarketUser.normalise()

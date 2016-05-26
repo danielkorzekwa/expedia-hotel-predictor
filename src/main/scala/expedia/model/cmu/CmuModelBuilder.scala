@@ -36,6 +36,12 @@ case class CmuModelBuilder(testClicks: Seq[Click],
     clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = 0)
   }
 
+  //key ((destId, marketId,userId)
+  private val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
+  testClicks.foreach { click =>
+    clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0)
+  }
+
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
@@ -53,6 +59,11 @@ case class CmuModelBuilder(testClicks: Seq[Click],
   private val destMarketCountsThresholdClickWeight2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight2").toFloat
   private val destMarketCountsDefaultWeight = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsDefaultWeight").toFloat
   private val destMarketCountsDefaultWeightBeta3 = hyperParams.getParamValue("expedia.model.marketdest.beta3").toFloat
+
+  //dest market user params
+  private val clusterHistByDestMarketUserBeta2 = hyperParams.getParamValue("expedia.model.marketdestuser.beta2").toFloat
+  private val clusterHistByDestMarketUserBeta5 = hyperParams.getParamValue("expedia.model.marketdestuser.beta5").toFloat
+  private val clusterHistByDestMarketUserBeta6 = hyperParams.getParamValue("expedia.model.marketdestuser.beta6").toFloat
   def processCluster(click: Click) = {
 
     val w = timeDecayService.getDecay(click.dateTime)
@@ -90,6 +101,14 @@ case class CmuModelBuilder(testClicks: Seq[Click],
       if (click.isBooking == 1) clusterHistByCountryUser.add(countryUserKey, click.cluster)
       else clusterHistByCountryUser.add(countryUserKey, click.cluster, value = clusterHistByCountryUserBeta1)
     }
+
+    //market dest user
+    val key = (click.destId, click.marketId, click.userId)
+    if (clusterHistByDestMarketUser.getMap.contains(key)) {
+      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w)
+      else clusterHistByDestMarketUser.add(key, click.cluster, value = w * clusterHistByDestMarketUserBeta6)
+    }
+
   }
 
   def create(countryModel: CountryModel): CmuModel = {
@@ -122,37 +141,50 @@ case class CmuModelBuilder(testClicks: Seq[Click],
         clusterCounts :-= (c + cm)
     }
 
-    val clusterHistByMarketDest2:immutable.Map[Tuple2[Int, Int], DenseVector[Float]] =    clusterHistByMarketDest.getMap.map {
-      case ((marketId, destId), dm) =>
-        
-           val c = countryModel.predict(countryByMarket(marketId))
-        val cm = clusterHistByMarket.getMap(marketId)
-        
-       (marketId, destId) -> (c + cm + dm)
-    }.toMap
-    
     //mu
     clusterHistByMarketUser.getMap.foreach {
       case ((marketId, userId), clusterCounts) =>
-
-        //  clusterCounts :+= countryModel.predict(countryByMarket(marketId)) - clusterCounts
-        // clusterCounts :+= countryModel.predict(countryByMarket(marketId)) + clusterHistByMarket.getMap(marketId)  - clusterCounts
-        //     clusterCounts :+= countryModel.predict(countryByMarket(marketId)) + clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId),userId),{println("no country");DenseVector.fill(100)(1e-10f)})  - clusterCounts
-
         val c = countryModel.predict(countryByMarket(marketId))
         val cm = clusterHistByMarket.getMap(marketId)
         val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
-        //        println(c.map { x => "%.2f".format(x) })
-        //        println(cm.map { x => "%.2f".format(x) })
-        //        println(cu.map { x => "%.2f".format(x) })
-        //        println(clusterCounts.map { x => "%.2f".format(x) })
-        //        println((c + cm + cu - clusterCounts).map { x => "%.2f".format(x) })
-        //        println("----------------")
+
+        val b = 0.7f
+     //   clusterCounts :+= 1f*(c + b*cm + (1-b)*cu)
         clusterCounts :+= c + cm
     }
     clusterHistByMarketUser.normalise()
 
-    CmuModel(clusterHistByMarketUser,clusterHistByMarketDest2 )
+    clusterHistByMarketUser.getMap.foreach {
+      case ((marketId, userId), clusterCounts) =>
+        val c = countryModel.predict(countryByMarket(marketId))
+        val cm = clusterHistByMarket.getMap(marketId)
+        val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
+
+         val b = 0.7f
+      //  clusterCounts :-= (c + b*cm + (1-b)*cu)
+        
+        clusterCounts :-= c + cm
+    }
+
+    clusterHistByDestMarketUser.getMap.foreach {
+
+      case ((destId, marketId, userId), userClusterProbs) =>
+        val c = countryModel.predict(countryByMarket(marketId))
+        val cm = clusterHistByMarket.getMap(marketId)
+        val md = clusterHistByMarketDest.getMap((marketId, destId))
+        val mu = clusterHistByMarketUser.getMap((marketId, userId))
+          val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
+
+        val b = 0.8f
+        //userClusterProbs :+= 8f*(b*(c +cm + md) +  (1 - b) * (c + cm + mu) ) 
+      //  userClusterProbs :+= 8f * (c + cm + b * md + (1 - b) * mu)
+        
+           userClusterProbs :+= 8f * (c + cm + b * md + (1 - b) * mu)
+
+    }
+    clusterHistByDestMarketUser.normalise()
+
+    CmuModel(clusterHistByMarketUser, clusterHistByDestMarketUser.getMap)
   }
 }
 

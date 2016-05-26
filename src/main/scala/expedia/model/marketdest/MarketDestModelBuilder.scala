@@ -70,12 +70,10 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         val destCounts = destCounterMap.getOrElse(destId, 0)
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
-//        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta1 * marketModel.predict(marketId)
-//        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta2 * destModel.predict(destId)
-//        else clusterCounts :+= beta3 * marketModel.predict(marketId)
+        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta1 * marketModel.predict(marketId)
+        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta2 * destModel.predict(destId)
+        else clusterCounts :+= beta3 * marketModel.predict(marketId)
         
-       clusterCounts :+= beta3 * marketModel.predict(marketId)
-
     }
     clusterHistByMarketDest.normalise()
 
