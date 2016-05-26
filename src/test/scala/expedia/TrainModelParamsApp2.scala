@@ -43,7 +43,7 @@ object TrainModelParamsApp2 extends LazyLogging {
     var bestMapk = -1d //initialMapk
     var bestHyperParams = initialHyperParams
 
-    val params = initialHyperParams.getParams()
+    val params = initialHyperParams.getParams().filter(p => p.startsWith("expedia.model.cmu"))
     logger.info("Number of hyper params:" + params.size)
 
     for (i <- 1 to 100) {
