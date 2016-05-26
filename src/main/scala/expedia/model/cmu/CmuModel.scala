@@ -50,7 +50,6 @@ case class CmuModel(
   
    
     def predict(click:Click): DenseVector[Float] = {
-
  
    val destCounts = destCounterMap.getOrElse(click.destId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)

@@ -90,6 +90,16 @@ case class CmuModelBuilder(testClicks: Seq[Click],
   private val clusterHistByDestMarketUserBeta2 = hyperParams.getParamValue("expedia.model.marketdestuser.beta2").toFloat
   private val clusterHistByDestMarketUserBeta5 = hyperParams.getParamValue("expedia.model.marketdestuser.beta5").toFloat
   private val clusterHistByDestMarketUserBeta6 = hyperParams.getParamValue("expedia.model.marketdestuser.beta6").toFloat
+
+  //cmu params
+  private val cmuBeta1 = hyperParams.getParamValue("expedia.model.cmu.beta1").toFloat
+  private val cmuBeta2 = hyperParams.getParamValue("expedia.model.cmu.beta2").toFloat
+  private val cmuBeta3 = hyperParams.getParamValue("expedia.model.cmu.beta3").toFloat
+  private val cmuBeta4 = hyperParams.getParamValue("expedia.model.cmu.beta4").toFloat
+  private val cmuBeta5 = hyperParams.getParamValue("expedia.model.cmu.beta5").toFloat
+  private val cmuBeta6 = hyperParams.getParamValue("expedia.model.cmu.beta6").toFloat
+  private val cmuBeta7 = hyperParams.getParamValue("expedia.model.cmu.beta7").toFloat
+
   def processCluster(click: Click) = {
 
     val w = timeDecayService.getDecay(click.dateTime)
@@ -224,30 +234,6 @@ case class CmuModelBuilder(testClicks: Seq[Click],
 
     }
 
-    //    //mdpu
-    //     clusterHistByMDPU.getMap.foreach {
-    //
-    //      case ((marketId, destId, isPackage, userId), userClusterProbs) =>
-    //        
-    //        val prior = 
-    //        userClusterProbs :+= 150f * (beta2 * mdpModel.predict(marketId, destId, isPackage) + (1 - beta2) * marketDestUserModel.predict(marketId, destId, userId))
-    //
-    //    }
-
-    //    val predictionMduMap = clusterHistByDestMarketUser.getMap.map {
-    //      case ((destId,marketId,userId), mdu) =>
-    //        val c = countryModel.predict(countryByMarket(marketId))
-    //        val cm = clusterHistByMarket.getMap(marketId)
-    //        val md = clusterHistByMarketDest.getMap((marketId, destId))
-    //        val mu = clusterHistByMarketUser.getMap((marketId, userId))
-    //        val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
-    //
-    //        val predicted = c + cm + 0.8f * md + 0.2f * mu + 0.08f * cu + 0.9f * mdu
-    //        //val predicted = c + cm + md 
-    //        (destId, marketId, userId) -> predicted
-    //
-    //    }
-
     val predictionMdpuMap = clusterHistByMDPU.getMap.map {
       case ((marketId, destId, isPackage, userId), clusterStat) =>
         val c = countryModel.predict(countryByMarket(marketId))
@@ -258,8 +244,8 @@ case class CmuModelBuilder(testClicks: Seq[Click],
         val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
         val mdu = clusterHistByDestMarketUser.getMap((destId, marketId, userId))
 
-        val predicted = c + cm + 0.8f * md + 0.2f * mu + 0.08f * cu + 0.9f * mdu + mdp
-        //  val predicted = c + cm + md +mdp
+        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp
+        //   val predicted = c + cm + md +mdp
         (marketId, destId, isPackage, userId) -> predicted
 
     }
