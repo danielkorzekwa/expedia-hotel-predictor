@@ -64,14 +64,13 @@ case class ExCSVDataSource(dsName: String, expediaFile: String, filter: (Click) 
     val checkout = if (lArray(12).size > 2) df.parse(lArray(12)).getTime else 0
     val destId = lArray(16).toInt
     val isBooking = if (lArray(18).length > 0) lArray(18).toInt else -1
-    val cnt = lArray(19).toInt
     val hotelContinent = lArray(20).toInt
     val countryId = lArray(21).toInt
     val market = lArray(22).toInt
     val cluster = if (lArray.size == 24) lArray(23).toInt else -1
 
     val stayDays = ((checkout - checkin) / (1000L * 60 * 60 * 24)).toInt
-    val click = Click(userRegion, userLoc, dist, userId, isPackage,destId, isBooking, cnt,hotelContinent, countryId, market, stayDays, dateTime, cluster)
+    val click = Click(userRegion, userLoc, dist, userId, isPackage,destId, isBooking, hotelContinent, countryId, market, stayDays, dateTime, cluster)
     click
   }
 }

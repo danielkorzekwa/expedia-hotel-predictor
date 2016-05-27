@@ -1,25 +1,16 @@
 package expedia.model.marketdestuser
 
-import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection._
+
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg._
-import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import expedia.data.Click
-import expedia.model.clusterdistprox.ClusterDistProxModel
-import expedia.model.dest.DestModel
-import expedia.model.svm.loadClusterProbsByKeyMap2
-import expedia.stats.CounterMap
-import expedia.stats.CounterMap
-import expedia.stats.CounterMap
-import expedia.model.regdest.RegDestModel
-import expedia.util.calcTopNClusters
-import expedia.util.getTop5Clusters
-import expedia.model.destbydist.DestByDistModel
-import expedia.stats.MulticlassHist
 import expedia.model.ClusterModel
+import expedia.stats.MulticlassHist
 
 case class MarketDestUserPredictionModel(clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]]) extends ClusterModel with LazyLogging {
 

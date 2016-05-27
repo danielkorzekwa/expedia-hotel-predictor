@@ -17,18 +17,8 @@ case class UserModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
 
   def processCluster(click: Click) = {
 
-    if (clusterHistByUser.getMap.contains(click.userId)) {
-      if (click.isBooking == 1) clusterHistByUser.add(click.userId, click.cluster)
-      else {
-         val cnt = click.cnt
-          val cntWeight = (1-exp(-4f*cnt)).toFloat
-        clusterHistByUser.add(click.userId, click.cluster, value = cntWeight)
-      }
-      
-//       val cnt = click.cnt
-//        val cntWeight = (1-exp(-4f*cnt)).toFloat
-//      if (click.isBooking == 0) clusterHistByUser.add(click.userId, click.cluster,value=cntWeight)
-    }
+  
+???
   }
 
   def create():  UserModel = {

@@ -266,7 +266,7 @@ case class CmuModelBuilder(testClicks: Seq[Click],
         val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
         val mdu = clusterHistByDestMarketUser.getMap((destId, marketId, userId))
 val mdpu = clusterHistByMDPU.getMap((marketId, destId, isPackage,userId))
-        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp + cmuBeta8*mdpu
+        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp 
         //   val predicted = c + cm + md +mdp
         (marketId, destId, isPackage, userId) -> predicted
 
