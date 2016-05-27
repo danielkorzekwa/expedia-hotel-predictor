@@ -15,6 +15,10 @@ import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.cmu.CmuModelBuilder
 import expedia.model.mdpu.MdpuModel
 import expedia.model.mdpu.MdpuModelBuilder
+import expedia.model.country.CountryModelBuilder
+import expedia.model.usermodel.UserModel
+import expedia.model.usermodel.UserModelBuilder
+import expedia.model.mdpu.MdpuModel
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -39,7 +43,7 @@ object AccuracySingleModelApp extends LazyLogging {
    //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
 
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click =>  marketIds.contains(click.marketId))
-    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks,hyperParams)
+    val model = MdpuModelBuilder.buildFromTrainingSet(trainDS, testClicks,hyperParams)
 
     val top5predictions = model.predictTop5(testClicks)
 
