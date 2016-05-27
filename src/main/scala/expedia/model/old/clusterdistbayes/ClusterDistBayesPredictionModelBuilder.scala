@@ -1,22 +1,15 @@
-package expedia.model.clusterdistbayes
+package expedia.model.old.clusterdistbayes
 
-import scala.collection._
-import breeze.linalg.DenseVector
-import scala.collection.mutable.ListBuffer
-import dk.bayes.dsl.variable.Categorical
-import dk.bayes.dsl.infer
-import com.typesafe.scalalogging.slf4j.LazyLogging
 import java.util.concurrent.atomic.AtomicInteger
+import scala.collection._
+import scala.collection.mutable.ListBuffer
+import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.linalg.DenseMatrix
-import expedia.stats.calcVectorProbsMutable
-import breeze.numerics._
-import dk.gp.gpr.GprModel
-import dk.gp.gpr.predict
-import expedia.model.clusterdist.calcJacardSimMatrix
-import expedia.model.clusterdistbayes.gprfast.GprFastModel
-import expedia.model.clusterdistbayes.gprfast.GprFastModel
-import expedia.model.clusterdistbayes.gprfast.gprFastPredict
+import breeze.linalg.DenseVector
 import expedia.model.clusterdist.calcClusterCoExistMatrix
+import expedia.model.clusterdist.calcJacardSimMatrix
+import expedia.model.old.clusterdistbayes.gprfast.gprFastPredict
+import expedia.model.old.clusterdistbayes.gprfast.GprFastModel
 
 case class ClusterDistBayesPredictionModelBuilder() extends LazyLogging {
 

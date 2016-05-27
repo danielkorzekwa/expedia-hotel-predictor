@@ -1,10 +1,11 @@
-package expedia.model.clusterdistbayes
+package expedia.model.old.clusterdistbayes
 
 import dk.gp.gpr.GprModel
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import breeze.numerics._
-import expedia.model.clusterdistbayes.gprfast.GprFastModel
+import expedia.model.old.clusterdistbayes.gprfast.GprFastModel
+import expedia.model.old.clusterdistbayes.GpTestCovFunc
 
 object createGPModelFast {
 

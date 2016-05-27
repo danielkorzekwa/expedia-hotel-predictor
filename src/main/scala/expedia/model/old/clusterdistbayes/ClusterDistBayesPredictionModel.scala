@@ -1,4 +1,4 @@
-package expedia.model.clusterdistbayes
+package expedia.model.old.clusterdistbayes
 
 import breeze.linalg.DenseVector
 import com.typesafe.scalalogging.slf4j.LazyLogging

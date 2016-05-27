@@ -1,4 +1,4 @@
-package expedia.model.clusterdistbayes
+package expedia.model.old.clusterdistbayes
 
 import dk.gp.cov.CovFunc
 import breeze.linalg.DenseMatrix

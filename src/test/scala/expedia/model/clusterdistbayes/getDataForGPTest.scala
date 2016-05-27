@@ -5,6 +5,7 @@ import Assert._
 import breeze.linalg.DenseVector
 import breeze.linalg.DenseMatrix
 import dk.bayes.math.linear.isIdentical
+import expedia.model.old.clusterdistbayes.getDataForGP
 
 class getDataForGPTest {
 

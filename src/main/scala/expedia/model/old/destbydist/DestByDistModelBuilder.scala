@@ -1,4 +1,4 @@
-package expedia.model.destbydist
+package expedia.model.old.destbydist
 
 import expedia.data.Click
 import scala.collection._

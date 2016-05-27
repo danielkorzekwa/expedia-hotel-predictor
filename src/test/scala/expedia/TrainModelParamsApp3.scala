@@ -13,7 +13,7 @@ import expedia.model.mdpu.MdpuModelBuilder
 import scala.util.Random
 import expedia.model.cmu.CmuModelBuilder
 
-object TrainModelParamsApp2 extends LazyLogging {
+object TrainModelParamsApp3 extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
     logger.info("Learning hyper params...")
@@ -48,13 +48,16 @@ object TrainModelParamsApp2 extends LazyLogging {
     logger.info("Number of hyper params:" + params.size)
 
     for (i <- 1 to 100) {
-       Random.shuffle(params).zipWithIndex.foreach {
+      Random.shuffle(params).zipWithIndex.foreach {
         case (param, paramIndex) =>
 
-          val paramValues = initialHyperParams.getParamValues(param)
-          Random.shuffle(paramValues).foreach { paramValue =>
-            logger.info("Learning param %d/%d".format(paramIndex, params.size))
-            val currHyperParams = bestHyperParams.copy(param, paramValue)
+          val bestParamValue = bestHyperParams.getParamValue(param)
+
+          (-3 to 3).foreach { i =>
+
+            val currParamValue = bestParamValue + i * bestParamValue * 0.1
+            logger.info("Learning param=%s %d/%d, bestValue/currValue=%.4f/%.4f".format(param, paramIndex, params.size, bestParamValue, currParamValue))
+            val currHyperParams = bestHyperParams.copy(param, currParamValue)
 
             val currMapk = computeMapk(currHyperParams, trainDS, testClicks)
 
@@ -67,6 +70,7 @@ object TrainModelParamsApp2 extends LazyLogging {
             logger.info("Best hyperParams:" + bestHyperParams)
 
           }
+
       }
     }
   }

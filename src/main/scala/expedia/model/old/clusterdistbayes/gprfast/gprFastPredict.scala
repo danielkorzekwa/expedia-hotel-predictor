@@ -1,4 +1,4 @@
-package expedia.model.clusterdistbayes.gprfast
+package expedia.model.old.clusterdistbayes.gprfast
 
 import breeze.linalg.DenseVector
 
