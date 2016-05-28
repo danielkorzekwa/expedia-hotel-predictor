@@ -8,19 +8,9 @@ import dk.gp.util.averagePrecision
 import dk.gp.util.csvwrite
 import expedia.data.Click
 import expedia.data.ExKryoDataSource
-import expedia.model.marketdestuser.MarketDestUserPredictionModel
+import expedia.model.countryuser.CountryUserModelBuilder
 import dk.bayes.math.accuracy.loglik
-import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
-import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.cmu.CmuModelBuilder
-import expedia.model.mdpu.MdpuModel
-import expedia.model.mdpu.MdpuModelBuilder
-import expedia.model.country.CountryModelBuilder
-import expedia.model.usermodel.UserModel
-import expedia.model.usermodel.UserModelBuilder
-import expedia.model.mdpu.MdpuModel
-import expedia.model.dest.DestModelBuilder
-import expedia.model.old.DestModelBuilder2
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -28,24 +18,24 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-     val hyperParams = HyperParams.createParamsCMU1()
-    
-  // val marketIds = Set(628, 675,365,1230,637,701)
-   val marketIds = Set(675)
-    
+    val hyperParams = HyperParams.createParamsCMU1()
+
+    // val marketIds = Set(628, 675,365,1230,637,701)
+    val marketIds = Set(675)
+
     def filterTrain(click: Click) = {
-true  //  marketIds.contains(click.marketId) 
+      true //  marketIds.contains(click.marketId) 
     }
 
     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
-     //     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
+    //     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
 
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
-   //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
+    //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
 
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click =>  marketIds.contains(click.marketId))
-    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks,hyperParams)
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click =>  marketIds.contains(click.marketId))
+    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
 
     val top5predictions = model.predictTop5(testClicks)
 

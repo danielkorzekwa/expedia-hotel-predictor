@@ -1,36 +1,46 @@
 package expedia.stats
 
 import org.junit._
-import Assert._
+
 import breeze.linalg.DenseVector
-import dk.bayes.math.Beta
-import breeze.linalg._
-import breeze.numerics._
+import breeze.stats._
+import breeze.stats.distributions.Dirichlet
 
 class DirichletTest {
 
-  @Test def test_getMean = {
- 
+  @Test def test_getMean: Unit = {
+
+    val data = Seq(
+      DenseVector(0.9, 0.01, 0.09),
+      DenseVector(0.9, 0.09, 0.01),
+      DenseVector(0.9, 0.09, 0.01),
+      DenseVector(0.1, 0.1, 0.8))
+
+    val dataMat = DenseVector.horzcat(data: _*).t
+
+    val meanVec: DenseVector[Double] = DenseVector.tabulate(dataMat.cols) { colIndex =>
+      val colVec = dataMat(::, colIndex)
+      mean(colVec)
+    }
+
+    val varVec: DenseVector[Double] = DenseVector.tabulate(dataMat.cols) { colIndex =>
+      val colVec = dataMat(::, colIndex)
+      variance(colVec)
+    }
     
-    
-    println("old way:")
-    println("low precision:" + 5d*(DenseVector(2.0, 3.0, 5.0)/sum(DenseVector(2.0, 3.0, 5.0))))
-     println("low precision:" + 5d*(DenseVector(20.0, 30.0, 50.0)/sum(DenseVector(20.0, 30.0, 50.0))))
-     
-     println("new way:")
-     
-      val alphaL = DenseVector(2.0, 3.0, 5.0)
-    val mL = Dirichlet.calcMean(alphaL)
-    val vL = Dirichlet.calcVariance(alphaL)
-    val sL = Dirichlet.calcPrecision(mL,vL + DenseVector.fill(3)(0.0138))
-    val alphaLWithNoise =  Dirichlet.calcAlpha(mL, sL)
-      println("low precision:" + alphaLWithNoise)
-      
-        val alphaH = DenseVector(2000.0, 3000.0, 5000.0)
-    val mH = Dirichlet.calcMean(alphaH)
-    val vH = Dirichlet.calcVariance(alphaH)
-    val sH = Dirichlet.calcPrecision(mH,vH + DenseVector.fill(3)(0.0138))
-    val alphaHWithNoise =  Dirichlet.calcAlpha(mH, sH)
-      println("low precision:" + alphaHWithNoise)
+    val s = Dirichlet.calcPrecision(meanVec,varVec)
+    val a = Dirichlet.calcAlpha(meanVec,s)
+
+    val expFam = new breeze.stats.distributions.Dirichlet.ExpFam(DenseVector.zeros[Double](3))
+
+    val suffStat = data.foldLeft(expFam.emptySufficientStatistic) { (a, x) =>
+      a + expFam.sufficientStatisticFor(x)
+    }
+
+    val alphaHat = expFam.mle(suffStat)
+    println(alphaHat)
+    println(a)
+    //DenseVector(2.9803000577558274, 2.325871404559782, 5.850530402841005)
+
   }
 }

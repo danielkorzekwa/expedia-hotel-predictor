@@ -26,12 +26,23 @@ object Dirichlet {
 
   def calcPrecision(m: DenseVector[Double], v: DenseVector[Double]): Double = {
 
-    val s = (1d / (m.size - 1)) * (0 until m.size - 1).map(i => log((m(i) * (1 - m(i))) / v(i) - 1)).sum
+    val s = (1d / (m.size - 1)) * (0 until m.size - 1).map { i =>
+      val t = (m(i) * (1 - m(i))) / v(i) - 1
+      log(t)
+    }.sum
     exp(s)
   }
-  
-  def calcAlpha(m:DenseVector[Double],s:Double):DenseVector[Double] = {
-    s*m
+
+  def calcAlpha(m: DenseVector[Double], s: Double): DenseVector[Double] = {
+    s * m
+  }
+
+  def addNoise(alpha: DenseVector[Double], noise: DenseVector[Double]): DenseVector[Double] = {
+    val m = Dirichlet.calcMean(alpha)
+    val v = Dirichlet.calcVariance(alpha)
+    val s = Dirichlet.calcPrecision(m, v + noise)
+    val alphaWithNoise = Dirichlet.calcAlpha(m, s)
+    alphaWithNoise
   }
 
 }
