@@ -11,6 +11,8 @@ import expedia.data.ExKryoDataSource
 import expedia.model.countryuser.CountryUserModelBuilder
 import dk.bayes.math.accuracy.loglik
 import expedia.model.cmu.CmuModelBuilder
+import expedia.model.countryuser.CountryUserModel
+import expedia.model.dest.DestModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -18,13 +20,13 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    val hyperParams = HyperParams.createParamsCMU1()
+    val hyperParams = HyperParams.createParamsCMU2()
 
     // val marketIds = Set(628, 675,365,1230,637,701)
     val marketIds = Set(675)
 
     def filterTrain(click: Click) = {
-      true //  marketIds.contains(click.marketId) 
+     true// click.countryId == 50
     }
 
     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
@@ -34,8 +36,8 @@ object AccuracySingleModelApp extends LazyLogging {
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
     //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
 
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click =>  marketIds.contains(click.marketId))
-    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => click.countryId == 50)
+    val model = DestModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
 
     val top5predictions = model.predictTop5(testClicks)
 

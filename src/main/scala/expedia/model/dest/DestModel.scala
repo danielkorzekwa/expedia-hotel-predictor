@@ -1,31 +1,24 @@
 package expedia.model.dest
 
 import java.io.File
+
+import scala.collection._
 import scala.collection.Map
 import scala.collection.Seq
+
+import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import breeze.linalg.csvread
+import expedia.HyperParams
 import expedia.data.Click
+import expedia.data.ExCSVDataSource
 import expedia.data.ExDataSource
+import expedia.model.ClusterModel
 import expedia.model.country.CountryModelBuilder
 import expedia.model.svm.loadClusterProbsByKeyMap
 import expedia.stats.MulticlassHistByKey
-import scala.collection._
-import java.util.concurrent.atomic.AtomicInteger
-import com.typesafe.scalalogging.slf4j.LazyLogging
-import expedia.util.getTop5Clusters
-import dk.gp.gpr.GprModel
-import breeze.numerics._
-import dk.gp.cov.CovSEiso
-import dk.gp.gpr.predict
-import dk.gp.gpr.gpr
-import expedia.rankgpr.RankGprModel
-import expedia.rankgpr.RankGprPredict
-import expedia.model.destmonth.DestMonthModel
-import expedia.data.ExCSVDataSource
-import expedia.HyperParams
-import expedia.model.ClusterModel
 import expedia.util.TimeDecayService
 
 case class DestModel(

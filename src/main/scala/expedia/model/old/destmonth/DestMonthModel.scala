@@ -1,4 +1,4 @@
-package expedia.model.destmonth
+package expedia.model.old.destmonth
 
 import breeze.linalg.DenseVector
 import expedia.data.Click
@@ -18,6 +18,9 @@ import java.util.Date
 import breeze.stats._
 import expedia.data.ExCSVDataSource
 
+/**
+ * Use GP model with month variable, didn't work
+ */
 case class DestMonthModel(rankGprPredict: RankGprPredict) {
 
 

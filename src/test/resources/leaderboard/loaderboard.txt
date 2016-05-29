@@ -1,4 +1,9 @@
-not tesed:
+net tested:
+params tuning + cmu model + time decay + hyper params tuning  + isPackage
+mapk=0.46718233, test size=1976304
+analysis time=256789
+--------------------------------------------
+submission: 0.51449
 cmu model + time decay + hyper params tuning  + isPackage
 ... (1976304 total)
 mapk=0.46712100, test size=1976304

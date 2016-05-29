@@ -3,7 +3,6 @@ package expedia
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.linalg.DenseVector
 import breeze.stats.mean
-import breeze.stats.mean.reduce_Double
 import dk.gp.util.averagePrecision
 import expedia.data.Click
 import expedia.data.ExDataSource
@@ -38,7 +37,7 @@ object TrainModelParamsApp3 extends LazyLogging {
 
   private def learn(trainDS: ExDataSource, testClicks: Seq[Click]) = {
 
-    val initialHyperParams = HyperParams.createParamsCMU1()
+    val initialHyperParams = HyperParams.createParamsCMU2()
 
     val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks)
     var bestMapk = -1d //initialMapk
