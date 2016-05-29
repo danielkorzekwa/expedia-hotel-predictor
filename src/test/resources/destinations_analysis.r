@@ -4,7 +4,7 @@ train_13[hotel_continent==2 & hotel_market==701 & srch_destination_id==8260][,.N
 
 train_13[hotel_continent==2 & hotel_market==628][,.N,by=srch_destination_id][order(+N)][1:10]
 
-clusters <- kmeans(dest[,2:150,with=F],200,iter.max=100)
+clusters <- kmeans(dest[,2:150,with=F],50000,iter.max=100)
 dest$cluster <- clusters$cluster
 destClusters <- dest[,c('srch_destination_id','cluster'),with=F]
-write.csv(destClusters,'c:/perforce/daniel/ex/statistics/clusterByDest.csv',row.names=F,quote=F)
+write.csv(destClusters,'c:/perforce/daniel/ex/statistics/clusterByDest_50k.csv',row.names=F,quote=F)

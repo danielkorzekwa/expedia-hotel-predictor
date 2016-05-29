@@ -84,7 +84,7 @@ object DestModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destClusterModel = destClusterModelBuilder.create(countryModel)
+    val destClusterModel = destClusterModelBuilder.create(countryModel,null)
     val destModel = destModelBuilder.create(countryModel, destClusterModel)
 
     destModel

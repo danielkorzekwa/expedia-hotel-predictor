@@ -15,11 +15,14 @@ import java.io.File
 import breeze.linalg._
 import expedia.stats.MulticlassHistByKey
 import expedia.stats.CounterMap
+import expedia.model.marketmodel.MarketModel
+import expedia.model.marketmodel.MarketModelBuilder
 
 case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   private val beta1 = hyperParams.getParamValue("expedia.model.destcluster.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.destcluster.beta2").toFloat
+   private val beta3 = hyperParams.getParamValue("expedia.model.destcluster.beta3").toFloat
 
   val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
   val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
@@ -56,15 +59,15 @@ case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
 
   }
 
-  def create(countryModel: CountryModel): DestClusterModel = {
+  def create(countryModel: CountryModel,marketModel:MarketModel): DestClusterModel = {
 
     destClusterHistByDestCluster.getMap.foreach {
       case (destCluster, clusterCounts) =>
-        clusterCounts :+= 1f * countryModel.predict(countryByDestCluster(destCluster))
+        clusterCounts :+= beta3 * countryModel.predict(countryByDestCluster(destCluster))
     }
     destClusterHistByDestCluster.normalise()
 
-    DestClusterModel(destClusterHistByDestCluster, destClusterByDestMap)
+    DestClusterModel(destClusterHistByDestCluster, destClusterByDestMap,countryModel)
   }
 
 }
@@ -76,17 +79,18 @@ object DestClusterModelBuilder {
 
     val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
     val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-
+val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
     def onClick(click: Click) = {
 
       destClusterModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
+      marketModelBuilder.processCluster(click)
     }
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-
-    val destClusterModel = destClusterModelBuilder.create(countryModel)
+val marketModel = marketModelBuilder.create(countryModel)
+    val destClusterModel = destClusterModelBuilder.create(countryModel,marketModel)
 
     destClusterModel
   }

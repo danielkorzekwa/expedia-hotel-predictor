@@ -76,13 +76,20 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         
         }
         
-        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta1 * marketModel.predict(marketId)
+        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) {
+                 if(destClusterModel.predictionExists(destId)  && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
+//                   println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
+                   clusterCounts :+= beta3 *  destClusterModel.predict(destId)
+                 }
+           else clusterCounts :+= beta1 * marketModel.predict(marketId)
+          //clusterCounts :+= beta1 * marketModel.predict(marketId)
+        }
         else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= {
        
           beta2 * destModel.predict(destId)
         }
         else {
-          // println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
+          
            if(destClusterModel.predictionExists(destId)  && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) clusterCounts :+= beta3 *  destClusterModel.predict(destId)
            else clusterCounts :+= beta3 * marketModel.predict(marketId)
         }
@@ -133,7 +140,7 @@ object MarketDestModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-     val destClusterModel = destClusterModelBuilder.create(countryModel)
+     val destClusterModel = destClusterModelBuilder.create(countryModel,null)
     val destModel = destModelBuilder.create(countryModel,destClusterModel)
 
     val marketModel = marketModelBuilder.create(countryModel)

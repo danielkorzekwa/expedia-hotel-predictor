@@ -78,7 +78,7 @@ object predictClustersCMU extends LazyLogging {
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val clusterDistModel = clusterDistModelBuilder.create(marketModel)
-      val destClusterModel = destClusterModelBuilder.create(countryModel)
+      val destClusterModel = destClusterModelBuilder.create(countryModel,null)
     val destModel = destModelBuilder.create(countryModel,destClusterModel)
  val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel)
    

@@ -26,6 +26,7 @@ import expedia.model.dest.DestModelBuilder
 import expedia.model.dest.DestModelBuilder
 import expedia.model.dest.DestModelBuilder
 import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModelBuilder
 
 case class CmuModelBuilder(testClicks: Seq[Click],
                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
@@ -255,7 +256,7 @@ case class CmuModelBuilder(testClicks: Seq[Click],
         (marketId, destId, isPackage, userId) -> predicted
 
     }
-    CmuModel(predictionMdpuMap, userCounterMap, destCounterMap, destMarketCounterMap, destModel)
+    CmuModel(predictionMdpuMap, userCounterMap, destCounterMap, destMarketCounterMap, destModel,hyperParams)
   }
 }
 
@@ -300,9 +301,10 @@ marketDestModelBuilder.processCluster(click)
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destClusterModel = destClusterModelBuilder.create(countryModel)
+      val marketModel = marketModelBuilder.create(countryModel)
+    val destClusterModel = destClusterModelBuilder.create(countryModel,marketModel)
     val destModel = destModelBuilder.create(countryModel, destClusterModel)
-    val marketModel = marketModelBuilder.create(countryModel)
+  
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel)
     val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel,marketDestModel)
     cmuModel

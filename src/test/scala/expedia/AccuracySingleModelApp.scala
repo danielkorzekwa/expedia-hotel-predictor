@@ -14,6 +14,7 @@ import expedia.model.cmu.CmuModelBuilder
 import expedia.model.countryuser.CountryUserModel
 import expedia.model.dest.DestModelBuilder
 import expedia.model.marketdest.MarketDestModelBuilder
+import expedia.model.destcluster.DestClusterModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 

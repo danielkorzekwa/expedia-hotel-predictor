@@ -11,11 +11,12 @@ import java.io.File
 import breeze.linalg._
 import expedia.stats.CounterMap
 import expedia.model.dest.DestModel
+import expedia.HyperParams
 
 case class CmuModel( 
     clusterHistByMDPU: Map[Tuple4[Int,Int, Int, Int], DenseVector[Float]],
       userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-      destModel: DestModel) extends ClusterModel{
+      destModel: DestModel,hyperParams:HyperParams) extends ClusterModel{
   
     
   
@@ -27,6 +28,7 @@ case class CmuModel(
       val userLoc = userLocMarketList(row, 0).toInt
       val marketId = userLocMarketList(row, 1).toInt
       val destId = userLocMarketList(row, 2).toInt
+      val count = userLocMarketList(row, 3).toInt
       new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
     }.
     map { row =>
@@ -47,7 +49,7 @@ case class CmuModel(
     }.filter(_._2.size > 0).toMap
 
   
-  
+   private val beta1 = hyperParams.getParamValue("expedia.model.cmumodel.beta1").toFloat
    
     def predict(click:Click): DenseVector[Float] = {
 // return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
@@ -71,7 +73,7 @@ case class CmuModel(
           //   logger.info(" svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
           val probVec = svmDistPrediction.get(click.dist)
 
-          if (probVec.isDefined && (max(clusterProb) < 0.83)) probVec.get.foreachPair { (index, prob) => clusterProb(index) = prob }
+          if (probVec.isDefined && (max(clusterProb) < beta1)) probVec.get.foreachPair { (index, prob) => clusterProb(index) = prob }
         }
         case None => //do nothing
       }

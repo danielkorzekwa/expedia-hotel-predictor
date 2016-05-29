@@ -6,15 +6,16 @@ source('calcClusterProbsSVM.r')
 
  rm(list=ls())
 
-  train_13 <- fread('data_all/train_all_2013.csv')
+  train_13 <-  fread('c:/perforce/daniel/ex/segments/all/train_2013.csv')
   train_13 <- subset(train_13,is_booking > -1 & !is.na(orig_destination_distance))
   
-  test_14 <- fread('data_booked/train_booked_2014_all_cols.csv')
+  test_14 <- fread('c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv')
+  test_15 <- fread('c:/perforce/daniel/ex/data_test/test_all_all_cols.csv')
   
   userLocMarketList <- sqldf('select user_location_city,hotel_market,srch_destination_id, count(*) from train_13 where is_booking > -1 group by user_location_city,hotel_market,srch_destination_id having count(*) > 1000 order by count(*) desc')
- write.csv(userLocMarketList,'svm/svm_dest_dist1000/userLocMarketList.csv',row.names=F) 
+ write.csv(userLocMarketList,'svm/svm_dest_dist1000_2/userLocMarketList.csv',row.names=F) 
  
-  for(i in 215: nrow(userLocMarketList)) {
+  for(i in 1: nrow(userLocMarketList)) {
     
     tryCatch(
       {
@@ -27,13 +28,24 @@ source('calcClusterProbsSVM.r')
         train <- subset(train_13,is_booking > -1 & hotel_market==market & user_location_city==userLoc & srch_destination_id==dest)
         train <- train[1:min(nrow(train),6000),c(7,24),with=F]
     
+        #test 2014
         test <- subset(test_14, hotel_market==market & user_location_city==userLoc & srch_destination_id==dest & !is.na(orig_destination_distance) )
         test <- test[,c('orig_destination_distance'),with=F]
     
         if(nrow(test)>0) {
           svmProbs <- calcClusterProbsSVM(train,test)
           svmProbs$orig_destination_distance <- test$orig_destination_distance
-          write.csv(svmProbs,sprintf('svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv',userLoc,market,dest),row.names=F)
+          write.csv(svmProbs,sprintf('svm/svm_dest_dist1000_2/svm_predictions_loc_%d_market_%d_dest_%d.csv',userLoc,market,dest),row.names=F)
+        }
+        
+        #test 2015
+        test <- subset(test_15, hotel_market==market & user_location_city==userLoc & srch_destination_id==dest & !is.na(orig_destination_distance) )
+        test <- test[,c('orig_destination_distance'),with=F]
+        
+        if(nrow(test)>0) {
+          svmProbs <- calcClusterProbsSVM(train,test)
+          svmProbs$orig_destination_distance <- test$orig_destination_distance
+          write.csv(svmProbs,sprintf('svm/svm_dest_dist1000_2/svm_predictions_loc_%d_market_%d_dest_%d_2015.csv',userLoc,market,dest),row.names=F)
         }
          
       },
