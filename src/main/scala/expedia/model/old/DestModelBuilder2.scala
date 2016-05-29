@@ -20,6 +20,9 @@ import expedia.model.dest.DestModel
 import expedia.model.old.destsmapfordest.DestsMapForDestBuilder
 import expedia.model.old.destsfordest.DestsForDestMapBuilder
 
+/**
+ * The idea was to reconstruct the hierarchy of destinations and use parent dest for a prior.
+ */
 case class DestModelBuilder2(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
