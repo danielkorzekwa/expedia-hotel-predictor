@@ -124,7 +124,7 @@ object MdpModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create(countryModel)
+    val destModel = destModelBuilder.create(countryModel,null)
 
     val marketModel = marketModelBuilder.create(countryModel)
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)

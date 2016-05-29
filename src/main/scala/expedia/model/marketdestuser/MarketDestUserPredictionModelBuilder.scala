@@ -81,7 +81,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
-
+  
         if (destMarketCounts < beta3) {
           userClusterProbs :+= beta4 * (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
         } else {
@@ -93,6 +93,8 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
           }
 
         }
+        
+        
 
     }
     clusterHistByDestMarketUser.normalise()
@@ -154,7 +156,7 @@ object MarketDestUserPredictionModelBuilder {
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val countryUserModel = countryUserModelBuilder.create(countryModel)
-    val destModel = destModelBuilder.create(countryModel)
+    val destModel = destModelBuilder.create(countryModel,null)
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
 
     val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)

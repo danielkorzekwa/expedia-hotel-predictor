@@ -58,26 +58,3 @@ case class DestModel(
   }
 
 }
-
-object DestModel {
-
-  def apply(expediaTrainFile: String, svmPredictionsData: DenseMatrix[Double], testClicks: Seq[Click],hyperParams:HyperParams): DestModel = {
-
-    val timeDecayService = TimeDecayService(testClicks,hyperParams)
-    
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks,hyperParams,timeDecayService)
-
-    def onClick(click: Click) = {
-      countryModelBuilder.processCluster(click)
-      destModelBuilder.processCluster(click)
-
-    }
-    ExCSVDataSource(dsName = "trainDS", expediaTrainFile).foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create(countryModel)
-    destModel
-  }
-
-}

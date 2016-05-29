@@ -310,7 +310,7 @@ object CmuModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create(countryModel)
+    val destModel = destModelBuilder.create(countryModel,null)
     val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel)
     cmuModel
   }
