@@ -1,7 +1,6 @@
 net tested:
-params tuning + cmu model + time decay + hyper params tuning  + isPackage
-mapk=0.46718233, test size=1976304
-analysis time=256789
+cluster dest model + params tuning + cmu model + time decay + hyper params tuning  + isPackage
+mapk=0.46732013, test size=1976304
 --------------------------------------------
 submission: 0.51449
 cmu model + time decay + hyper params tuning  + isPackage

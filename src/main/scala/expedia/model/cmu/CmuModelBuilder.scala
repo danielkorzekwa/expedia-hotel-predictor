@@ -16,6 +16,16 @@ import expedia.stats.MulticlassHist
 import expedia.stats.normaliseMutable
 import expedia.model.dest.DestModel
 import expedia.model.dest.DestModelBuilder
+import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.model.marketdest.MarketDestModel
+import expedia.model.marketdest.MarketDestModelBuilder
+import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModelBuilder
+import expedia.model.marketmodel.MarketModelBuilder
+import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModelBuilder
+import expedia.model.dest.DestModelBuilder
 
 case class CmuModelBuilder(testClicks: Seq[Click],
                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
@@ -33,11 +43,6 @@ case class CmuModelBuilder(testClicks: Seq[Click],
   private val clusterHistByMarketUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByMarketUser.add((click.marketId, click.userId), click.cluster, value = 0))
 
-  //key ((marketId,destId)
-  private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
-  testClicks.foreach { click =>
-    clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = 0)
-  }
 
   //key ((marketId,destId,isPackage)
   private val clusterHistByMDP = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
@@ -101,8 +106,8 @@ case class CmuModelBuilder(testClicks: Seq[Click],
   private val cmuBeta7 = hyperParams.getParamValue("expedia.model.cmu.beta7").toFloat
   private val cmuBeta8 = hyperParams.getParamValue("expedia.model.cmu.beta8").toFloat
 
-   private val mdpuBeta1 = hyperParams.getParamValue("expedia.model.mdpu.beta1").toFloat
-  
+  private val mdpuBeta1 = hyperParams.getParamValue("expedia.model.mdpu.beta1").toFloat
+
   def processCluster(click: Click) = {
 
     val w = timeDecayService.getDecay(click.dateTime)
@@ -122,10 +127,6 @@ case class CmuModelBuilder(testClicks: Seq[Click],
       else if (destMarketCounts < destMarketCountsThreshold2) destMarketCountsThresholdClickWeight2
       else destMarketCountsDefaultWeight
 
-    if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
-      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w)
-      else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * clickWeightMd)
-    }
 
     //mdp
     val clickWeightMdp =
@@ -158,19 +159,19 @@ case class CmuModelBuilder(testClicks: Seq[Click],
       if (click.isBooking == 1) clusterHistByDestMarketUser.add(keyMdu, click.cluster, value = w)
       else clusterHistByDestMarketUser.add(keyMdu, click.cluster, value = w * clusterHistByDestMarketUserBeta6)
     }
-    
+
     //mdpu
-     val keyMdpu = (click.marketId, click.destId, click.isPackage, click.userId)
+    val keyMdpu = (click.marketId, click.destId, click.isPackage, click.userId)
     if (clusterHistByMDPU.getMap.contains(keyMdpu)) {
-      if (click.isBooking == 1) clusterHistByMDPU.add(keyMdpu, click.cluster,value=w)
-      else clusterHistByMDPU.add(keyMdpu, click.cluster, value = w*mdpuBeta1)
+      if (click.isBooking == 1) clusterHistByMDPU.add(keyMdpu, click.cluster, value = w)
+      else clusterHistByMDPU.add(keyMdpu, click.cluster, value = w * mdpuBeta1)
     }
 
     userCounterMap.add(click.userId)
   }
 
   def create(countryModel: CountryModel, destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-             destModel: DestModel): CmuModel = {
+             destModel: DestModel,marketDestModel:MarketDestModel): CmuModel = {
 
     //mc
     clusterHistByMarket.getMap.foreach {
@@ -188,28 +189,12 @@ case class CmuModelBuilder(testClicks: Seq[Click],
         clusterCounts :+= cu - clusterCounts
     }
 
-    //md
-    clusterHistByMarketDest.getMap.foreach {
-      case ((marketId, destId), clusterCounts) =>
-
-        val c = countryModel.predict(countryByMarket(marketId))
-        val cm = clusterHistByMarket.getMap(marketId)
-
-        val prior = (c + cm)
-        val md = normaliseMutable(clusterCounts + destMarketCountsDefaultWeightBeta3 * prior) - prior
-        clusterCounts :+= md - clusterCounts
-
-    }
 
     //mdp
     clusterHistByMDP.getMap.foreach {
       case ((marketId, destId, isPackage), clusterCounts) =>
 
-        val c = countryModel.predict(countryByMarket(marketId))
-        val cm = clusterHistByMarket.getMap(marketId)
-        val md = clusterHistByMarketDest.getMap(marketId, destId)
-
-        val prior = (c + cm + md)
+        val prior = marketDestModel.predict(marketId, destId)
         val mdp = normaliseMutable(clusterCounts + clusterHistByMDPBeta8 * prior) - prior
         clusterCounts :+= mdp - clusterCounts
 
@@ -233,41 +218,40 @@ case class CmuModelBuilder(testClicks: Seq[Click],
       case ((destId, marketId, userId), clusterCounts) =>
         val c = countryModel.predict(countryByMarket(marketId))
         val cm = clusterHistByMarket.getMap(marketId)
-        val md = clusterHistByMarketDest.getMap((marketId, destId))
+     //   val md = clusterHistByMarketDest.getMap((marketId, destId))
         val mu = clusterHistByMarketUser.getMap((marketId, userId))
         val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
 
-        //val prior = (c + cm + 0.8f * md + 0.2f * mu + 0.08f * cu)
-        val prior = (c + cm + md)
+        val prior = marketDestModel.predict(marketId, destId)
         val mdu = normaliseMutable(clusterCounts + 8f * prior) - prior
         clusterCounts :+= mdu - clusterCounts
 
     }
-    
+
     //mdpu
     clusterHistByMDPU.getMap.map {
       case ((marketId, destId, isPackage, userId), clusterCounts) =>
-          val c = countryModel.predict(countryByMarket(marketId))
+        val c = countryModel.predict(countryByMarket(marketId))
         val cm = clusterHistByMarket.getMap(marketId)
-        val md = clusterHistByMarketDest.getMap((marketId, destId))
-         val mdp = clusterHistByMDP.getMap((marketId, destId, isPackage))
-          val prior = (c + cm + md + mdp)
-            val mdpu = normaliseMutable(clusterCounts + 8f * prior) - prior
-             clusterCounts :+= mdpu - clusterCounts
+        val mdp = clusterHistByMDP.getMap((marketId, destId, isPackage))
+        val prior =  marketDestModel.predict(marketId, destId) + mdp
+        val mdpu = normaliseMutable(clusterCounts + 8f * prior) - prior
+        clusterCounts :+= mdpu - clusterCounts
     }
 
     val predictionMdpuMap = clusterHistByMDPU.getMap.map {
       case ((marketId, destId, isPackage, userId), clusterStat) =>
         val c = countryModel.predict(countryByMarket(marketId))
         val cm = clusterHistByMarket.getMap(marketId)
-        val md = clusterHistByMarketDest.getMap((marketId, destId))
         val mdp = clusterHistByMDP.getMap((marketId, destId, isPackage))
         val mu = clusterHistByMarketUser.getMap((marketId, userId))
         val cu = clusterHistByCountryUser.getMap.getOrElse((countryByMarket(marketId), userId), DenseVector.fill(100)(1e-10f))
         val mdu = clusterHistByDestMarketUser.getMap((destId, marketId, userId))
-val mdpu = clusterHistByMDPU.getMap((marketId, destId, isPackage,userId))
-        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp 
-        //   val predicted = c + cm + md +mdp
+        val mdpu = clusterHistByMDPU.getMap((marketId, destId, isPackage, userId))
+       
+        val mdPred = marketDestModel.predict(marketId, destId)
+        val md2 = mdPred - (c+cm)
+        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md2 + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp
         (marketId, destId, isPackage, userId) -> predicted
 
     }
@@ -297,21 +281,30 @@ object CmuModelBuilder {
 
     val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
 
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
     val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+
+    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+  val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
+ 
     val cmuModelBuilder = CmuModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
 
     def onClick(click: Click) = {
-
+marketModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
       destModelBuilder.processCluster(click)
       cmuModelBuilder.processCluster(click)
-
+      destClusterModelBuilder.processCluster(click)
+marketDestModelBuilder.processCluster(click)
     }
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create(countryModel,null)
-    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel)
+    val destClusterModel = destClusterModelBuilder.create(countryModel)
+    val destModel = destModelBuilder.create(countryModel, destClusterModel)
+    val marketModel = marketModelBuilder.create(countryModel)
+    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel)
+    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel,marketDestModel)
     cmuModel
   }
 }

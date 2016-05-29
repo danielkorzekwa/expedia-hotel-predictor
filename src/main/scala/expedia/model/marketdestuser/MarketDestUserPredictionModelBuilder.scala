@@ -159,7 +159,7 @@ object MarketDestUserPredictionModelBuilder {
     val destModel = destModelBuilder.create(countryModel,null)
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
 
-    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,null)
     modelBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel,
       countryUserModel, marketDestModel, marketUserModel)
 

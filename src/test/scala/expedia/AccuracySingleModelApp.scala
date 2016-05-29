@@ -38,7 +38,7 @@ object AccuracySingleModelApp extends LazyLogging {
     //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
 
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => click.countryId == 50)
-    val model = DestModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
 
     val top5predictions = model.predictTop5(testClicks)
 

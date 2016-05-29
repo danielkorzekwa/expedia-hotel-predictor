@@ -128,7 +128,7 @@ object MdpuModelBuilder {
     val destModel = destModelBuilder.create(countryModel,null)
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
 
-    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap)
+    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,null)
 
     val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,marketDestModel)
 
