@@ -60,7 +60,7 @@ object predictClusters extends LazyLogging {
     val marketDestUserPredictBuilder = MarketDestUserPredictionModelBuilder(testClicks,hyperParams,timeDecayService)
   //  val mdpuModelBuilder = MdpuModelBuilder(testClicks,hyperParams,timeDecayService)
 
-    val cmuModelBuilder = CmuModelBuilder(testClicks,destMarketCounterMap,destCounterMap,marketCounterMap,hyperParams,timeDecayService)
+    val cmuModelBuilder = CmuModelBuilder(testClicks,hyperParams,timeDecayService)
     
     def onClick(click: Click) = {
       clusterDistModelBuilder.processCluster(click)
@@ -98,7 +98,7 @@ object predictClusters extends LazyLogging {
 
       val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,marketDestModel)
     // val mdpuModel = mdpuModelBuilder.create(marketDestUserModel, marketDestModel, mdpModel, destCounterMap, destMarketCounterMap, destModel)
-    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel,null)
+    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel,null,null,null,null,null,null)
     /**
      * Cluster dist
      */

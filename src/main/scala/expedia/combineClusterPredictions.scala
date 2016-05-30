@@ -29,9 +29,6 @@ object combineClusterPredictions extends LazyLogging {
       val marketDestVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (2, marketDestPredVec(i), marketDestPredVec(5 + i).toInt))
       val clusterDistProxVotes: Seq[Tuple3[Int, Double, Int]] = (0 until 5).map(i => (3, clusterDistProxPredVec(i), clusterDistProxPredVec(5 + i).toInt))
 
-      //  val clusterDistModel = SvrModel.loadFromFile("target/apk_clusterDistModel.svr")
-      //  val marketDestModel = SvrModel.loadFromFile("target/apk_marketDestModel.svr")
-
       val prioritizedVotes = ListBuffer[Tuple3[Int, Double, Int]]()
 
       //fill clusterDistPred

@@ -19,13 +19,14 @@ import expedia.stats.CounterMap
 import expedia.util.TimeDecayService
 import expedia.model.cmu.CmuModelBuilder
 import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 
 object predictClustersCMU extends LazyLogging {
 
   /**
    * @return Top 5 predictions for three models[clusterDist,marketDest,clusterDistProx]. ClusterDist: [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
+  def apply(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
 
     /**
      * Create counters
@@ -42,23 +43,27 @@ object predictClustersCMU extends LazyLogging {
     }
     trainDS.foreach { click => onClickCounters(click) }
 
-    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+    val timeDecayService = TimeDecayService(testClicks, hyperParams)
     /**
      * Create models
      */
-    
-    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks,hyperParams)
+
+    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks, hyperParams)
     val clusterDistProxModelBuilder = ClusterDistProxModelBuilder(testClicks)
 
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
-    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams,timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks,hyperParams,timeDecayService)
- val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-   val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
- 
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
+    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketDestUserModelBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams, timeDecayService)
+    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams, timeDecayService)
+    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
 
-    val cmuModelBuilder = CmuModelBuilder(testClicks,destMarketCounterMap,destCounterMap,marketCounterMap,hyperParams,timeDecayService)
-    
+    val cmuModelBuilder = CmuModelBuilder(testClicks, hyperParams, timeDecayService)
+
     def onClick(click: Click) = {
       clusterDistModelBuilder.processCluster(click)
       clusterDistProxModelBuilder.processCluster(click)
@@ -70,6 +75,11 @@ object predictClustersCMU extends LazyLogging {
       cmuModelBuilder.processCluster(click)
       destClusterModelBuilder.processCluster(click)
       marketDestModelBuilder.processCluster(click)
+      marketDestClusterModelBuilder.processCluster(click)
+      marketDestUserModelBuilder.processCluster(click)
+      countryUserModelBuilder.processCluster(click)
+      marketUserModelBuilder.processCluster(click)
+      mdpModelBuilder.processCluster(click)
     }
     trainDS.foreach { click => onClick(click) }
 
@@ -78,14 +88,20 @@ object predictClustersCMU extends LazyLogging {
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val clusterDistModel = clusterDistModelBuilder.create(marketModel)
-      val destClusterModel = destClusterModelBuilder.create(countryModel,null)
-    val destModel = destModelBuilder.create(countryModel,destClusterModel)
- val marketDestModel = marketDestModelBuilder.create(
-     destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel,null)
-   
+    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
+    val destModel = destModelBuilder.create(countryModel, destClusterModel)
+    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
+    val marketDestModel = marketDestModelBuilder.create(
+      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel, marketDestClusterModel)
 
+    val countryUserModel = countryUserModelBuilder.create(countryModel)
+    val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
+    val marketDestUserModel = marketDestUserModelBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel, countryUserModel, marketDestModel, marketUserModel)
 
-    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel,marketDestModel)
+    val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketDestModel)
+
+    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel, marketDestModel, marketDestUserModel,
+      countryUserModel, marketUserModel, marketModel, mdpModel)
     /**
      * Cluster dist
      */

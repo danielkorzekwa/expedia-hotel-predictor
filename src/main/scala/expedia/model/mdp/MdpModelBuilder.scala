@@ -62,14 +62,16 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 
     clusterHistByMDP.getMap.foreach {
       case ((marketId, destId, isPackage), clusterCounts) =>
-
-        val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
-        val destCounts = destCounterMap.getOrElse(destId, 0)
-        val marketCounts = marketCounterMap.getOrElse(marketId, 0)
-
-        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta6 * marketModel.predict(marketId)
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta7 * destModel.predict(destId)
-        else clusterCounts :+= beta8 * marketModel.predict(marketId)
+//
+//        val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
+//        val destCounts = destCounterMap.getOrElse(destId, 0)
+//        val marketCounts = marketCounterMap.getOrElse(marketId, 0)
+//
+//        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta6 * marketModel.predict(marketId)
+//        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta7 * destModel.predict(destId)
+//        else clusterCounts :+= beta8 * marketModel.predict(marketId)
+        
+        clusterCounts :+= beta8 * marketDestModel.predict(marketId, destId)
 
     }
 

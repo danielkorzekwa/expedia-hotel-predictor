@@ -52,7 +52,7 @@ case class CmuModel(
    private val beta1 = hyperParams.getParamValue("expedia.model.cmumodel.beta1").toFloat
    
     def predict(click:Click): DenseVector[Float] = {
-// return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
+// /return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
    val destCounts = destCounterMap.getOrElse(click.destId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
 

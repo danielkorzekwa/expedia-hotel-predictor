@@ -17,6 +17,8 @@ import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 import expedia.model.marketdestcluster.MarketDestClusterModel
+import expedia.model.marketdestuser.MarketDestUserPredictionModel
+import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -41,7 +43,7 @@ object AccuracySingleModelApp extends LazyLogging {
     //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
 
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => click.countryId == 50)
-    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+    val model = MarketDestUserPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
 
     val top5predictions = model.predictTop5(testClicks)
 

@@ -43,9 +43,12 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
 
     clusterHistByMarketUser.getMap.foreach {
       case ((marketId, userId), clusterCounts) =>
-        if (countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
-          clusterCounts :+= beta3 * (beta2 * marketModel.predict(marketId) + (1 - beta2) * countryUserModel.predict(countryByMarket(marketId), userId)) 
-        } else clusterCounts :+= marketModel.predict(marketId) 
+        
+//        if (countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+//          clusterCounts :+= beta3 * (beta2 * marketModel.predict(marketId) + (1 - beta2) * countryUserModel.predict(countryByMarket(marketId), userId)) 
+//        } else clusterCounts :+= marketModel.predict(marketId) 
+        
+         clusterCounts :+= marketModel.predict(marketId) 
     }
     clusterHistByMarketUser.normalise()
 
