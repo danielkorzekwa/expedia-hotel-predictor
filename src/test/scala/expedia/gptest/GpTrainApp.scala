@@ -24,12 +24,12 @@ object GpTrainApp {
   
   def main(args: Array[String]): Unit = {
 
-    val clusterSet = Set(19, 21, 23)
-    val allClicks = ExCSVDataSource(dsName = "test",  "c:/perforce/daniel/ex/segments/dest_12217/train_2013_dest12217.csv").getAllClicks()
+    val clusterSet = Set(56,41)
+    val allClicks = ExCSVDataSource(dsName = "test",  "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013_loc_2096_market_675_dest_8267.csv").getAllClicks()
 
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (clusterSet.contains(c.cluster)) && c.dateTime.getTime > 0 }
+    val filteredClicks = allClicks//.filter { c => (clusterSet.contains(c.cluster))}
 
-    val dataX = DenseVector(filteredClicks.map(c => c.dateTime.getTime/DAY).toArray).toDenseMatrix.t
+    val dataX = DenseVector(filteredClicks.map(c => c.dist).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => c.cluster.toDouble).toArray)
 
     val covFunc = CovSEiso()

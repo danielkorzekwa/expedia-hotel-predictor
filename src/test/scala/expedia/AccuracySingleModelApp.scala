@@ -20,6 +20,11 @@ import expedia.model.marketdestcluster.MarketDestClusterModel
 import expedia.model.marketdestuser.MarketDestUserPredictionModel
 import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.marketuser.MarketUserModelBuilder
+import expedia.model.distsvm.DistSvmModel
+import expedia.model.distgp.DistGpModel
+import expedia.model.clusterdist.ClusterDistPredictionModel
+import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
+import expedia.data.ExCSVDataSource
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -29,22 +34,23 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val hyperParams = HyperParams.createParamsCMU3()
 
-     val marketIds = Set(628, 675,365,1230,637,701)
-   // val marketIds = Set(675)
+    val marketIds = Set(628, 675, 365, 1230, 637, 701)
+    // val marketIds = Set(675)
 
     def filterTrain(click: Click) = {
-  true//  marketIds.contains(click.marketId)
+    true//  click.userLoc == 2096 && click.marketId == 675 && click.destId == 8267
     }
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
-    //     val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
-    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
+    //  val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
+    val expediaTrainFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013.csv"
+    val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainFileCSV, filterTrain)
 
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
-    //      val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
+    // val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
+    val expediaTestFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
 
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => marketIds.contains(click.marketId))
-    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFileCSV).getAllClicks()//.filter(click => click.userLoc == 2096 && click.marketId == 675 && click.destId == 8267)
+   // val model = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+   val model = DistGpModel.build()
 
     val top5predictions = model.predictTop5(testClicks)
 
