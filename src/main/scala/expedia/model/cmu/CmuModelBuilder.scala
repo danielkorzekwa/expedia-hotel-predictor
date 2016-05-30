@@ -109,6 +109,7 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
         val mduPred = marketDestUserModel.predict(marketId, destId, userId)
         val mdu2 = mduPred - mdPred
         val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu2 + cmuBeta7 * mdp
+        //  val predicted =muPred
         (marketId, destId, isPackage, userId) -> predicted
 
     }

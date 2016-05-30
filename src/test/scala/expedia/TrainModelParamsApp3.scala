@@ -43,7 +43,7 @@ object TrainModelParamsApp3 extends LazyLogging {
     var bestMapk = -1d //initialMapk
     var bestHyperParams = initialHyperParams
 
-    val params = initialHyperParams.getParams()//.filter(p => p.startsWith("expedia.timeDecay"))
+    val params = initialHyperParams.getParams().filter(p => p.startsWith("expedia.model.marketuser.beta3") || p.startsWith("expedia.model.cmu."))
     logger.info("Number of hyper params:" + params.size)
 
     for (i <- 1 to 100) {
@@ -52,7 +52,7 @@ object TrainModelParamsApp3 extends LazyLogging {
 
           val bestParamValue = bestHyperParams.getParamValue(param)
 
-          (-3 to 3).filter(x => x!=0).foreach { i =>
+          (-3 to 3).filter(x => x != 0).foreach { i =>
 
             val currParamValue = bestParamValue + i * bestParamValue * 0.05
             logger.info("Learning param=%s %d/%d, bestValue/currValue=%.4f/%.4f".format(param, paramIndex, params.size, bestParamValue, currParamValue))

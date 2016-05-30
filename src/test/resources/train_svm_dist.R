@@ -14,7 +14,7 @@ source('calcClusterProbsSVM.r')
   test_15 <- fread('c:/perforce/daniel/ex/data_test/test_all_all_cols.csv')
   test_14_15 <- rbind(test_14,test_15)
   
-  userLocMarketList <- sqldf('select user_location_city,hotel_market,srch_destination_id, count(*) from train_13 where is_booking > -1 group by user_location_city,hotel_market,srch_destination_id having count(*) > 100 order by count(*) desc')
+  userLocMarketList <- sqldf('select user_location_city,hotel_market,srch_destination_id, count(*) c from train_13 where is_booking > -1 group by user_location_city,hotel_market,srch_destination_id having count(*) > 100 order by count(*) desc')
  write.csv(userLocMarketList,'c:/perforce/daniel/ex/svm/svm_dest_dist100/userLocMarketList.csv',row.names=F) 
  
   for(i in 1: nrow(userLocMarketList)) {
@@ -47,10 +47,19 @@ source('calcClusterProbsSVM.r')
    
   }
   
+ #Analysis
+ 
+ train <-  subset(train_13,  user_location_city==2096 & hotel_market==675 & srch_destination_id==8267 ) 
+ train[1:min(nrow(train),10000),c(7,24),with=F]
+ 
+ test <- train
+ test[,c('orig_destination_distance'),with=F]
+ 
+ svmProbs <- calcClusterProbsSVM(train,test)
+ 
+ 
   
- svmProbs <- calcClusterProbsSVM(t,t)
-  test <- cbind(t,svmProbs)
-    ggplot() + geom_line(aes(col='54',x=test$orig_destination_distance,y=test$X54)) + 
-      geom_line(aes(col='1',x=test$orig_destination_distance,y=test$X1)) + 
-    coord_cartesian(xlim=c(44,47),ylim=c(-0.1,1.1)) + scale_x_continuous(breaks=seq(44,47,0.5)) 
+    ggplot() + geom_line(aes(col='1',x=test$orig_destination_distance,y=svmProbs$X56)) + 
+      geom_line(aes(col='2',x=test$orig_destination_distance,y=svmProbs$X41)) + 
+    coord_cartesian(xlim=c(4015,4022),ylim=c(-0.1,1.1)) 
 

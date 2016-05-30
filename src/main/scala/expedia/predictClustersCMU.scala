@@ -20,13 +20,14 @@ import expedia.util.TimeDecayService
 import expedia.model.cmu.CmuModelBuilder
 import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
+import expedia.model.distsvm.DistSvmModel
 
 object predictClustersCMU extends LazyLogging {
 
   /**
-   * @return Top 5 predictions for three models[clusterDist,marketDest,clusterDistProx]. ClusterDist: [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
+   * @return Top 5 predictions for four models[clusterDist,marketDest,clusterDistProx]. ClusterDist: [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
+  def apply(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): Tuple4[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double],DenseMatrix[Double]] = {
 
     /**
      * Create counters
@@ -117,6 +118,11 @@ object predictClustersCMU extends LazyLogging {
      */
     val predictionMatrixMarketDest = cmuModel.predictTop5(testClicks)
 
-    (predictionMatrixClusterDist, predictionMatrixMarketDest, predictionMatrixClusterDistProx)
+    /**
+     * Dist svm
+     */
+    val distSvmMatrix = DistSvmModel().predictTop5(testClicks)
+    
+    (predictionMatrixClusterDist, predictionMatrixMarketDest, predictionMatrixClusterDistProx,distSvmMatrix)
   }
 }

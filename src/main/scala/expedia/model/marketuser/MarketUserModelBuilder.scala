@@ -24,7 +24,7 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
   private val beta1 = hyperParams.getParamValue("expedia.model.marketuser.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.marketuser.beta2").toFloat
+  private val beta2 = 0.95f//hyperParams.getParamValue("expedia.model.marketuser.beta2").toFloat
   private val beta3 = hyperParams.getParamValue("expedia.model.marketuser.beta3").toFloat
 
   def processCluster(click: Click) = {
@@ -46,9 +46,9 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
         
 //        if (countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
 //          clusterCounts :+= beta3 * (beta2 * marketModel.predict(marketId) + (1 - beta2) * countryUserModel.predict(countryByMarket(marketId), userId)) 
-//        } else clusterCounts :+= marketModel.predict(marketId) 
+//        } else clusterCounts :+= beta3* marketModel.predict(marketId) 
         
-         clusterCounts :+= marketModel.predict(marketId) 
+         clusterCounts :+= beta3*marketModel.predict(marketId) 
     }
     clusterHistByMarketUser.normalise()
 

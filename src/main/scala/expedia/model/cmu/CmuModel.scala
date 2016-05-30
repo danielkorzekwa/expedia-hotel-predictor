@@ -52,7 +52,7 @@ case class CmuModel(
    private val beta1 = hyperParams.getParamValue("expedia.model.cmumodel.beta1").toFloat
    
     def predict(click:Click): DenseVector[Float] = {
-// /return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
+// return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
    val destCounts = destCounterMap.getOrElse(click.destId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
 
@@ -65,19 +65,19 @@ case class CmuModel(
       }
 
     clusterProb = clusterProb.copy
-
-    if (click.dist > -1) {
-      val svmDistPrediction = svmDistPredictionsByLocMarketDist.get((click.userLoc, click.marketId, click.destId))
-      svmDistPrediction match {
-        case Some(svmDistPrediction) => {
-          //   logger.info(" svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
-          val probVec = svmDistPrediction.get(click.dist)
-
-          if (probVec.isDefined && (max(clusterProb) < beta1)) probVec.get.foreachPair { (index, prob) => clusterProb(index) = prob }
-        }
-        case None => //do nothing
-      }
-    }
+//
+//    if (click.dist > -1) {
+//      val svmDistPrediction = svmDistPredictionsByLocMarketDist.get((click.userLoc, click.marketId, click.destId))
+//      svmDistPrediction match {
+//        case Some(svmDistPrediction) => {
+//          //   logger.info(" svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
+//          val probVec = svmDistPrediction.get(click.dist)
+//
+//          if (probVec.isDefined && (max(clusterProb) < beta1)) probVec.get.foreachPair { (index, prob) => clusterProb(index) = prob }
+//        }
+//        case None => //do nothing
+//      }
+//    }
 
     clusterProb
   }
