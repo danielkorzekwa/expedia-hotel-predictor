@@ -15,6 +15,8 @@ import expedia.model.countryuser.CountryUserModel
 import expedia.model.dest.DestModelBuilder
 import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
+import expedia.model.marketdestcluster.MarketDestClusterModel
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -22,7 +24,7 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    val hyperParams = HyperParams.createParamsCMU2()
+    val hyperParams = HyperParams.createParamsCMU3()
 
     // val marketIds = Set(628, 675,365,1230,637,701)
     val marketIds = Set(675)

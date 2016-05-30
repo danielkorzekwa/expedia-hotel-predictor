@@ -1,4 +1,4 @@
-package expedia.model.destcluster
+package expedia.model.marketdestcluster
 
 import scala.collection.Seq
 import scala.collection.mutable
@@ -18,10 +18,10 @@ import expedia.stats.CounterMap
 import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 
-case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
+case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.destcluster.beta1").toFloat
-   private val beta3 = hyperParams.getParamValue("expedia.model.destcluster.beta3").toFloat
+  private val beta1 = hyperParams.getParamValue("expedia.model.marketdestcluster.beta1").toFloat
+  private val beta2 = hyperParams.getParamValue("expedia.model.marketdestcluster.beta2").toFloat
 
   val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
   val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
@@ -37,7 +37,13 @@ case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
     if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
   }
 
-  private val destClusterHistByDestCluster = MulticlassHistByKey[Int](100)
+  private val destClusterHistByMarketDestCluster = MulticlassHistByKey[Tuple2[Int, Int]](100)
+  testClicks.foreach { click =>
+    if (destClusterByDestMap.contains(click.destId)) {
+      val key = (click.marketId, destClusterByDestMap(click.destId))
+      destClusterHistByMarketDestCluster.add(key, click.cluster, value = 0)
+    }
+  }
 
   def processCluster(click: Click) = {
     if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
@@ -50,47 +56,51 @@ case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
 
     destClusterByDestMap.get(click.destId) match {
       case Some(destCluster) => {
-        if (click.isBooking == 1) destClusterHistByDestCluster.add(destCluster, click.cluster, value = w)
-        else destClusterHistByDestCluster.add(destCluster, click.cluster, value = w * beta1)
+        val key = (click.marketId, destClusterByDestMap(click.destId))
+        if (destClusterHistByMarketDestCluster.getMap.contains(key)) {
+          if (click.isBooking == 1) destClusterHistByMarketDestCluster.add(key, click.cluster, value = w)
+          else destClusterHistByMarketDestCluster.add(key, click.cluster, value = w * beta1)
+        }
       }
       case None => //do nothing
     }
 
   }
 
-  def create(countryModel: CountryModel,marketModel:MarketModel): DestClusterModel = {
+  def create(countryModel: CountryModel, marketModel: MarketModel): MarketDestClusterModel = {
 
-    destClusterHistByDestCluster.getMap.foreach {
-      case (destCluster, clusterCounts) =>
-        clusterCounts :+= beta3 * countryModel.predict(countryByDestCluster(destCluster))
+    destClusterHistByMarketDestCluster.getMap.foreach {
+      case ((marketId,destCluster), clusterCounts) =>
+      
+        clusterCounts :+=  beta2*marketModel.predict(marketId)
     }
-    destClusterHistByDestCluster.normalise()
+    destClusterHistByMarketDestCluster.normalise()
 
-    DestClusterModel(destClusterHistByDestCluster, destClusterByDestMap,countryModel)
+    MarketDestClusterModel(destClusterHistByMarketDestCluster, destClusterByDestMap, countryModel)
   }
 
 }
 
-object DestClusterModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): DestClusterModel = {
+object MarketDestClusterModelBuilder {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketDestClusterModel = {
 
     val timeDecayService = TimeDecayService(testClicks, hyperParams)
 
-    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
     val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
     def onClick(click: Click) = {
 
-      destClusterModelBuilder.processCluster(click)
+      marketDestClusterModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
       marketModelBuilder.processCluster(click)
     }
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-val marketModel = marketModelBuilder.create(countryModel)
-    val destClusterModel = destClusterModelBuilder.create(countryModel,marketModel)
+    val marketModel = marketModelBuilder.create(countryModel)
+    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
 
-    destClusterModel
+    marketDestClusterModel
   }
 }

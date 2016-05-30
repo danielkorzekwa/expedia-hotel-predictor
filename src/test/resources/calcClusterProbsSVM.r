@@ -6,7 +6,7 @@ calcClusterProbsSVM <- function (clusterTrainData,clusterTestData) {
   
   clusterTrainData$hotel_cluster <- as.factor(clusterTrainData$hotel_cluster)
   
-  model <- svm(hotel_cluster ~ ., data = clusterTrainData,probability=T,scale=F)
+  model <- svm(hotel_cluster ~ ., data = clusterTrainData,probability=T,cross=2)
   print(summary(model))
   
   svmProbs <- predict(model,clusterTestData,probability=T)

@@ -17,11 +17,13 @@ import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 import expedia.model.destcluster.DestClusterModel
 import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.model.marketdestcluster.MarketDestClusterModel
+import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                   destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-                                  hyperParams: HyperParams,timeDecayService:TimeDecayService) {
+                                  hyperParams: HyperParams, timeDecayService: TimeDecayService) {
 
   //key ((marketId,destId)
   private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -41,11 +43,12 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
   private val beta1 = hyperParams.getParamValue("expedia.model.marketdest.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.marketdest.beta2").toFloat
   private val beta3 = hyperParams.getParamValue("expedia.model.marketdest.beta3").toFloat
+  private val beta4 = hyperParams.getParamValue("expedia.model.marketdest.beta4").toFloat
 
   def processCluster(click: Click) = {
 
-     val w = timeDecayService.getDecay(click.dateTime)
-    
+    val w = timeDecayService.getDecay(click.dateTime)
+
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
     val destCounts = destCounterMap.getOrElse(click.destId, 0)
@@ -55,15 +58,15 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
       else destMarketCountsDefaultWeight
 
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
-      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster,value=w)
-      else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w*clickWeight)
+      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w)
+      else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * clickWeight)
     }
 
   }
 
   def create(destModel: DestModel, marketModel: MarketModel, countryModel: CountryModel, destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
              destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-              destClusterModel: DestClusterModel): MarketDestModel = {
+             destClusterModel: DestClusterModel, marketDestClusterModel: MarketDestClusterModel): MarketDestModel = {
 
     clusterHistByMarketDest.getMap.foreach {
       case ((marketId, destId), clusterCounts) =>
@@ -72,30 +75,23 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         val destCounts = destCounterMap.getOrElse(destId, 0)
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
-          if (destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
-        
+        if (destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
+
         }
-        
+
         if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) {
-                 if(destClusterModel.predictionExists(destId)  && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
-//                   println(marketCounts + ":" + destCounts + ":" + destMarketCounts)
-                   clusterCounts :+= beta3 *  destClusterModel.predict(destId)
-                 }
-           else clusterCounts :+= beta1 * marketModel.predict(marketId)
-          //clusterCounts :+= beta1 * marketModel.predict(marketId)
-        }
-        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= {
-       
+          if (marketDestClusterModel.predictionExists(marketId, destId) && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
+            clusterCounts :+= beta4 * marketDestClusterModel.predict(marketId, destId)
+          } else clusterCounts :+= beta1 * marketModel.predict(marketId)
+        } else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= {
           beta2 * destModel.predict(destId)
         }
         else {
-          
-           if(destClusterModel.predictionExists(destId)  && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) clusterCounts :+= beta3 *  destClusterModel.predict(destId)
-           else clusterCounts :+= beta3 * marketModel.predict(marketId)
+          if (marketDestClusterModel.predictionExists(marketId, destId) && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1)
+            clusterCounts :+= beta4 * marketDestClusterModel.predict(marketId, destId)
+          else clusterCounts :+= beta3 * marketModel.predict(marketId)
         }
-        
-  //      clusterCounts :+= beta3 * marketModel.predict(marketId)
-        
+
     }
     clusterHistByMarketDest.normalise()
 
@@ -121,30 +117,35 @@ object MarketDestModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
-    val timeDecayService = TimeDecayService(testClicks,hyperParams)
-    
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks,hyperParams,timeDecayService)
-    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams,timeDecayService)
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
- 
+    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
+
     val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-    
+    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+
     def onClick(click: Click) = {
       destModelBuilder.processCluster(click)
       marketModelBuilder.processCluster(click)
       countryModelBuilder.processCluster(click)
       marketDestModelBuilder.processCluster(click)
       destClusterModelBuilder.processCluster(click)
+      marketDestClusterModelBuilder.processCluster(click)
     }
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-     val destClusterModel = destClusterModelBuilder.create(countryModel,null)
-    val destModel = destModelBuilder.create(countryModel,destClusterModel)
+    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
+
+    val destModel = destModelBuilder.create(countryModel, destClusterModel)
 
     val marketModel = marketModelBuilder.create(countryModel)
-    val marketDestModel = marketDestModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,destClusterModel)
+    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
+    val marketDestModel = marketDestModelBuilder.create(
+      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel, marketDestClusterModel)
 
     marketDestModel
   }
