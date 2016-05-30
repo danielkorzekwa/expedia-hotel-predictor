@@ -21,6 +21,8 @@ import expedia.model.cmu.CmuModelBuilder
 import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 import expedia.model.distsvm.DistSvmModel
+import expedia.model.distgp.DistGpModel
+import expedia.model.distsvm.DistSvmModel
 
 object predictClustersCMU extends LazyLogging {
 

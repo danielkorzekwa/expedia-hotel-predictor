@@ -18,7 +18,7 @@ case class DistSvmModel() extends ClusterModel {
       val marketId = userLocMarketList(row, 1).toInt
       val destId = userLocMarketList(row, 2).toInt
       val count = userLocMarketList(row, 3).toInt
-      new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
+      new File("c:/perforce/daniel/ex/svm/svm_dest_dist100/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
     }.
     map { row =>
       val userLoc = userLocMarketList(row, 0).toInt
@@ -47,9 +47,13 @@ case class DistSvmModel() extends ClusterModel {
           probVec
 
         }
-        case None => DenseVector.fill(100)(0f)
+        case None => {
+          DenseVector.fill(100)(0f)
+        }
       }
-    } else DenseVector.fill(100)(0f)
+    } else {
+      DenseVector.fill(100)(0f)
+    }
   }
 
 }

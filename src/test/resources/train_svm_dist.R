@@ -61,5 +61,5 @@ source('calcClusterProbsSVM.r')
   
     ggplot() + geom_line(aes(col='1',x=test$orig_destination_distance,y=svmProbs$X56)) + 
       geom_line(aes(col='2',x=test$orig_destination_distance,y=svmProbs$X41)) + 
-    coord_cartesian(xlim=c(4015,4022),ylim=c(-0.1,1.1)) 
+    coord_cartesian(xlim=c(4016,4018),ylim=c(-0.1,1.1)) 
 

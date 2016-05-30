@@ -25,7 +25,7 @@ object combineClusterPredictions extends LazyLogging {
       val marketDestPredVec = {
         val marketDestPredVec = marketDestPred(r, ::).t
         val distSvmPredVec = distSvmPred(r, ::).t
-        if (max(distSvmPredVec(0 until 5)) > 0.05 && (max(marketDestPredVec(0 until 5)) < 0.7885)) {
+        if (max(distSvmPredVec(0 until 5)) > 0.0 && (max(marketDestPredVec(0 until 5)) < 0.7885)) {
           distSvmPredVec
         }
         else marketDestPredVec

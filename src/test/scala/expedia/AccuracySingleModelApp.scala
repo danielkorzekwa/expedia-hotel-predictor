@@ -38,7 +38,7 @@ object AccuracySingleModelApp extends LazyLogging {
     // val marketIds = Set(675)
 
     def filterTrain(click: Click) = {
-    true//  click.userLoc == 2096 && click.marketId == 675 && click.destId == 8267
+  click.dist > -1
     }
 
     //  val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
@@ -48,7 +48,7 @@ object AccuracySingleModelApp extends LazyLogging {
     // val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
     val expediaTestFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
 
-    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFileCSV).getAllClicks()//.filter(click => click.userLoc == 2096 && click.marketId == 675 && click.destId == 8267)
+    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFileCSV).getAllClicks().filter(click =>   click.dist > -1)
    // val model = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
    val model = DistGpModel.build()
 

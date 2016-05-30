@@ -13,7 +13,7 @@ import expedia.rankgpr.util.calcOneVsOnePairs
 
 object rankGprTrain {
 
-  def apply(model: RankGprModel): RankGprModel = {
+  def apply(model: RankGprModel,tolerance:Double=1.0E-6): RankGprModel = {
 
     val classes = unique(model.y)
     val oneToOnePairs = calcOneVsOnePairs(classes)
@@ -38,7 +38,7 @@ object rankGprTrain {
     }
     val classYVec = DenseVector.vertcat(classYSeq: _*)
 
-    val (newCovFuncParams, newLikNoiseLogStdDev) = learnMtGgHyperParams(classXMat, classYVec, model.covFunc, model.covFuncParams, model.noiseLogStdDev)
+    val (newCovFuncParams, newLikNoiseLogStdDev) = learnMtGgHyperParams(classXMat, classYVec, model.covFunc, model.covFuncParams, model.noiseLogStdDev,tolerance)
 
     val newModel = model.copy(covFuncParams = newCovFuncParams, noiseLogStdDev = newLikNoiseLogStdDev)
     newModel

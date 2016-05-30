@@ -12,5 +12,5 @@ s2 <- subset(s,   hotel_cluster==   41 & orig_destination_distance>3000 )
 
 ggplot() + geom_histogram(aes(col='s1',x=s1$orig_destination_distance),binwidth = 0.1,alpha=0.5) +
   geom_histogram(aes(col='s2',x=s2$orig_destination_distance),binwidth = 0.1,alpha=0.5) +
-  coord_cartesian(xlim=c(3900,4100))
+  coord_cartesian(xlim=c(4016,4025))
 
