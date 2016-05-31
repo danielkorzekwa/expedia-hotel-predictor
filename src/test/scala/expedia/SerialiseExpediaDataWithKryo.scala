@@ -9,7 +9,7 @@ object SerialiseExpediaDataWithKryo {
 
   def main(args: Array[String]): Unit = {
 
-    val expediaTrainFile = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3"
+    val expediaTrainFile = "c:/perforce/daniel/ex/segments/continent_6/train_2013_continent6"
     val trainClicks = ExCSVDataSource(dsName = "testDS", expediaTrainFile + ".csv").getAllClicks().toList
     saveObject(trainClicks, expediaTrainFile + ".kryo")
     

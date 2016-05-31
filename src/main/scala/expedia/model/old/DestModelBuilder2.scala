@@ -43,7 +43,7 @@ case class DestModelBuilder2(testClicks: Seq[Click], hyperParams: HyperParams, t
 
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click)
 
     //  if (clusterHistByDest.getMap.contains(click.destId)) {
 

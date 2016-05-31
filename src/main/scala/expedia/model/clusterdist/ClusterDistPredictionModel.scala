@@ -16,6 +16,7 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple4[Int,Int, I
 
   val distClutersSeq = topClusterByDistMap.map { case (key, clusters) => clusters }.toList
   val clusterCoExistMat = calcClusterCoExistMatrix(distClutersSeq)
+  println(clusterCoExistMat.toDenseVector)
   val similarClustersMatrix = calcSimilarClustersMap(clusterCoExistMat)
 
   def predict(clicks: Seq[Click]): DenseMatrix[Float] = {
@@ -51,6 +52,8 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple4[Int,Int, I
 
   def predict(userLoc: Int, dist: Double, market: Int,destId:Int): DenseVector[Float] = {
 
+    val minCounts=1d
+      //println("topCluster=%d, cluster=%d, counts=%d".format(topCluster.toInt,hotelCluster.toInt,counts))
     val clusterProbs = DenseVector.tabulate[Float](100) { hotelCluster =>
 
       val key = (userLoc, (dist * 10000).toInt, market,destId)
@@ -64,13 +67,18 @@ case class ClusterDistPredictionModel(topClusterByDistMap: Map[Tuple4[Int,Int, I
               val topCluster = clusterVec(0)
 
               if (hotelCluster == similarClustersMatrix(topCluster.toInt, 1)) {
-                0.5f
+
+                val counts = clusterCoExistMat(topCluster,hotelCluster).toInt  
+                if(counts>= minCounts) 0.5f - 0.0 else 0f
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 2)) {
-                0.5f - 0.01
+               val counts = clusterCoExistMat(topCluster,hotelCluster).toInt  
+                if(counts>= minCounts) 0.5f - 0.01 else 0f
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 3)) {
-                0.5f - 0.02
+                  val counts = clusterCoExistMat(topCluster,hotelCluster).toInt  
+                if(counts>= minCounts) 0.5f - 0.02 else 0f
               } else if (hotelCluster == similarClustersMatrix(topCluster.toInt, 4)) {
-                0.5f - 0.03
+                val counts = clusterCoExistMat(topCluster,hotelCluster).toInt  
+                if(counts>= minCounts) 0.5f - 0.03 else 0f
               } else 0f
             } else 0f
           } else 1f - 0.01 * clusterIndex

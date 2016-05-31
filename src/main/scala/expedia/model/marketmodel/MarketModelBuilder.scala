@@ -24,7 +24,7 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,t
 
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click)
     
     if (clusterHistByMarket.getMap.contains(click.marketId)) {
       if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster,value=w)
@@ -34,7 +34,10 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,t
 
   def create(countryModel: CountryModel): MarketModel = {
 
-    clusterHistByMarket.getMap.foreach { case (marketId, clusterCounts) => clusterCounts :+= countryModel.predict(countryByMarket(marketId)) }
+    clusterHistByMarket.getMap.foreach { case (marketId, clusterCounts) =>
+     //   clusterCounts :-= clusterCounts
+      clusterCounts :+= 1f*countryModel.predict(countryByMarket(marketId))
+      }
     clusterHistByMarket.normalise()
 
     MarketModel(clusterHistByMarket)

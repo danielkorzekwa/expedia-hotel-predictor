@@ -74,7 +74,7 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
 
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click)
 
     userCounterMap.add(click.userId)
   }

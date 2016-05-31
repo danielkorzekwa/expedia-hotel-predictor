@@ -29,7 +29,7 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
 
   def processCluster(click: Click) = {
 
-      val w = timeDecayService.getDecay(click.dateTime)
+      val w = timeDecayService.getDecay(click)
     
     val marketUserKey = (click.marketId, click.userId)
     if (clusterHistByMarketUser.getMap.contains(marketUserKey)) {

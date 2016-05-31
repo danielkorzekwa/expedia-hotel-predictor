@@ -17,7 +17,8 @@ object combineClusterPredictions extends LazyLogging {
    *
    * @return Top 5 predictions  [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(clusterDistPred: DenseMatrix[Double], marketDestPred: DenseMatrix[Double], clusterDistProxPred: DenseMatrix[Double], distSvmPred: DenseMatrix[Double]): DenseMatrix[Double] = {
+  def apply(clusterDistPred: DenseMatrix[Double], marketDestPred: DenseMatrix[Double], clusterDistProxPred: DenseMatrix[Double], 
+      distSvmPred: DenseMatrix[Double],distGPPred: DenseMatrix[Double]): DenseMatrix[Double] = {
 
     val i = new AtomicInteger(0)
     val top5ClustersSeq = (0 until clusterDistPred.rows).map { r =>
@@ -25,7 +26,9 @@ object combineClusterPredictions extends LazyLogging {
       val marketDestPredVec = {
         val marketDestPredVec = marketDestPred(r, ::).t
         val distSvmPredVec = distSvmPred(r, ::).t
-        if (max(distSvmPredVec(0 until 5)) > 0.0 && (max(marketDestPredVec(0 until 5)) < 0.7885)) {
+        val distGPPredVec =  distGPPred(r, ::).t
+       if ( max(distGPPredVec(0 until 5)) > 0.0 && (max(marketDestPredVec(0 until 5)) < 0.7885)) distGPPredVec
+       else if ( max(distSvmPredVec(0 until 5)) > 0.0 && (max(marketDestPredVec(0 until 5)) < 0.7885)) {
           distSvmPredVec
         }
         else marketDestPredVec

@@ -46,7 +46,7 @@ case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
       destCounterMap.add(click.destId)
     }
 
-    val w = timeDecayService.getDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click)
 
     destClusterByDestMap.get(click.destId) match {
       case Some(destCluster) => {

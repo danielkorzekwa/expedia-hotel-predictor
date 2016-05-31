@@ -24,10 +24,10 @@ object TrainModelParamsApp3 extends LazyLogging {
       true //    destIds.contains(click.destId)
     }
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_6/train_2013_continent6.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
 
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_6/train_2014_continent6_booked_only.kryo"
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => destIds.contains(click.destId))
 
     learn(trainDS, testClicks)
@@ -43,7 +43,7 @@ object TrainModelParamsApp3 extends LazyLogging {
     var bestMapk = -1d //initialMapk
     var bestHyperParams = initialHyperParams
 
-    val params = initialHyperParams.getParams().filter(p => p.startsWith("expedia.model.marketuser.beta3") || p.startsWith("expedia.model.cmu."))
+    val params = initialHyperParams.getParams()//.filter(p => p.startsWith("expedia.model.marketuser.beta3") || p.startsWith("expedia.model.cmu."))
     logger.info("Number of hyper params:" + params.size)
 
     for (i <- 1 to 100) {

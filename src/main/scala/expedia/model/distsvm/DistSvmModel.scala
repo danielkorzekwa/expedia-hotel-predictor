@@ -6,6 +6,7 @@ import java.io.File
 import scala.collection._
 import expedia.data.Click
 import expedia.model.ClusterModel
+import java.util.concurrent.atomic.AtomicInteger
 
 case class DistSvmModel() extends ClusterModel {
 
@@ -18,7 +19,7 @@ case class DistSvmModel() extends ClusterModel {
       val marketId = userLocMarketList(row, 1).toInt
       val destId = userLocMarketList(row, 2).toInt
       val count = userLocMarketList(row, 3).toInt
-      new File("c:/perforce/daniel/ex/svm/svm_dest_dist100/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
+      new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
     }.
     map { row =>
       val userLoc = userLocMarketList(row, 0).toInt
@@ -37,12 +38,14 @@ case class DistSvmModel() extends ClusterModel {
       (userLoc, marketId, destId) -> svmMap
     }.filter(_._2.size > 0).toMap
 
+    val counter = new AtomicInteger(0)
   def predict(click: Click): DenseVector[Float] = {
 
     if (click.dist > -1) {
       val svmDistPrediction = svmDistPredictionsByLocMarketDist.get((click.userLoc, click.marketId, click.destId))
       svmDistPrediction match {
         case Some(svmDistPrediction) => {
+         // println("DistSvmModel:" + counter.incrementAndGet())
           val probVec = svmDistPrediction.getOrElse(click.dist, DenseVector.fill(100)(0f))
           probVec
 

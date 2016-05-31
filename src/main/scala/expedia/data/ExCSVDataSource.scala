@@ -70,7 +70,7 @@ case class ExCSVDataSource(dsName: String, expediaFile: String, filter: (Click) 
     val cluster = if (lArray.size == 24) lArray(23).toInt else -1
 
     val stayDays = ((checkout - checkin) / (1000L * 60 * 60 * 24)).toInt
-    val click = Click(userRegion, userLoc, dist, userId, isPackage,destId, isBooking, hotelContinent, countryId, market, stayDays, dateTime, cluster)
+    val click = Click(userRegion, userLoc, dist, userId, isPackage,destId, isBooking, hotelContinent, countryId, market, stayDays, dateTime,checkinDate, cluster)
     click
   }
 }

@@ -18,18 +18,35 @@ import breeze.numerics._
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.rankgpr.RankGprModel
 import expedia.rankgpr.RankGprPredict
-import expedia.gptest.TestCovFunc
+import scala.collection._
+import java.util.concurrent.atomic.AtomicInteger
 
-case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredict]]) extends ClusterModel {
+/**
+ * @param rankedClustersByLocMarketDest  //key - (userLoc,market,destId), val Map[dist,rankedClusters]]
+ */
+case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredict]],rankedClustersByLocMarketDest:Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Int]]]) extends ClusterModel {
 
-  logger.info("Number of GP models:" + distGPModelMap.values.filter(m => m.isDefined).size)
+ // logger.info("Number of GP models:" + distGPModelMap.values.filter(m => m.isDefined).size)
 
   def predict(click: Click): DenseVector[Float] = {
     val key = (click.userLoc, click.marketId, click.destId)
-    if (click.dist > -1 && distGPModelMap.contains(key) && distGPModelMap(key).isDefined) {
-
-      val rankGPPredict = distGPModelMap(key).get
-      val predictedRanks = rankGPPredict.predict(DenseVector(click.dist))
+//    if (click.dist > -1 && distGPModelMap.contains(key) && distGPModelMap(key).isDefined) {
+//
+//      val rankGPPredict = distGPModelMap(key).get
+//      val predictedRanks = rankGPPredict.predict(DenseVector(click.dist))
+//
+//      val probVector = DenseVector.fill(100)(0f)
+//      predictedRanks.toArray.zipWithIndex.foreach { case (cluster, index) => probVector(cluster.toInt) = (100f - index) }
+//      normaliseMutable(probVector)
+//      probVector
+//    } else DenseVector.fill(100)(0f)
+    
+     val counter = new AtomicInteger(0)
+     if (click.dist > -1 && rankedClustersByLocMarketDest.contains(key) && rankedClustersByLocMarketDest(key).contains(click.dist)) {
+  println("DistGpModel:" + counter.incrementAndGet())
+       
+      val rankedClusterByDistMap = rankedClustersByLocMarketDest(key)
+      val predictedRanks = rankedClusterByDistMap(click.dist)
 
       val probVector = DenseVector.fill(100)(0f)
       predictedRanks.toArray.zipWithIndex.foreach { case (cluster, index) => probVector(cluster.toInt) = (100f - index) }
@@ -41,52 +58,31 @@ case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredic
 
 object DistGpModel extends LazyLogging {
 
-  /**
-   * key - (loc,market,dest)
-   */
-  def build(): DistGpModel = {
+  def build2(): DistGpModel = {
+    val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/userLocMarketList.csv"), skipLines = 1)
 
-    val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/segments/loc_market_dest/userLocMarketList.csv"), skipLines = 1)
+    //key - (userLoc,market,destId), val Map[dist,rankedClusters]]
+    val rankedClustersByLocMarketDest: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Int]]] = (0 until userLocMarketList.rows).
 
-    val distGPModelMap = (0 until userLocMarketList.rows).par.map { r =>
-      val userLoc = userLocMarketList(r, 0).toInt
-      val marketId = userLocMarketList(r, 1).toInt
-      val destId = userLocMarketList(r, 2).toInt
-
-      val trainDS = ExCSVDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId))
-      val trainClicks = trainDS.getAllClicks()
-
-      val dataX = DenseVector(trainClicks.map(c => c.dist).toArray).toDenseMatrix.t
-      val dataY = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
-
-//      val covFunc = CovSEiso()
-//      val covFuncParams = DenseVector[Double](log(1), log(1))
-//      val noiseLogStdDev = log(1d)
-         
-          val covFunc = TestCovFunc()
-    val covFuncParams = DenseVector[Double](-0.794353361706918, -11.251867145609713, -1.1522147378772258, 0.28935151100974615)
-    val noiseLogStdDev = -3.0328025222890753
-      val model = RankGprModel(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev)
-
-      val rankGprPredict = try {
-        val trainedModel = if (true || userLoc == 2096) {
-       Some(RankGprPredict(model)) 
-        //  Some(RankGprPredict(rankGprTrain(model, tolerance = 1e-3))) 
-        }
-            else None
-          
+      map { row =>
+        val userLoc = userLocMarketList(row, 0).toInt
+        val marketId = userLocMarketList(row, 1).toInt
+        val destId = userLocMarketList(row, 2).toInt
+        val modelFile =  new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/predictions/predicted_clusters_loc_%d_market_%d_dest_%d.csv.csv".format(userLoc, marketId, destId))
         
-        trainedModel
-      } catch {
-        case e: Exception => {
-          logger.error("Creating rankGprPredict model for _loc_%d_market_%d_dest_%d failed".format(userLoc, marketId, destId))
-          None
-        }
-      }
+        if(modelFile.exists()) {
+        val rankedClustersByDistData = csvread(
+        modelFile, skipLines = 1)
 
-      (userLoc, marketId, destId) -> rankGprPredict
-    }.toList.toMap
+        val distPredictionMap = createRankedClustersByDistMap(rankedClustersByDistData)
 
-    DistGpModel(distGPModelMap)
+        (userLoc, marketId, destId) -> distPredictionMap
+        } else (userLoc, marketId, destId) -> Map[Double,DenseVector[Int]]()
+        
+      }.toMap
+
+    DistGpModel(null,rankedClustersByLocMarketDest)
   }
+
+ 
 }

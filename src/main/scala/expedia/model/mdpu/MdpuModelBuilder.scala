@@ -38,7 +38,7 @@ case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,tim
 
   def processCluster(click: Click) = {
 
-     val w = timeDecayService.getDecay(click.dateTime)
+     val w = timeDecayService.getDecay(click)
   
     val key = (click.marketId, click.destId, click.isPackage, click.userId)
     if (clusterHistByMDPU.getMap.contains(key)) {

@@ -47,7 +47,7 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click)
 
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)

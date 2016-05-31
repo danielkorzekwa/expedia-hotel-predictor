@@ -50,7 +50,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
 
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click.dateTime)
+    val w = timeDecayService.getDecay(click)
 
     val key = (click.destId, click.marketId, click.userId)
     if (clusterHistByDestMarketUser.getMap.contains(key)) {

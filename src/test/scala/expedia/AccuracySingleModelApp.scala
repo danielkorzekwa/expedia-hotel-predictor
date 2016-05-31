@@ -25,6 +25,9 @@ import expedia.model.distgp.DistGpModel
 import expedia.model.clusterdist.ClusterDistPredictionModel
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.data.ExCSVDataSource
+import expedia.data.ExKryoDataSource
+import expedia.model.country.CountryModelBuilder
+import expedia.model.marketmodel.MarketModelBuilder
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -38,19 +41,19 @@ object AccuracySingleModelApp extends LazyLogging {
     // val marketIds = Set(675)
 
     def filterTrain(click: Click) = {
-  click.dist > -1
+true// click.marketId==1392
     }
 
-    //  val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
-    val expediaTrainFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013.csv"
-    val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainFileCSV, filterTrain)
+      val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+    //val expediaTrainFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013.csv"
+    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
 
-    // val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
-    val expediaTestFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
+     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+    //val expediaTestFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
 
-    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFileCSV).getAllClicks().filter(click =>   click.dist > -1)
-   // val model = ClusterDistPredictionModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
-   val model = DistGpModel.build()
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click =>   click.marketId==1392)
+   val model = MarketModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+  // val model = DistGpModel.build()
 
     val top5predictions = model.predictTop5(testClicks)
 

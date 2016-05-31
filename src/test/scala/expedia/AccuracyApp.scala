@@ -18,6 +18,7 @@ import expedia.data.ExCSVDataSource
 import expedia.data.ExDataSource
 import dk.gp.util.saveObject
 import dk.gp.util.loadObject
+import expedia.data.ExKryoDataSource
 
 object AccuracyApp extends LazyLogging {
 
@@ -25,25 +26,28 @@ object AccuracyApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    
     def filterTrain(click: Click) = {
-  true//click.dist > -1
+      true //click.dist > -1
     }
-    
+
     val hyperParams = HyperParams.createParamsCMU3()
 
-    
-    //val expediaTrainFile = "c:/perforce/daniel/ex/segments/market_365/train_2013_market365.csv"
-    val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
-   //   val expediaTrainFile = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013.csv"
-    val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainFile,filterTrain)
+        val expediaTrainFile = "c:/perforce/daniel/ex/segments/all/train_2013.csv"
+        val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainFile, filterTrain)
+        val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
+        val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(click =>   click.marketId==1392)
 
-    // val expediaTestFile = "c:/perforce/daniel/ex/segments/market_365/train_2014_market365_booked_only.csv"
-    val expediaTestFile = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv"
-   //  val expediaTestFile = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
-    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks()// .filter(click =>  click.dist > -1)
+//    val expediaTrainFile = "c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/train_2013.csv"
+//    val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainFile, filterTrain)
+//    val expediaTestFile = "c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/train_2014_booked_only.csv"
+//    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks() //.filter(click =>   click.marketId==1392)
+//
+//    //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+    //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
+    //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+    //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click =>   click.marketId==1392)
 
-       predictClustersAndSaveToFile(trainDS, testClicks, hyperParams)
+    predictClustersAndSaveToFile(trainDS, testClicks, hyperParams)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
     val top5predictions = loadPredictions()
@@ -68,26 +72,24 @@ object AccuracyApp extends LazyLogging {
     val marketDestPred = csvread(new File("target/marketDestPred_test.csv"), skipLines = 1)
     val clusterDistProxPred = csvread(new File("target/clusterDistProxPred_test.csv"), skipLines = 1)
     val distSvmPred = csvread(new File("target/distSvmPred_test.csv"), skipLines = 1)
-    
-   
+ val distGPPred = csvread(new File("target/distGPPred_test.csv"), skipLines = 1)
 
     logger.info("combineClusterPredictions...")
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
-    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred, distSvmPred)
+    val top5predictions = combineClusterPredictions(clusterDistPred, marketDestPred, clusterDistProxPred, distSvmPred,distGPPred)
     top5predictions
   }
 
   private def predictClustersAndSaveToFile(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams) = {
     logger.info("predictClusters and save to files...")
 
-    val (clusterDistPred, marketDestPred, clusterDistProxPred, distSvmPred) = predictClustersCMU(trainDS, testClicks, hyperParams)
+    val (clusterDistPred, marketDestPred, clusterDistProxPred, distSvmPred,distGPPred) = predictClustersCMU(trainDS, testClicks, hyperParams)
 
-        csvwrite("target/clusterDistPred_test.csv", clusterDistPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
-        csvwrite("target/marketDestPred_test.csv", marketDestPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
-        csvwrite("target/clusterDistProxPred_test.csv", clusterDistProxPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
-        csvwrite("target/distSvmPred_test.csv", distSvmPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+    csvwrite("target/clusterDistPred_test.csv", clusterDistPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+    csvwrite("target/marketDestPred_test.csv", marketDestPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+    csvwrite("target/clusterDistProxPred_test.csv", clusterDistProxPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+    csvwrite("target/distSvmPred_test.csv", distSvmPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
+     csvwrite("target/distGPPred_test.csv", distGPPred, header = "p1,p2,p3,p4,p5,r1,r2,r3,r4,r5")
 
-  
-  
   }
 }

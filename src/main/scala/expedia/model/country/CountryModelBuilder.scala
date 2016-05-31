@@ -26,7 +26,7 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,
 
   def processCluster(click: Click) = {
 
-       val w = timeDecayService.getDecay(click.dateTime)
+       val w = timeDecayService.getDecay(click)
     
     clusterHistByContinent.add(click.continentId, click.cluster)
 
