@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
 case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredict]],rankedClustersByLocMarketDest:Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Int]]]) extends ClusterModel {
 
  // logger.info("Number of GP models:" + distGPModelMap.values.filter(m => m.isDefined).size)
-
+ val counter = new AtomicInteger(0)
   def predict(click: Click): DenseVector[Float] = {
     val key = (click.userLoc, click.marketId, click.destId)
 //    if (click.dist > -1 && distGPModelMap.contains(key) && distGPModelMap(key).isDefined) {
@@ -41,7 +41,7 @@ case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredic
 //      probVector
 //    } else DenseVector.fill(100)(0f)
     
-     val counter = new AtomicInteger(0)
+    
      if (click.dist > -1 && rankedClustersByLocMarketDest.contains(key) && rankedClustersByLocMarketDest(key).contains(click.dist)) {
   println("DistGpModel:" + counter.incrementAndGet())
        
@@ -59,7 +59,7 @@ case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredic
 object DistGpModel extends LazyLogging {
 
   def build2(): DistGpModel = {
-    val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/userLocMarketList.csv"), skipLines = 1)
+    val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_100/userLocMarketList.csv"), skipLines = 1)
 
     //key - (userLoc,market,destId), val Map[dist,rankedClusters]]
     val rankedClustersByLocMarketDest: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Int]]] = (0 until userLocMarketList.rows).
@@ -68,7 +68,7 @@ object DistGpModel extends LazyLogging {
         val userLoc = userLocMarketList(row, 0).toInt
         val marketId = userLocMarketList(row, 1).toInt
         val destId = userLocMarketList(row, 2).toInt
-        val modelFile =  new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/predictions/predicted_clusters_loc_%d_market_%d_dest_%d.csv.csv".format(userLoc, marketId, destId))
+        val modelFile =  new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_100/predictions/predicted_clusters_loc_%d_market_%d_dest_%d.csv.csv".format(userLoc, marketId, destId))
         
         if(modelFile.exists()) {
         val rankedClustersByDistData = csvread(

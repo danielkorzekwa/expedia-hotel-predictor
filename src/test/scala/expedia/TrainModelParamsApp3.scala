@@ -24,10 +24,10 @@ object TrainModelParamsApp3 extends LazyLogging {
       true //    destIds.contains(click.destId)
     }
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_6/train_2013_continent6.kryo"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_4/train_2013_continent4.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
 
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_6/train_2014_continent6_booked_only.kryo"
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_4/train_2014_continent4_booked_only.kryo"
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => destIds.contains(click.destId))
 
     learn(trainDS, testClicks)

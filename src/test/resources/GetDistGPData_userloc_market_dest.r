@@ -8,7 +8,7 @@ train_13 <- subset(train_13,!is.na(orig_destination_distance))
 
 test_all <- fread('c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv')
 
-userLocMarketList <- sqldf('select user_location_city,hotel_market,srch_destination_id, count(*) c from train_13 group by user_location_city,hotel_market,srch_destination_id having count(*)>100 order by count(*) desc')
+userLocMarketList <- sqldf('select user_location_city,hotel_market,srch_destination_id, count(*) c from train_13 group by user_location_city,hotel_market,srch_destination_id having count(*)>0 order by count(*) desc')
 
 write.csv(userLocMarketList,'c:/perforce/daniel/ex/segments/loc_market_dest/userLocMarketList.csv',row.names=F)
 

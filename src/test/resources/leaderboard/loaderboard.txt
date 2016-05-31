@@ -1,5 +1,9 @@
 net tested:
-distGP + cluster dest model + params tuning + cmu model + time decay + hyper params tuning  + isPackage
+distGP100 + cluster dest model + params tuning + cmu model + time decay + hyper params tuning  + isPackage
+mapk=0.46755729, test size=1976304
+
+net tested:
+distGP1000 + cluster dest model + params tuning + cmu model + time decay + hyper params tuning  + isPackage
 mapk=0.46743369, test size=1976304
 
 net tested:
