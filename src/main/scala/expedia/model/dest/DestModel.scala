@@ -4,22 +4,16 @@ import java.io.File
 
 import scala.collection._
 import scala.collection.Map
-import scala.collection.Seq
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
 
 import breeze.linalg.DenseMatrix
 import breeze.linalg.DenseVector
 import breeze.linalg.csvread
-import expedia.HyperParams
 import expedia.data.Click
-import expedia.data.ExCSVDataSource
-import expedia.data.ExDataSource
 import expedia.model.ClusterModel
-import expedia.model.country.CountryModelBuilder
 import expedia.model.svm.loadClusterProbsByKeyMap
 import expedia.stats.MulticlassHistByKey
-import expedia.util.TimeDecayService
 
 case class DestModel(
     clusterHistByDest: MulticlassHistByKey[Int]) extends ClusterModel with LazyLogging {

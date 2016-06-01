@@ -11,11 +11,12 @@ import dk.gp.cov.CovSEiso
 import dk.gp.gpr.gpr
 import dk.gp.gpr.predict
 import breeze.stats._
+import expedia.rankgpr.util.calcMultiClassProbsPKPD
 
 case class RankGprPredict(model: RankGprModel) {
 
-  private val classes = unique(model.y)
-  private val oneToOnePairs = calcOneVsOnePairs(classes)
+  
+  private val oneToOnePairs = calcOneVsOnePairs(model.classes)
 
   val gpModelsByoneToOnePair: Map[List[Double], GprModel] = oneToOnePairs.par.map {
     case List(c1, c2) =>
@@ -33,26 +34,29 @@ case class RankGprPredict(model: RankGprModel) {
   /**
    * @param t test point [D], D - dimensionality of prediction vector
    *
-   * @return Vector of ranked classes
+   * @return Vector of probabilities for sorted classes
    */
   def predict(t: DenseVector[Double]): DenseVector[Double] = {
 
-    val votesMap: mutable.Map[Double, Int] = mutable.Map()
-    classes.foreach { c => votesMap += c -> 0 }
+    val classNum = model.classes.size
+    val probsMat = DenseMatrix.fill(classNum,classNum)(0d)
+    val classIndexByClass:Map[Double,Int] = model.classes.map(c => c -> model.classes.indexOf(c)).toMap
 
     oneToOnePairs.foreach {
       case List(c1, c2) =>
-
+   
         val gprModel = gpModelsByoneToOnePair(List(c1, c2))
         val probC1 = dk.gp.gpr.predict(t.toDenseMatrix.t, gprModel)(0, 0)
-        val votedClass = if (probC1 > 0.5) c1 else c2
-        val currClassVotes = votesMap(votedClass)
-        votesMap += votedClass -> (currClassVotes + 1)
-
+       
+        val c1Index = classIndexByClass(c1)
+        val c2Index = classIndexByClass(c2)
+        probsMat(c1Index,c2Index) = probC1
+        probsMat(c2Index,c1Index) = 1 - probC1
     }
+      val probsVector = calcMultiClassProbsPKPD(probsMat)
 
-    val rankedClasses = votesMap.toList.sortWith { case (c1Votes, c2Votes) => c1Votes._2 > c2Votes._2 }.map(_._1).toArray
-    DenseVector(rankedClasses)
+   probsVector
+    
   }
 
   /**

@@ -2,28 +2,29 @@ package expedia.model.marketdest
 
 import scala.collection.Seq
 import scala.collection.mutable
+
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
+import breeze.numerics.log
+import expedia.CompoundHyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
 import expedia.model.country.CountryModelBuilder
 import expedia.model.dest.DestModel
 import expedia.model.dest.DestModelBuilder
+import expedia.model.destcluster.DestClusterModel
+import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.model.marketdestcluster.MarketDestClusterModel
+import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
-import expedia.model.destcluster.DestClusterModel
-import expedia.model.destcluster.DestClusterModelBuilder
-import expedia.model.marketdestcluster.MarketDestClusterModel
-import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
-import breeze.numerics._
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                   destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-                                  hyperParams: HyperParams, timeDecayService: TimeDecayService) {
+                                  hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   private val segmentSizeMap: Map[(Int, Int), Int] = testClicks.groupBy { c => (c.marketId, c.destId) }.map { x => x._1 -> x._2.size }
 
@@ -36,33 +37,27 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
 
-  private val destMarketCountsThreshold1 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThreshold1").toFloat
-  private val destMarketCountsThresholdClickWeight1 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight1").toFloat
-  private val destMarketCountsThreshold2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThreshold2").toFloat
-  private val destMarketCountsThresholdClickWeight2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight2").toFloat
-  private val destMarketCountsDefaultWeight = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsDefaultWeight").toFloat
-
-  private val beta1 = hyperParams.getParamValue("expedia.model.marketdest.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.marketdest.beta2").toFloat
-  private val beta3 = hyperParams.getParamValue("expedia.model.marketdest.beta3").toFloat
-  private val beta4 = hyperParams.getParamValue("expedia.model.marketdest.beta4").toFloat
-  private val segmentSizeWeight = hyperParams.getParamValue("expedia.model.marketdest.segmentSizeWeight").toFloat
-
-  private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketdest.isBookingWeight").toFloat
-
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click)
-
-    val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
-    val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
-    val destCounts = destCounterMap.getOrElse(click.destId, 0)
-    val clickWeight =
-      if (destMarketCounts < destMarketCountsThreshold1) destMarketCountsThresholdClickWeight1
-      else if (destMarketCounts < destMarketCountsThreshold2) destMarketCountsThresholdClickWeight2
-      else destMarketCountsDefaultWeight
-
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
+
+      val destMarketCountsThreshold1 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThreshold1", click.marketId).toFloat
+      val destMarketCountsThresholdClickWeight1 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThresholdClickWeight1", click.marketId).toFloat
+      val destMarketCountsThreshold2 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThreshold2", click.marketId).toFloat
+      val destMarketCountsThresholdClickWeight2 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThresholdClickWeight2", click.marketId).toFloat
+      val destMarketCountsDefaultWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsDefaultWeight", click.marketId).toFloat
+
+      val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
+      val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
+      val destCounts = destCounterMap.getOrElse(click.destId, 0)
+      val clickWeight =
+        if (destMarketCounts < destMarketCountsThreshold1) destMarketCountsThresholdClickWeight1
+        else if (destMarketCounts < destMarketCountsThreshold2) destMarketCountsThresholdClickWeight2
+        else destMarketCountsDefaultWeight
+
+      val w = timeDecayService.getDecayForMarketId(click.dateTime, click.marketId)
+      val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.isBookingWeight", click.marketId).toFloat
+
       if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * isBookingWeight)
       else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * clickWeight)
     }
@@ -75,6 +70,12 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 
     clusterHistByMarketDest.getMap.foreach {
       case ((marketId, destId), clusterCounts) =>
+
+        val beta1 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta1", marketId).toFloat
+        val beta2 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta2", marketId).toFloat
+        val beta3 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta3", marketId).toFloat
+        val beta4 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta4", marketId).toFloat
+        val segmentSizeWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.segmentSizeWeight", marketId).toFloat
 
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
@@ -101,7 +102,7 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 }
 
 object MarketDestModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketDestModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestModel = {
 
     /**
      * Create counters

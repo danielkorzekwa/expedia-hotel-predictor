@@ -28,6 +28,7 @@ import expedia.data.ExCSVDataSource
 import expedia.data.ExKryoDataSource
 import expedia.model.country.CountryModelBuilder
 import expedia.model.marketmodel.MarketModelBuilder
+import expedia.CompoundHyperParams
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -35,27 +36,31 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    val hyperParams = HyperParams.createParamsCont3()
-
+   
     val marketIds = Set(628, 675, 365, 1230, 637, 701)
     // val marketIds = Set(675)
 
     def filterTrain(click: Click) = {
-true// click.marketId==1392
+    true//  click.continentId==3
     }
 
-      val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
-    //val expediaTrainFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013.csv"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()// .filter(click =>   click.marketId==1392)
 
-     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
-    //val expediaTestFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
+     val hyperParams = CompoundHyperParams(testClicks)
 
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click =>   click.marketId==1392)
-   val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
-  // val model = DistGpModel.build()
+    
+//    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
+//    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
+//    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
+//    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() .filter(click =>  click.continentId==3)
 
-   val k = 5
+    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+    // val model = DistGpModel.build()
+
+    val k = 5
     val top5predictions = model.predictTop5(testClicks)
 
     val predictedMat = model.predict(testClicks) + 1e-10f
@@ -64,7 +69,7 @@ true// click.marketId==1392
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
     println(DenseMatrix.horzcat(actual.toDenseMatrix.t, top5predictions).toString(20, 320))
 
-    val apkVector = averagePrecision(top5predictions(::, top5predictions.cols/2 until top5predictions.cols), actual, k)
+    val apkVector = averagePrecision(top5predictions(::, top5predictions.cols / 2 until top5predictions.cols), actual, k)
     val mapk = mean(apkVector)
 
     val loglikValue = loglik(predictedMat.map(x => x.toDouble), actual)

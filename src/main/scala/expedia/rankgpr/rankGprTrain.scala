@@ -15,8 +15,7 @@ object rankGprTrain {
 
   def apply(model: RankGprModel,tolerance:Double=1.0E-6): RankGprModel = {
 
-    val classes = unique(model.y)
-    val oneToOnePairs = calcOneVsOnePairs(classes)
+    val oneToOnePairs = calcOneVsOnePairs(model.classes)
 
     val classXSeq = oneToOnePairs.zipWithIndex.map {
       case (List(c1, c2), index) =>

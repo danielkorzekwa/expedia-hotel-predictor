@@ -1,28 +1,28 @@
 package expedia.model.mdpu
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
+import breeze.linalg.InjectNumericOps
+import expedia.CompoundHyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModelBuilder
 import expedia.model.countryuser.CountryUserModelBuilder
+import expedia.model.dest.DestModel
 import expedia.model.dest.DestModelBuilder
+import expedia.model.marketdest.MarketDestModel
 import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.marketdestuser.MarketDestUserPredictionModel
 import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.marketuser.MarketUserModelBuilder
-import expedia.model.regdest.RegDestModelBuilder
-import expedia.stats.CounterMap
-import expedia.stats.MulticlassHistByKey
-import expedia.model.marketdest.MarketDestModel
 import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder
-import expedia.model.dest.DestModel
-import expedia.HyperParams
-import expedia.util.TimeDecayService
+import expedia.stats.CounterMap
+import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 
-case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService) extends LazyLogging {
+case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   //key ((marketId,destId,isPackage,userId)
   private val clusterHistByMDPU = MulticlassHistByKey[Tuple4[Int, Int, Int, Int]](100)
@@ -33,19 +33,19 @@ case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,tim
 
   private val userCounterMap = CounterMap[Int]()
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.mdpu.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.mdpu.beta2").toFloat
-private val isBookingWeight = hyperParams.getParamValue("expedia.model.mdpu.isBookingWeight").toFloat
-
-  
   def processCluster(click: Click) = {
-
-     val w = timeDecayService.getDecay(click)
-  
+   
     val key = (click.marketId, click.destId, click.isPackage, click.userId)
     if (clusterHistByMDPU.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster,value=w*isBookingWeight)
-      else clusterHistByMDPU.add(key, click.cluster, value = w*beta1)
+      
+       val beta1 = hyperParams.getParamValueForMarketId("expedia.model.mdpu.beta1", click.marketId).toFloat
+    val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.mdpu.isBookingWeight", click.marketId).toFloat
+
+    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
+
+      
+      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster, value = w * isBookingWeight)
+      else clusterHistByMDPU.add(key, click.cluster, value = w * beta1)
     }
 
     userCounterMap.add(click.userId)
@@ -59,6 +59,9 @@ private val isBookingWeight = hyperParams.getParamValue("expedia.model.mdpu.isBo
     clusterHistByMDPU.getMap.foreach {
 
       case ((marketId, destId, isPackage, userId), userClusterProbs) =>
+
+        val beta2 = hyperParams.getParamValueForMarketId("expedia.model.mdpu.beta2", marketId).toFloat
+
         userClusterProbs :+= 150f * (beta2 * mdpModel.predict(marketId, destId, isPackage) + (1 - beta2) * marketDestUserModel.predict(marketId, destId, userId))
 
     }
@@ -72,7 +75,7 @@ private val isBookingWeight = hyperParams.getParamValue("expedia.model.mdpu.isBo
 
 object MdpuModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MdpuModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MdpuModel = {
 
     /**
      * Create counters
@@ -89,25 +92,25 @@ object MdpuModelBuilder {
     }
     trainDatasource.foreach { click => onClickCounters(click) }
 
-      val timeDecayService = TimeDecayService(testClicks,hyperParams)
-    
+    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+
     /**
      * Create models
      */
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks, hyperParams,timeDecayService)
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
 
-    val countryUserModelBuilder = CountryUserModelBuilder(testClicks,hyperParams)
+    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
 
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
+    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
 
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams,timeDecayService)
-    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams,timeDecayService)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams, timeDecayService)
+    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
 
-    val markerDestUserBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams,timeDecayService)
+    val markerDestUserBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams, timeDecayService)
 
-    val mdpuModelBuilder = MdpuModelBuilder(testClicks, hyperParams,timeDecayService)
+    val mdpuModelBuilder = MdpuModelBuilder(testClicks, hyperParams, timeDecayService)
 
     def onClick(click: Click) = {
 
@@ -127,18 +130,17 @@ object MdpuModelBuilder {
     val countryModel = countryModelBuilder.create()
     val marketModel = marketModelBuilder.create(countryModel)
     val countryUserModel = countryUserModelBuilder.create(countryModel)
-    val destModel = destModelBuilder.create(countryModel,null)
+    val destModel = destModelBuilder.create(countryModel, null)
     val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
 
     val marketDestModel = marketDestModelBuilder.create(
-        destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,null,null)
+      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, null, null)
 
-    val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,marketDestModel)
+    val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketDestModel)
 
     val marketDestUserModel = markerDestUserBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel,
       countryUserModel, marketDestModel, marketUserModel)
 
-    
     val mdpuModel = mdpuModelBuilder.create(marketDestUserModel, marketDestModel, mdpModel, destCounterMap, destMarketCounterMap, destModel)
     mdpuModel
 

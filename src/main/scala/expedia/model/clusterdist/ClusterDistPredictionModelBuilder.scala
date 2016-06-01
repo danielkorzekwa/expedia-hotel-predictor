@@ -2,10 +2,8 @@ package expedia.model.clusterdist
 
 import scala.collection.Map
 import scala.collection.Seq
-
 import breeze.linalg.DenseVector
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModelBuilder
@@ -14,7 +12,8 @@ import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 import expedia.util.calcTopNClusters
-case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams) {
+import expedia.CompoundHyperParams
+case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams) {
 
   private val clusterHistByKey = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
   testClicks.foreach { click =>
@@ -28,11 +27,11 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
     clusterHistByKey2.add(key, click.cluster, value = 0)
   }
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.clusterdist.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.clusterdist.beta2").toFloat
+ 
 
   def processCluster(click: Click) = {
 
+    
     if (click.dist != -1) {
       val key = (click.userLoc, (click.dist * 10000).toInt, click.marketId)
       if (clusterHistByKey.getMap.contains(key)) clusterHistByKey.add(key, click.cluster)
@@ -46,6 +45,9 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
   def create(marketModel: MarketModel): ClusterDistPredictionModel = {
     clusterHistByKey.getMap.foreach {
       case ((_, _, marketId), clusterCounts) =>
+          val beta1 = hyperParams.getParamValueForMarketId("expedia.model.clusterdist.beta1",marketId).toFloat
+  
+        
         val prior = marketModel.predict(marketId.toInt).copy
         (0 until clusterCounts.size).foreach { i =>
           if (clusterCounts(i) == 0) prior(i) = 0f
@@ -56,7 +58,10 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
     }
 
     clusterHistByKey.normalise()
-    clusterHistByKey2.getMap.foreach { case (key, clusterCounts) => clusterCounts :+= beta2 * clusterHistByKey.getMap((key._1, key._2, key._3)) }
+    clusterHistByKey2.getMap.foreach { case (key, clusterCounts) => 
+   val beta2 = hyperParams.getParamValueForMarketId("expedia.model.clusterdist.beta2",key._3).toFloat
+      clusterCounts :+= beta2 * clusterHistByKey.getMap((key._1, key._2, key._3))
+      }
 
     val topClustersByKey: Map[Tuple4[Int, Int, Int, Int], DenseVector[Int]] =
       clusterHistByKey2.getMap.map { case (key, clusterProbs) => key -> calcTopNClusters(clusterProbs, 100, minProb = Some(0)) }
@@ -66,7 +71,7 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
 }
 
 object ClusterDistPredictionModelBuilder {
-  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): ClusterDistPredictionModel = {
+  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): ClusterDistPredictionModel = {
   
     val timeDecayService = TimeDecayService(testClicks,hyperParams)
     

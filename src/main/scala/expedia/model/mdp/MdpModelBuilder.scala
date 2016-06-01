@@ -1,7 +1,8 @@
 package expedia.model.mdp
 
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
+import breeze.numerics.log
+import expedia.CompoundHyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
@@ -15,39 +16,34 @@ import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
-import breeze.numerics._
 
 case class MdpModelBuilder(testClicks: Seq[Click],
                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-                           destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int], hyperParams: HyperParams, timeDecayService: TimeDecayService) {
+                           destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
 
-   private val segmentSizeMap: Map[(Int, Int), Int] = testClicks.groupBy { c => (c.marketId, c.destId) }.map { x => x._1 -> x._2.size }
+  private val segmentSizeMap: Map[(Int, Int), Int] = testClicks.groupBy { c => (c.marketId, c.destId) }.map { x => x._1 -> x._2.size }
 
-  
   //key ((marketId,destId,isPackage)
   private val clusterHistByMDP = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
   testClicks.foreach { click =>
     clusterHistByMDP.add((click.marketId, click.destId, click.isPackage), click.cluster, value = 0)
   }
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.mdp.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.mdp.beta2").toFloat
-  private val beta3 = hyperParams.getParamValue("expedia.model.mdp.beta3").toFloat
-  private val beta4 = hyperParams.getParamValue("expedia.model.mdp.beta4").toFloat
-  private val beta5 = hyperParams.getParamValue("expedia.model.mdp.beta5").toFloat
-
-  private val beta6 = hyperParams.getParamValue("expedia.model.mdp.beta6").toFloat
-  private val beta7 = hyperParams.getParamValue("expedia.model.mdp.beta7").toFloat
-  private val beta8 = hyperParams.getParamValue("expedia.model.mdp.beta8").toFloat
-
-  private val isBookingWeight = hyperParams.getParamValue("expedia.model.mdp.isBookingWeight").toFloat
-
-  private val segmentSizeWeight = hyperParams.getParamValue("expedia.model.marketdest.segmentSizeWeight").toFloat
-
-  
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click)
+  
+
+    val key = (click.marketId, click.destId, click.isPackage)
+    if (clusterHistByMDP.getMap.contains(key)) {
+      
+        val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.mdp.isBookingWeight", click.marketId).toFloat
+    val beta1 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta1", click.marketId).toFloat
+    val beta2 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta2", click.marketId).toFloat
+    val beta3 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta3", click.marketId).toFloat
+    val beta4 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta4", click.marketId).toFloat
+    val beta5 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta5", click.marketId).toFloat
+
+    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
 
     val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
@@ -56,10 +52,8 @@ case class MdpModelBuilder(testClicks: Seq[Click],
       if (destMarketCounts < beta1) beta2
       else if (destMarketCounts < beta3) beta4
       else beta5
-
-    val key = (click.marketId, click.destId, click.isPackage)
-    if (clusterHistByMDP.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster, value = w*isBookingWeight)
+      
+      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster, value = w * isBookingWeight)
       else clusterHistByMDP.add(key, click.cluster, value = w * clickWeight)
     }
 
@@ -71,16 +65,22 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 
     clusterHistByMDP.getMap.foreach {
       case ((marketId, destId, isPackage), clusterCounts) =>
-//
-//        val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
-//        val destCounts = destCounterMap.getOrElse(destId, 0)
-//        val marketCounts = marketCounterMap.getOrElse(marketId, 0)
-//
-//        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta6 * marketModel.predict(marketId)
-//        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta7 * destModel.predict(destId)
-//        else clusterCounts :+= beta8 * marketModel.predict(marketId)
-        
-        clusterCounts :+= (beta8+ + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat))* marketDestModel.predict(marketId, destId)
+
+        val beta6 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta6", marketId).toFloat
+        val beta7 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta7", marketId).toFloat
+        val beta8 = hyperParams.getParamValueForMarketId("expedia.model.mdp.beta8", marketId).toFloat
+        val segmentSizeWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.segmentSizeWeight", marketId).toFloat
+
+        //
+        //        val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
+        //        val destCounts = destCounterMap.getOrElse(destId, 0)
+        //        val marketCounts = marketCounterMap.getOrElse(marketId, 0)
+        //
+        //        if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) clusterCounts :+= beta6 * marketModel.predict(marketId)
+        //        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta7 * destModel.predict(destId)
+        //        else clusterCounts :+= beta8 * marketModel.predict(marketId)
+
+        clusterCounts :+= (beta8 + +segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat)) * marketDestModel.predict(marketId, destId)
 
     }
 
@@ -99,7 +99,7 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 
 object MdpModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MdpModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MdpModel = {
 
     /**
      * Create counters
@@ -135,11 +135,11 @@ object MdpModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destModel = destModelBuilder.create(countryModel,null)
+    val destModel = destModelBuilder.create(countryModel, null)
 
     val marketModel = marketModelBuilder.create(countryModel)
     val marketDestModel = marketDestModelBuilder.create(
-        destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap,null,null)
+      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, null, null)
 
     val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketDestModel)
 

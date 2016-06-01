@@ -4,7 +4,7 @@ import scala.collection.Seq
 import scala.collection.mutable
 
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
+import expedia.CompoundHyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModelBuilder
@@ -15,7 +15,7 @@ import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 
-case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,timeDecayService:TimeDecayService) {
+case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   private val clusterHistByMarketUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByMarketUser.add((click.marketId, click.userId), click.cluster, value = 0))
@@ -23,20 +23,21 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.marketuser.beta1").toFloat
-  private val beta2 = 0.95f//hyperParams.getParamValue("expedia.model.marketuser.beta2").toFloat
-  private val beta3 = hyperParams.getParamValue("expedia.model.marketuser.beta3").toFloat
-  private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketuser.isBookingWeight").toFloat
+  private val beta2 = 0.95f //hyperParams.getParamValue("expedia.model.marketuser.beta2").toFloat
 
-  
   def processCluster(click: Click) = {
 
-      val w = timeDecayService.getDecay(click)
-    
+  
+
     val marketUserKey = (click.marketId, click.userId)
     if (clusterHistByMarketUser.getMap.contains(marketUserKey)) {
-      if (click.isBooking == 1) clusterHistByMarketUser.add(marketUserKey, click.cluster,value=w*isBookingWeight)
-      else clusterHistByMarketUser.add(marketUserKey, click.cluster, value = w*beta1)
+      
+        val beta1 = hyperParams.getParamValueForMarketId("expedia.model.marketuser.beta1", click.marketId).toFloat
+    val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketuser.isBookingWeight", click.marketId).toFloat
+
+    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
+      if (click.isBooking == 1) clusterHistByMarketUser.add(marketUserKey, click.cluster, value = w * isBookingWeight)
+      else clusterHistByMarketUser.add(marketUserKey, click.cluster, value = w * beta1)
     }
 
   }
@@ -45,12 +46,13 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
 
     clusterHistByMarketUser.getMap.foreach {
       case ((marketId, userId), clusterCounts) =>
-        
-//        if (countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
-//          clusterCounts :+= beta3 * (beta2 * marketModel.predict(marketId) + (1 - beta2) * countryUserModel.predict(countryByMarket(marketId), userId)) 
-//        } else clusterCounts :+= beta3* marketModel.predict(marketId) 
-        
-         clusterCounts :+= beta3*marketModel.predict(marketId) 
+        val beta3 = hyperParams.getParamValueForMarketId("expedia.model.marketuser.beta3", marketId).toFloat
+
+        //        if (countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+        //          clusterCounts :+= beta3 * (beta2 * marketModel.predict(marketId) + (1 - beta2) * countryUserModel.predict(countryByMarket(marketId), userId)) 
+        //        } else clusterCounts :+= beta3* marketModel.predict(marketId) 
+
+        clusterCounts :+= beta3 * marketModel.predict(marketId)
     }
     clusterHistByMarketUser.normalise()
 
@@ -61,13 +63,13 @@ case class MarketUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPara
 
 object MarketUserModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketUserModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketUserModel = {
 
-    val timeDecayService = TimeDecayService(testClicks,hyperParams)
-    
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams,timeDecayService)
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams,timeDecayService)
+    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+
+    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams, timeDecayService)
     val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
 
     def onClick(click: Click) = {

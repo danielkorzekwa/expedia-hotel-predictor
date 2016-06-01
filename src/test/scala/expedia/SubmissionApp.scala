@@ -11,7 +11,6 @@ object SubmissionApp extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
 
-    val hyperParams = HyperParams.createParamsCMU3()
     
     val expediaTrainFile = "c:/perforce/daniel/ex/orig_data/train.csv"
     val trainDataSource = ExCSVDataSource(dsName = "trainDS", expediaTrainFile)
@@ -19,6 +18,7 @@ object SubmissionApp extends LazyLogging {
     logger.info("Loading test data...")
     val expediaTestFile = "c:/perforce/daniel/ex/data_test/test_all_all_cols.csv"
     val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
+ val hyperParams = CompoundHyperParams(testClicks)
 
     val (clusterDistPred, marketDestPred, clusterDistProxPred,distSvmPred,distGPPred) = predictClustersCMU(trainDataSource, testClicks,hyperParams)
 

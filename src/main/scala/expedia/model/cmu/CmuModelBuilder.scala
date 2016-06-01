@@ -1,7 +1,6 @@
 package expedia.model.cmu
 
 import expedia.data.Click
-import expedia.HyperParams
 import expedia.data.ExDataSource
 import expedia.util.TimeDecayService
 import expedia.model.country.CountryModelBuilder
@@ -37,8 +36,10 @@ import expedia.model.countryuser.CountryUserModel
 import expedia.model.marketmodel.MarketModel
 import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder
+import expedia.CompoundHyperParams
+import expedia.CompoundHyperParams
 
-case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) {
+case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   //key ((marketId,destId,isPackage,userId)
   private val clusterHistByMDPU = MulticlassHistByKey[Tuple4[Int, Int, Int, Int]](100)
@@ -52,21 +53,10 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
 
   private val userCounterMap = CounterMap[Int]()
 
-  //cmu params
-  private val cmuBeta1 = hyperParams.getParamValue("expedia.model.cmu.beta1").toFloat
-  private val cmuBeta2 = hyperParams.getParamValue("expedia.model.cmu.beta2").toFloat
-  private val cmuBeta3 = hyperParams.getParamValue("expedia.model.cmu.beta3").toFloat
-  private val cmuBeta4 = hyperParams.getParamValue("expedia.model.cmu.beta4").toFloat
-  private val cmuBeta5 = hyperParams.getParamValue("expedia.model.cmu.beta5").toFloat
-  private val cmuBeta6 = hyperParams.getParamValue("expedia.model.cmu.beta6").toFloat
-  private val cmuBeta7 = hyperParams.getParamValue("expedia.model.cmu.beta7").toFloat
-  private val cmuBeta8 = hyperParams.getParamValue("expedia.model.cmu.beta8").toFloat
-
-  private val mdpuBeta1 = hyperParams.getParamValue("expedia.model.mdpu.beta1").toFloat
+ 
 
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click)
 
     userCounterMap.add(click.userId)
   }
@@ -78,6 +68,18 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
 
     val predictionMdpuMap = clusterHistByMDPU.getMap.map {
       case ((marketId, destId, isPackage, userId), clusterStat) =>
+        
+         //cmu params
+   val cmuBeta1 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta1",marketId).toFloat
+   val cmuBeta2 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta2",marketId).toFloat
+   val cmuBeta3 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta3",marketId).toFloat
+   val cmuBeta4 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta4",marketId).toFloat
+   val cmuBeta5 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta5",marketId).toFloat
+   val cmuBeta6 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta6",marketId).toFloat
+   val cmuBeta7 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta7",marketId).toFloat
+   val cmuBeta8 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta8",marketId).toFloat
+
+        
         val c = countryModel.predict(countryByMarket(marketId))
 
         val cmPred = marketModel.predict(marketId)
@@ -110,7 +112,7 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
 
 object CmuModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): CmuModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CmuModel = {
     /**
      * Create counters
      */

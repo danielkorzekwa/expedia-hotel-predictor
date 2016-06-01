@@ -1,11 +1,13 @@
 package expedia
 
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg.DenseMatrix
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
 import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
+import expedia.model.cmu.CmuModelBuilder
 import expedia.model.country.CountryModelBuilder
 import expedia.model.countryuser.CountryUserModelBuilder
 import expedia.model.dest.DestModelBuilder
@@ -14,17 +16,15 @@ import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
 import expedia.model.marketmodel.MarketModelBuilder
 import expedia.model.marketuser.MarketUserModelBuilder
 import expedia.model.mdp.MdpModelBuilder
-import expedia.model.mdpu.MdpuModelBuilder
 import expedia.stats.CounterMap
 import expedia.util.TimeDecayService
-import expedia.model.cmu.CmuModelBuilder
 
 object predictClusters extends LazyLogging {
 
   /**
    * @return Top 5 predictions for three models[clusterDist,marketDest,clusterDistProx]. ClusterDist: [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:HyperParams): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
+  def apply(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:CompoundHyperParams): Tuple3[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double]] = {
 
     /**
      * Create counters

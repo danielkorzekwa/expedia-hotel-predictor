@@ -4,7 +4,6 @@ import scala.collection.Seq
 import scala.collection.mutable
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
@@ -17,18 +16,15 @@ import expedia.stats.MulticlassHistByKey
 import expedia.stats.CounterMap
 import expedia.model.destcluster.DestClusterModel
 import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.CompoundHyperParams
 
-case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
+case class DestModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByDest.add(click.destId, click.cluster, value = 0))
 
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
-
-   private val isBookingWeight = hyperParams.getParamValue("expedia.model.dest.isBookingWeight").toFloat
-  private val beta1 = hyperParams.getParamValue("expedia.model.dest.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.dest.beta2").toFloat
 
   val destCounterMap = CounterMap[Int]()
 
@@ -38,11 +34,13 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, ti
       destCounterMap.add(click.destId)
     }
 
-    val w = timeDecayService.getDecay(click)
-
     if (clusterHistByDest.getMap.contains(click.destId)) {
+      val isBookingWeight = hyperParams.getParamValueForDestId("expedia.model.dest.isBookingWeight", click.destId).toFloat
+      val beta1 = hyperParams.getParamValueForDestId("expedia.model.dest.beta1", click.destId).toFloat
 
-      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster, value = w*isBookingWeight)
+      val w = timeDecayService.getDecayForDestId(click.dateTime, click.destId)
+
+      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster, value = w * isBookingWeight)
       else clusterHistByDest.add(click.destId, click.cluster, value = w * beta1)
 
     }
@@ -53,6 +51,7 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, ti
 
     clusterHistByDest.getMap.foreach {
       case (destId, clusterCounts) =>
+        val beta2 = hyperParams.getParamValueForDestId("expedia.model.dest.beta2", destId).toFloat
 
         if (destClusterModel.predictionExists(destId) && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
           clusterCounts :+= beta2 * destClusterModel.predict(destId)
@@ -69,7 +68,7 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, ti
 }
 
 object DestModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): DestModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): DestModel = {
 
     val timeDecayService = TimeDecayService(testClicks, hyperParams)
 
@@ -85,7 +84,7 @@ object DestModelBuilder {
     trainDatasource.foreach { click => onClick(click) }
 
     val countryModel = countryModelBuilder.create()
-    val destClusterModel = destClusterModelBuilder.create(countryModel,null)
+    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
     val destModel = destModelBuilder.create(countryModel, destClusterModel)
 
     destModel

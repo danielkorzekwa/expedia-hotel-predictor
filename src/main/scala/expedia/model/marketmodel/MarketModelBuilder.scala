@@ -2,8 +2,6 @@ package expedia.model.marketmodel
 
 import scala.collection.Seq
 import scala.collection.mutable
-
-import expedia.HyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
@@ -11,8 +9,9 @@ import expedia.model.country.CountryModelBuilder
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 import breeze.numerics._
+import expedia.CompoundHyperParams
 
-case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) {
+case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   private val segmentSizeMap: Map[Int, Int] = testClicks.groupBy { c => c.marketId }.map { x => x._1 -> x._2.size }
 
@@ -23,17 +22,13 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, 
   private val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.marketmodel.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.marketmodel.beta2").toFloat
-
-  private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketmodel.isBookingWeight").toFloat
-  private val segmentSizeWeight = hyperParams.getParamValue("expedia.model.marketmodel.segmentSizeWeight").toFloat
-
   def processCluster(click: Click) = {
 
-    val w = timeDecayService.getDecay(click)
-
     if (clusterHistByMarket.getMap.contains(click.marketId)) {
+      val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
+      val beta1 = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.beta1", click.marketId).toFloat
+      val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.isBookingWeight", click.marketId).toFloat
+
       if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster, value = w * isBookingWeight)
       else clusterHistByMarket.add(click.marketId, click.cluster, value = w * beta1)
     }
@@ -43,6 +38,10 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, 
 
     clusterHistByMarket.getMap.foreach {
       case (marketId, clusterCounts) =>
+        val beta2 = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.beta2", marketId).toFloat
+
+        val segmentSizeWeight = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.segmentSizeWeight", marketId).toFloat
+
         clusterCounts :+= (beta2 + segmentSizeWeight * log(segmentSizeMap(marketId).toFloat)) * countryModel.predict(countryByMarket(marketId))
     }
     clusterHistByMarket.normalise()
@@ -52,7 +51,7 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, 
 }
 
 object MarketModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketModel = {
 
     val timeDecayService = TimeDecayService(testClicks, hyperParams)
 

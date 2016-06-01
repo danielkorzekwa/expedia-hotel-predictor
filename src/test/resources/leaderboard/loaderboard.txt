@@ -1,4 +1,10 @@
-net tested:
+not tested:
+learned by continent:
+mapk=0.46791431, test size=1976304
+analysis time=539555
+
+
+not tested:
 distGP100 + cluster dest model + params tuning + cmu model + time decay + hyper params tuning  + isPackage
 mapk=0.46754996, test size=1976304
 analysis time=543145

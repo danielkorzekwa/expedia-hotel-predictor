@@ -2,15 +2,14 @@ package expedia.model.country
 
 import scala.collection.Seq
 import scala.collection.mutable
-
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
+import expedia.CompoundHyperParams
 
-case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) {
+case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   private val clusterHistByContinent = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
@@ -21,19 +20,17 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,
   private val continentByCountry: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => continentByCountry += click.countryId -> click.continentId)
 
-  private val isBookingWeight = hyperParams.getParamValue("expedia.model.country.isBookingWeight").toFloat
-  private val beta1 = hyperParams.getParamValue("expedia.model.country.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.country.beta2").toFloat
-
   def processCluster(click: Click) = {
-
-    val w = timeDecayService.getDecay(click)
 
     clusterHistByContinent.add(click.continentId, click.cluster)
 
-    if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster, value = w * isBookingWeight)
-    else clusterHistByCountry.add(click.countryId, click.cluster, value = w * beta1)
-
+    if (clusterHistByCountry.getMap.contains(click.countryId)) {
+      val isBookingWeight = hyperParams.getParamValueForCountryId("expedia.model.country.isBookingWeight", click.countryId).toFloat
+      val beta1 = hyperParams.getParamValueForCountryId("expedia.model.country.beta1", click.countryId).toFloat
+      val w = timeDecayService.getDecayForCountryId(click.dateTime,click.countryId)
+      if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster, value = w * isBookingWeight)
+      else clusterHistByCountry.add(click.countryId, click.cluster, value = w * beta1)
+    }
     continentByCountry += click.countryId -> click.continentId
   }
 
@@ -43,6 +40,7 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,
 
     clusterHistByCountry.getMap.foreach {
       case (countryId, clusterCounts) =>
+        val beta2 = hyperParams.getParamValueForCountryId("expedia.model.country.beta2", countryId).toFloat
         clusterCounts :+= beta2 * clusterHistByContinent.getMap(continentByCountry(countryId))
     }
     clusterHistByCountry.normalise()
@@ -52,7 +50,7 @@ case class CountryModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,
 }
 
 object CountryModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): CountryModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CountryModel = {
 
     val timeDecayService = TimeDecayService(testClicks, hyperParams)
 

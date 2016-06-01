@@ -1,28 +1,26 @@
 package expedia.model.marketdestcluster
 
+import java.io.File
+
 import scala.collection.Seq
 import scala.collection.mutable
+
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
+import breeze.linalg.csvread
+import expedia.CompoundHyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
 import expedia.model.country.CountryModelBuilder
-import expedia.stats.MulticlassHistByKey
-import expedia.util.TimeDecayService
-import java.io.File
-import breeze.linalg._
-import expedia.stats.MulticlassHistByKey
-import expedia.stats.CounterMap
 import expedia.model.marketmodel.MarketModel
 import expedia.model.marketmodel.MarketModelBuilder
+import expedia.stats.CounterMap
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
 
-case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
-
-  private val beta1 = hyperParams.getParamValue("expedia.model.marketdestcluster.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.marketdestcluster.beta2").toFloat
-  private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketdestcluster.isBookingWeight").toFloat
+case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
   val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
@@ -47,19 +45,23 @@ case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: Hy
   }
 
   def processCluster(click: Click) = {
+
     if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
 
     if (click.isBooking == 1) {
       destCounterMap.add(click.destId)
     }
 
-    val w = timeDecayService.getDecay(click)
-
     destClusterByDestMap.get(click.destId) match {
       case Some(destCluster) => {
         val key = (click.marketId, destClusterByDestMap(click.destId))
         if (destClusterHistByMarketDestCluster.getMap.contains(key)) {
-          if (click.isBooking == 1) destClusterHistByMarketDestCluster.add(key, click.cluster, value = w*isBookingWeight)
+
+          val beta1 = hyperParams.getParamValueForMarketId("expedia.model.marketdestcluster.beta1", click.marketId).toFloat
+          val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdestcluster.isBookingWeight", click.marketId).toFloat
+          val w = timeDecayService.getDecayForMarketId(click.dateTime, click.marketId)
+
+          if (click.isBooking == 1) destClusterHistByMarketDestCluster.add(key, click.cluster, value = w * isBookingWeight)
           else destClusterHistByMarketDestCluster.add(key, click.cluster, value = w * beta1)
         }
       }
@@ -73,6 +75,8 @@ case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: Hy
     destClusterHistByMarketDestCluster.getMap.foreach {
       case ((marketId, destCluster), clusterCounts) =>
 
+        val beta2 = hyperParams.getParamValueForMarketId("expedia.model.marketdestcluster.beta2", marketId).toFloat
+
         clusterCounts :+= beta2 * marketModel.predict(marketId)
     }
     destClusterHistByMarketDestCluster.normalise()
@@ -83,7 +87,7 @@ case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: Hy
 }
 
 object MarketDestClusterModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketDestClusterModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestClusterModel = {
 
     val timeDecayService = TimeDecayService(testClicks, hyperParams)
 

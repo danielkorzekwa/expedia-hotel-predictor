@@ -46,11 +46,16 @@ object PredictAndSaveApp extends LazyLogging {
 
         val gpPredict = RankGprPredict(model)
 
-        val predictedClustersAll = gpPredict.predict(testDataX)
-        val predictedClusters = predictedClustersAll(::, 0 until 5.min(predictedClustersAll.cols))
+        val predictedProbs = gpPredict.predict(testDataX)
 
-        val outputPrediction = DenseMatrix.horzcat(testDataX, predictedClusters)
-        csvwrite(predOutputFile, outputPrediction, header = "dist,r1,r2,r3,r4,r5")
+        val probVector = predictedProbs(*, ::).map { predictedProbs =>
+          val probsVec = DenseVector.fill(100)(0f)
+          model.classes.zipWithIndex.foreach { case (c, i) => probsVec(c.toInt) = predictedProbs(i).toFloat }
+          probsVec
+        }
+
+        val outputPrediction = DenseMatrix.horzcat(testDataX, predictedProbs)
+        csvwrite(predOutputFile, outputPrediction, header = "dist,p0,p1,...,p99")
 
         outputPrediction
       }

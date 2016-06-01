@@ -4,7 +4,6 @@ import scala.collection.Seq
 import scala.collection.mutable
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.linalg.InjectNumericOps
-import expedia.HyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
@@ -23,10 +22,12 @@ import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 import expedia.model.destcluster.DestClusterModelBuilder
+import expedia.CompoundHyperParams
+import expedia.CompoundHyperParams
 /**
  * @param trainData mat[userId,dest,cluster]
  */
-case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
+case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   //key ((destId, marketId,userId)
   private val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
@@ -40,24 +41,17 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
   private val marketUserCounterMap = CounterMap[Tuple2[Int, Int]]()
   private val userCounterMap = CounterMap[Int]()
 
-  private val beta1 = hyperParams.getParamValue("expedia.model.marketdestuser.beta1").toFloat
-  private val beta2 = hyperParams.getParamValue("expedia.model.marketdestuser.beta2").toFloat
-  private val beta3 = hyperParams.getParamValue("expedia.model.marketdestuser.beta3").toFloat
-  private val beta4 = hyperParams.getParamValue("expedia.model.marketdestuser.beta4").toFloat
-  private val beta5 = hyperParams.getParamValue("expedia.model.marketdestuser.beta5").toFloat
-
-  private val beta6 = hyperParams.getParamValue("expedia.model.marketdestuser.beta6").toFloat
-
-   private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketdestuser.isBookingWeight").toFloat
-
-  
   def processCluster(click: Click) = {
-
-    val w = timeDecayService.getDecay(click)
 
     val key = (click.destId, click.marketId, click.userId)
     if (clusterHistByDestMarketUser.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w*isBookingWeight)
+
+      val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdestuser.isBookingWeight", click.marketId).toFloat
+      val beta6 = hyperParams.getParamValueForMarketId("expedia.model.marketdestuser.beta6", click.marketId).toFloat
+
+      val w = timeDecayService.getDecayForMarketId(click.dateTime, click.marketId)
+
+      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w * isBookingWeight)
       else clusterHistByDestMarketUser.add(key, click.cluster, value = w * beta6)
     }
 
@@ -78,32 +72,37 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
 
       case ((destId, marketId, userId), userClusterProbs) =>
 
+        //    private val beta1 = hyperParams.getParamValue("expedia.model.marketdestuser.beta1").toFloat
+        //private val beta2 = hyperParams.getParamValue("expedia.model.marketdestuser.beta2").toFloat
+        //private val beta3 = hyperParams.getParamValue("expedia.model.marketdestuser.beta3").toFloat
+        //private val beta4 = hyperParams.getParamValue("expedia.model.marketdestuser.beta4").toFloat
+        val beta5 = hyperParams.getParamValueForMarketId("expedia.model.marketdestuser.beta5", marketId).toFloat
+
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
         val (prior, factor) = (marketDestModel.predict(marketId, destId), beta5)
 
-//        val (prior, factor) = if (destMarketCounts < beta3) {
-//          val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
-//          val factor = beta4
-//          (prior, beta4)
-//        } else {
-//          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
-//          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
-//            val prior =  beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
-//            val factor=1f
-//            (prior,factor)
-//          } else {
-//            val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
-//            val factor = beta5
-//            (prior,factor)
-//          }
-//
-//        }
+        //        val (prior, factor) = if (destMarketCounts < beta3) {
+        //          val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+        //          val factor = beta4
+        //          (prior, beta4)
+        //        } else {
+        //          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
+        //          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+        //            val prior =  beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
+        //            val factor=1f
+        //            (prior,factor)
+        //          } else {
+        //            val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+        //            val factor = beta5
+        //            (prior,factor)
+        //          }
+        //
+        //        }
 
         userClusterProbs :+= factor * prior
-        
 
     }
     clusterHistByDestMarketUser.normalise()
@@ -116,7 +115,7 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
 
 object MarketDestUserPredictionModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: HyperParams): MarketDestUserPredictionModel = {
+  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestUserPredictionModel = {
 
     /**
      * Create counters

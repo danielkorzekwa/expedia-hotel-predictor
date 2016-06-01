@@ -11,12 +11,12 @@ import java.io.File
 import breeze.linalg._
 import expedia.stats.CounterMap
 import expedia.model.dest.DestModel
-import expedia.HyperParams
+import expedia.CompoundHyperParams
 
 case class CmuModel( 
     clusterHistByMDPU: Map[Tuple4[Int,Int, Int, Int], DenseVector[Float]],
       userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-      destModel: DestModel,hyperParams:HyperParams) extends ClusterModel{
+      destModel: DestModel,hyperParams:CompoundHyperParams) extends ClusterModel{
   
     
   
@@ -49,8 +49,7 @@ case class CmuModel(
     }.filter(_._2.size > 0).toMap
 
   
-   private val beta1 = hyperParams.getParamValue("expedia.model.cmumodel.beta1").toFloat
-   
+  
     def predict(click:Click): DenseVector[Float] = {
 // return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
    val destCounts = destCounterMap.getOrElse(click.destId, 0)
@@ -65,19 +64,6 @@ case class CmuModel(
       }
 
     clusterProb = clusterProb.copy
-//
-//    if (click.dist > -1) {
-//      val svmDistPrediction = svmDistPredictionsByLocMarketDist.get((click.userLoc, click.marketId, click.destId))
-//      svmDistPrediction match {
-//        case Some(svmDistPrediction) => {
-//          //   logger.info(" svmDistProbCounter=" + svmDistProbCounter.getAndIncrement)
-//          val probVec = svmDistPrediction.get(click.dist)
-//
-//          if (probVec.isDefined && (max(clusterProb) < beta1)) probVec.get.foreachPair { (index, prob) => clusterProb(index) = prob }
-//        }
-//        case None => //do nothing
-//      }
-//    }
 
     clusterProb
   }

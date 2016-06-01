@@ -17,16 +17,17 @@ import org.joda.time.LocalTime
 import java.text.SimpleDateFormat
 import org.joda.time.LocalDate
 import expedia.data.ExCSVDataSource
+import expedia.model.distgp.DistGPCovFunc
 
 object GpTestBinaryApp {
 
   def main(args: Array[String]): Unit = {
 
-    val cluster1 = 56
-    val cluster2 = 41
-    val allClicks = ExCSVDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/loc_market_dest/train_2013_loc_2096_market_675_dest_8267.csv").getAllClicks()
+    val cluster1 = 41
+    val cluster2 = 56
+    val allClicks = ExCSVDataSource(dsName = "test", "c:/perforce/daniel/ex/segments/loc_market_dest/more_than_1000/train_2013_loc_2096_market_675_dest_8267.csv").getAllClicks()
 
-    val filteredClicks = allClicks.filter { c => c.isBooking == 1 && (c.cluster == cluster1 || c.cluster == cluster2) }
+    val filteredClicks = allClicks.filter { c =>  (c.cluster == cluster1 || c.cluster == cluster2) }
 
     val dataX = DenseVector(filteredClicks.map(c => c.dist).toArray).toDenseMatrix.t
     val dataY = DenseVector(filteredClicks.map(c => if (c.cluster == cluster1) 1.0 else 0).toArray)
@@ -36,9 +37,9 @@ object GpTestBinaryApp {
     //    val covFuncParams = DenseVector[Double](-0.6503421631104198, 0.36622005354726767)
     //    val noiseLogStdDev = -0.9264392185311553
 
-    val covFunc = TestCovFunc()
-    val covFuncParams = DenseVector[Double](-0.794353361706918, -11.251867145609713, -1.1522147378772258, 0.28935151100974615)
-    val noiseLogStdDev = -3.0328025222890753
+     val covFunc = DistGPCovFunc()
+  val covFuncParams = DenseVector[Double](-0.794353361706918, -11.251867145609713, -1.1522147378772258, 0.28935151100974615)
+  val noiseLogStdDev = -3.0328025222890753
 
     val gpMean = mean(dataY)
     val model = GprModel(dataX, dataY, covFunc, covFuncParams, noiseLogStdDev, gpMean)
