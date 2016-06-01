@@ -15,6 +15,7 @@ case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
   private val clusterHistByCountryUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
   testClicks.foreach(click => clusterHistByCountryUser.add((click.countryId, click.userId), click.cluster, value = 0))
 
+   private val isBookingWeight = hyperParams.getParamValue("expedia.model.countryuser.isBookingWeight").toFloat
   private val beta1 = hyperParams.getParamValue("expedia.model.countryuser.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.countryuser.beta2").toFloat
 
@@ -22,7 +23,7 @@ case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
 
     val countryUserKey = (click.countryId, click.userId)
     if (clusterHistByCountryUser.getMap.contains(countryUserKey)) {
-      if (click.isBooking == 1) clusterHistByCountryUser.add(countryUserKey, click.cluster)
+      if (click.isBooking == 1) clusterHistByCountryUser.add(countryUserKey, click.cluster,value=isBookingWeight)
       else clusterHistByCountryUser.add(countryUserKey, click.cluster, value = beta1)
     }
   }

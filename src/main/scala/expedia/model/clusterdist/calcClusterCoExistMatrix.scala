@@ -13,7 +13,6 @@ object calcClusterCoExistMatrix {
   def apply(distClutersSeq: Seq[DenseVector[Int]]): DenseMatrix[Double] = {
 
     val clusterSimMatrix = DenseMatrix.fill(100, 100)(0d)
-    val similarClustersMap: mutable.Map[Double, mutable.HashSet[Double]] = mutable.Map()
 
     distClutersSeq.foreach {
       clusters =>

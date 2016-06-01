@@ -52,14 +52,6 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
 
   private val userCounterMap = CounterMap[Int]()
 
-  //market dest params
-  private val destMarketCountsThreshold1 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThreshold1").toFloat
-  private val destMarketCountsThresholdClickWeight1 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight1").toFloat
-  private val destMarketCountsThreshold2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThreshold2").toFloat
-  private val destMarketCountsThresholdClickWeight2 = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsThresholdClickWeight2").toFloat
-  private val destMarketCountsDefaultWeight = hyperParams.getParamValue("expedia.model.marketdest.destMarketCountsDefaultWeight").toFloat
-  private val destMarketCountsDefaultWeightBeta3 = hyperParams.getParamValue("expedia.model.marketdest.beta3").toFloat
-
   //cmu params
   private val cmuBeta1 = hyperParams.getParamValue("expedia.model.cmu.beta1").toFloat
   private val cmuBeta2 = hyperParams.getParamValue("expedia.model.cmu.beta2").toFloat
@@ -109,7 +101,6 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, tim
         val mduPred = marketDestUserModel.predict(marketId, destId, userId)
         val mdu2 = mduPred - mdPred
         val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu2 + cmuBeta7 * mdp
-        //  val predicted =muPred
         (marketId, destId, isPackage, userId) -> predicted
 
     }

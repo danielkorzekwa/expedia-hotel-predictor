@@ -22,6 +22,7 @@ case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: Hy
 
   private val beta1 = hyperParams.getParamValue("expedia.model.marketdestcluster.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.marketdestcluster.beta2").toFloat
+  private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketdestcluster.isBookingWeight").toFloat
 
   val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
   val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
@@ -58,7 +59,7 @@ case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: Hy
       case Some(destCluster) => {
         val key = (click.marketId, destClusterByDestMap(click.destId))
         if (destClusterHistByMarketDestCluster.getMap.contains(key)) {
-          if (click.isBooking == 1) destClusterHistByMarketDestCluster.add(key, click.cluster, value = w)
+          if (click.isBooking == 1) destClusterHistByMarketDestCluster.add(key, click.cluster, value = w*isBookingWeight)
           else destClusterHistByMarketDestCluster.add(key, click.cluster, value = w * beta1)
         }
       }
@@ -70,9 +71,9 @@ case class MarketDestClusterModelBuilder(testClicks: Seq[Click], hyperParams: Hy
   def create(countryModel: CountryModel, marketModel: MarketModel): MarketDestClusterModel = {
 
     destClusterHistByMarketDestCluster.getMap.foreach {
-      case ((marketId,destCluster), clusterCounts) =>
-      
-        clusterCounts :+=  beta2*marketModel.predict(marketId)
+      case ((marketId, destCluster), clusterCounts) =>
+
+        clusterCounts :+= beta2 * marketModel.predict(marketId)
     }
     destClusterHistByMarketDestCluster.normalise()
 

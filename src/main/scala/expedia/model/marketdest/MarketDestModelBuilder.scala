@@ -19,11 +19,13 @@ import expedia.model.destcluster.DestClusterModel
 import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.model.marketdestcluster.MarketDestClusterModel
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
-
+import breeze.numerics._
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                   destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
                                   hyperParams: HyperParams, timeDecayService: TimeDecayService) {
+
+  private val segmentSizeMap: Map[(Int, Int), Int] = testClicks.groupBy { c => (c.marketId, c.destId) }.map { x => x._1 -> x._2.size }
 
   //key ((marketId,destId)
   private val clusterHistByMarketDest = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -44,6 +46,9 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
   private val beta2 = hyperParams.getParamValue("expedia.model.marketdest.beta2").toFloat
   private val beta3 = hyperParams.getParamValue("expedia.model.marketdest.beta3").toFloat
   private val beta4 = hyperParams.getParamValue("expedia.model.marketdest.beta4").toFloat
+  private val segmentSizeWeight = hyperParams.getParamValue("expedia.model.marketdest.segmentSizeWeight").toFloat
+
+  private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketdest.isBookingWeight").toFloat
 
   def processCluster(click: Click) = {
 
@@ -58,7 +63,7 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
       else destMarketCountsDefaultWeight
 
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
-      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w)
+      if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * isBookingWeight)
       else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * clickWeight)
     }
 
@@ -75,21 +80,17 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         val destCounts = destCounterMap.getOrElse(destId, 0)
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
 
-        if (destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
-
-        }
-
         if (destMarketCounts > 0 && destCounts > 0 && destCounts == destMarketCounts) {
           if (marketDestClusterModel.predictionExists(marketId, destId) && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
-            clusterCounts :+= beta4 * marketDestClusterModel.predict(marketId, destId)
-          } else clusterCounts :+= beta1 * marketModel.predict(marketId)
+            clusterCounts :+= (beta4 + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat)) * marketDestClusterModel.predict(marketId, destId)
+          } else clusterCounts :+= (beta1 + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat)) * marketModel.predict(marketId)
         } else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= {
-          beta2 * destModel.predict(destId)
+          (beta2 + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat)) * destModel.predict(destId)
         }
         else {
           if (marketDestClusterModel.predictionExists(marketId, destId) && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1)
-            clusterCounts :+= beta4 * marketDestClusterModel.predict(marketId, destId)
-          else clusterCounts :+= beta3 * marketModel.predict(marketId)
+            clusterCounts :+= (beta4 + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat)) * marketDestClusterModel.predict(marketId, destId)
+          else clusterCounts :+= (beta3 + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat)) * marketModel.predict(marketId)
         }
 
     }

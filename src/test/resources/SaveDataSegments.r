@@ -7,5 +7,5 @@ train_14b <- subset(train_b,as.Date(date_time) >= as.Date('2014-01-01'))
 
 
 
-write.csv(subset(train_from140101_until140701),'c:/perforce/daniel/ex/segments/by6months/train_140101_140701.csv',row.names=F,quote=F)
-write.csv(subset(train_14b_from0701),'c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.csv',row.names=F,quote=F)
+write.csv(subset(train_13[hotel_continent==2 & hotel_country==50]),'c:/perforce/daniel/ex/segments/continent2_country50/train_2013.csv',row.names=F,quote=F)
+write.csv(subset(test_all[hotel_continent==2 & hotel_country==50]),'c:/perforce/daniel/ex/segments/continent2_country50/train_2014_booked_only.csv',row.names=F,quote=F)

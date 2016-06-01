@@ -23,6 +23,8 @@ import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 import expedia.model.distsvm.DistSvmModel
 import expedia.model.distgp.DistGpModel
 import expedia.model.distsvm.DistSvmModel
+import expedia.model.distgp.LocMarketDistGpModel
+import expedia.model.distgp.DistGpModel
 
 object predictClustersCMU extends LazyLogging {
 
@@ -125,8 +127,10 @@ object predictClustersCMU extends LazyLogging {
      * Dist svm/gp
      */
     val distSvmMatrix = DistSvmModel().predictTop5(testClicks)
+  //   val distGPMatrix = LocMarketDistGpModel.build2().predictTop5(testClicks)
      val distGPMatrix = DistGpModel.build2().predictTop5(testClicks)
     
+     
     (predictionMatrixClusterDist, predictionMatrixMarketDest, predictionMatrixClusterDistProx,distSvmMatrix,distGPMatrix)
   }
 }

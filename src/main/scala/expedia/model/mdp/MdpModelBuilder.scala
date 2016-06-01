@@ -15,11 +15,15 @@ import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
+import breeze.numerics._
 
 case class MdpModelBuilder(testClicks: Seq[Click],
                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                            destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int], hyperParams: HyperParams, timeDecayService: TimeDecayService) {
 
+   private val segmentSizeMap: Map[(Int, Int), Int] = testClicks.groupBy { c => (c.marketId, c.destId) }.map { x => x._1 -> x._2.size }
+
+  
   //key ((marketId,destId,isPackage)
   private val clusterHistByMDP = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
   testClicks.foreach { click =>
@@ -36,6 +40,11 @@ case class MdpModelBuilder(testClicks: Seq[Click],
   private val beta7 = hyperParams.getParamValue("expedia.model.mdp.beta7").toFloat
   private val beta8 = hyperParams.getParamValue("expedia.model.mdp.beta8").toFloat
 
+  private val isBookingWeight = hyperParams.getParamValue("expedia.model.mdp.isBookingWeight").toFloat
+
+  private val segmentSizeWeight = hyperParams.getParamValue("expedia.model.marketdest.segmentSizeWeight").toFloat
+
+  
   def processCluster(click: Click) = {
 
     val w = timeDecayService.getDecay(click)
@@ -50,7 +59,7 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 
     val key = (click.marketId, click.destId, click.isPackage)
     if (clusterHistByMDP.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster, value = w)
+      if (click.isBooking == 1) clusterHistByMDP.add(key, click.cluster, value = w*isBookingWeight)
       else clusterHistByMDP.add(key, click.cluster, value = w * clickWeight)
     }
 
@@ -71,7 +80,7 @@ case class MdpModelBuilder(testClicks: Seq[Click],
 //        else if (destMarketCounts > 0 && destCounts > 0 && marketCounts == destMarketCounts) clusterCounts :+= beta7 * destModel.predict(destId)
 //        else clusterCounts :+= beta8 * marketModel.predict(marketId)
         
-        clusterCounts :+= beta8 * marketDestModel.predict(marketId, destId)
+        clusterCounts :+= (beta8+ + segmentSizeWeight * log(segmentSizeMap((marketId, destId)).toFloat))* marketDestModel.predict(marketId, destId)
 
     }
 

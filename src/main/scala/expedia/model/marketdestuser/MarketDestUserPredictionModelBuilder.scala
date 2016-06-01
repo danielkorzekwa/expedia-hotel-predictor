@@ -48,13 +48,16 @@ case class MarketDestUserPredictionModelBuilder(testClicks: Seq[Click], hyperPar
 
   private val beta6 = hyperParams.getParamValue("expedia.model.marketdestuser.beta6").toFloat
 
+   private val isBookingWeight = hyperParams.getParamValue("expedia.model.marketdestuser.isBookingWeight").toFloat
+
+  
   def processCluster(click: Click) = {
 
     val w = timeDecayService.getDecay(click)
 
     val key = (click.destId, click.marketId, click.userId)
     if (clusterHistByDestMarketUser.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w)
+      if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w*isBookingWeight)
       else clusterHistByDestMarketUser.add(key, click.cluster, value = w * beta6)
     }
 

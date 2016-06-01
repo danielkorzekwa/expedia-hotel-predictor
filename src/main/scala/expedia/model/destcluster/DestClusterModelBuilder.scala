@@ -20,6 +20,7 @@ import expedia.model.marketmodel.MarketModelBuilder
 
 case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
+   private val isBookingWeight = hyperParams.getParamValue("expedia.model.destcluster.isBookingWeight").toFloat
   private val beta1 = hyperParams.getParamValue("expedia.model.destcluster.beta1").toFloat
    private val beta3 = hyperParams.getParamValue("expedia.model.destcluster.beta3").toFloat
 
@@ -50,7 +51,7 @@ case class DestClusterModelBuilder(testClicks: Seq[Click], hyperParams: HyperPar
 
     destClusterByDestMap.get(click.destId) match {
       case Some(destCluster) => {
-        if (click.isBooking == 1) destClusterHistByDestCluster.add(destCluster, click.cluster, value = w)
+        if (click.isBooking == 1) destClusterHistByDestCluster.add(destCluster, click.cluster, value = w*isBookingWeight)
         else destClusterHistByDestCluster.add(destCluster, click.cluster, value = w * beta1)
       }
       case None => //do nothing

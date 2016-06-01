@@ -29,7 +29,7 @@ object LocMarketDistPredictAndSaveApp extends LazyLogging {
 
       val predOutputFile = "c:/perforce/daniel/ex/segments/loc_market/more_than_100/predictions/predicted_clusters_loc_%d_market_%d.csv".format(userLoc, marketId)
 
-      if (marketSize < 5000 && !(new File(predOutputFile).exists())) {
+      if (!(userLoc==36643 && marketId==12) && marketSize < 5000 && !(new File(predOutputFile).exists())) {
 
         val trainDS = ExCSVDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/segments/loc_market/more_than_100/train_2013_loc_%d_market_%d.csv".format(userLoc, marketId))
         val trainClicks = trainDS.getAllClicks()

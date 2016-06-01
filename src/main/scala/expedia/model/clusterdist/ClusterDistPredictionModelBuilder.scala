@@ -33,8 +33,6 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
 
   def processCluster(click: Click) = {
 
-    
-    
     if (click.dist != -1) {
       val key = (click.userLoc, (click.dist * 10000).toInt, click.marketId)
       if (clusterHistByKey.getMap.contains(key)) clusterHistByKey.add(key, click.cluster)

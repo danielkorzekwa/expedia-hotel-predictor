@@ -6,6 +6,7 @@ import breeze.linalg.DenseVector
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.util.getTop5Clusters
+import expedia.util.getTopNClusters
 
 trait ClusterModel extends LazyLogging{
   
@@ -27,7 +28,7 @@ trait ClusterModel extends LazyLogging{
     val predictionRecords = clicks.par.map { click =>
       val predicted = predict(click)
 
-      val record = getTop5Clusters(predicted)
+      val record = getTopNClusters(predicted,5)
       if (i.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(i.get))
       record
     }.toList

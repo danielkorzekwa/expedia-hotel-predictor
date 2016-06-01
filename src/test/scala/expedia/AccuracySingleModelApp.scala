@@ -35,7 +35,7 @@ object AccuracySingleModelApp extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    val hyperParams = HyperParams.createParamsCMU3()
+    val hyperParams = HyperParams.createParamsCont3()
 
     val marketIds = Set(628, 675, 365, 1230, 637, 701)
     // val marketIds = Set(675)
@@ -52,9 +52,10 @@ true// click.marketId==1392
     //val expediaTestFileCSV = "c:/perforce/daniel/ex/segments/loc_market_dest/train_2014_booked_only.csv"
 
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click =>   click.marketId==1392)
-   val model = MarketModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+   val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
   // val model = DistGpModel.build()
 
+   val k = 5
     val top5predictions = model.predictTop5(testClicks)
 
     val predictedMat = model.predict(testClicks) + 1e-10f
@@ -63,7 +64,7 @@ true// click.marketId==1392
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
     println(DenseMatrix.horzcat(actual.toDenseMatrix.t, top5predictions).toString(20, 320))
 
-    val apkVector = averagePrecision(top5predictions(::, 5 to 9), actual, k = 5)
+    val apkVector = averagePrecision(top5predictions(::, top5predictions.cols/2 until top5predictions.cols), actual, k)
     val mapk = mean(apkVector)
 
     val loglikValue = loglik(predictedMat.map(x => x.toDouble), actual)

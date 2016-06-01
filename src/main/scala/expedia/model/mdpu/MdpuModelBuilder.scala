@@ -35,14 +35,16 @@ case class MdpuModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams,tim
 
   private val beta1 = hyperParams.getParamValue("expedia.model.mdpu.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.mdpu.beta2").toFloat
+private val isBookingWeight = hyperParams.getParamValue("expedia.model.mdpu.isBookingWeight").toFloat
 
+  
   def processCluster(click: Click) = {
 
      val w = timeDecayService.getDecay(click)
   
     val key = (click.marketId, click.destId, click.isPackage, click.userId)
     if (clusterHistByMDPU.getMap.contains(key)) {
-      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster,value=w)
+      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster,value=w*isBookingWeight)
       else clusterHistByMDPU.add(key, click.cluster, value = w*beta1)
     }
 

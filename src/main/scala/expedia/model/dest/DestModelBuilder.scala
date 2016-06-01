@@ -26,6 +26,7 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, ti
   private val countryByDest: mutable.Map[Int, Int] = mutable.Map()
   testClicks.foreach(click => countryByDest += click.destId -> click.countryId)
 
+   private val isBookingWeight = hyperParams.getParamValue("expedia.model.dest.isBookingWeight").toFloat
   private val beta1 = hyperParams.getParamValue("expedia.model.dest.beta1").toFloat
   private val beta2 = hyperParams.getParamValue("expedia.model.dest.beta2").toFloat
 
@@ -41,7 +42,7 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: HyperParams, ti
 
     if (clusterHistByDest.getMap.contains(click.destId)) {
 
-      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster, value = w)
+      if (click.isBooking == 1) clusterHistByDest.add(click.destId, click.cluster, value = w*isBookingWeight)
       else clusterHistByDest.add(click.destId, click.cluster, value = w * beta1)
 
     }
