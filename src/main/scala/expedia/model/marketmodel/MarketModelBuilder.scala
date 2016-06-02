@@ -10,8 +10,9 @@ import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 import breeze.numerics._
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 
-case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
+case class MarketModelBuilder(testClicks: Seq[Click],  hyperParamsService: HyperParamsService,hyperParams:CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   private val segmentSizeMap: Map[Int, Int] = testClicks.groupBy { c => c.marketId }.map { x => x._1 -> x._2.size }
 
@@ -26,8 +27,8 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyper
 
     if (clusterHistByMarket.getMap.contains(click.marketId)) {
       val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
-      val beta1 = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.beta1", click.marketId).toFloat
-      val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.isBookingWeight", click.marketId).toFloat
+      val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketmodel.beta1", click.marketId,hyperParams).toFloat
+      val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketmodel.isBookingWeight", click.marketId,hyperParams).toFloat
 
       if (click.isBooking == 1) clusterHistByMarket.add(click.marketId, click.cluster, value = w * isBookingWeight)
       else clusterHistByMarket.add(click.marketId, click.cluster, value = w * beta1)
@@ -38,9 +39,9 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyper
 
     clusterHistByMarket.getMap.foreach {
       case (marketId, clusterCounts) =>
-        val beta2 = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.beta2", marketId).toFloat
+        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketmodel.beta2", marketId,hyperParams).toFloat
 
-        val segmentSizeWeight = hyperParams.getParamValueForMarketId("expedia.model.marketmodel.segmentSizeWeight", marketId).toFloat
+        val segmentSizeWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketmodel.segmentSizeWeight", marketId,hyperParams).toFloat
 
         clusterCounts :+= (beta2 + segmentSizeWeight * log(segmentSizeMap(marketId).toFloat)) * countryModel.predict(countryByMarket(marketId))
     }
@@ -51,24 +52,24 @@ case class MarketModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyper
 }
 
 object MarketModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketModel = {
-
-    val timeDecayService = TimeDecayService(testClicks, hyperParams)
-
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    def onClick(click: Click) = {
-
-      marketModelBuilder.processCluster(click)
-      countryModelBuilder.processCluster(click)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-
-    val model = marketModelBuilder.create(countryModel)
-
-    model
-  }
+//  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketModel = {
+//
+//    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+//
+//    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    def onClick(click: Click) = {
+//
+//      marketModelBuilder.processCluster(click)
+//      countryModelBuilder.processCluster(click)
+//    }
+//    trainDatasource.foreach { click => onClick(click) }
+//
+//    val countryModel = countryModelBuilder.create()
+//
+//    val model = marketModelBuilder.create(countryModel)
+//
+//    model
+//  }
 }

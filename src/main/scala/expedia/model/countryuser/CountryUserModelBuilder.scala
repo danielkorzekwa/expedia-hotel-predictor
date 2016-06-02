@@ -8,8 +8,9 @@ import expedia.model.country.CountryModelBuilder
 import expedia.data.ExDataSource
 import expedia.util.TimeDecayService
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 
-case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams) {
+case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParamsService: HyperParamsService,hyperParams:CompoundHyperParams) {
 
   //key ((countryId,userId)
   private val clusterHistByCountryUser = MulticlassHistByKey[Tuple2[Int, Int]](100)
@@ -23,8 +24,8 @@ case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: Compound
     val countryUserKey = (click.countryId, click.userId)
     if (clusterHistByCountryUser.getMap.contains(countryUserKey)) {
       
-          val isBookingWeight = hyperParams.getParamValueForCountryId("expedia.model.countryuser.isBookingWeight",click.countryId).toFloat
-   val beta1 = hyperParams.getParamValueForCountryId("expedia.model.countryuser.beta1",click.countryId).toFloat
+          val isBookingWeight = hyperParamsService.getParamValueForCountryId("expedia.model.countryuser.isBookingWeight",click.countryId,hyperParams).toFloat
+   val beta1 = hyperParamsService.getParamValueForCountryId("expedia.model.countryuser.beta1",click.countryId,hyperParams).toFloat
   
       
       if (click.isBooking == 1) clusterHistByCountryUser.add(countryUserKey, click.cluster,value=isBookingWeight)
@@ -36,7 +37,7 @@ case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: Compound
 
     clusterHistByCountryUser.getMap.foreach { case ((countryId, userId), clusterCounts) => 
       
-       val beta2 = hyperParams.getParamValueForCountryId("expedia.model.countryuser.beta2",countryId).toFloat
+       val beta2 = hyperParamsService.getParamValueForCountryId("expedia.model.countryuser.beta2",countryId,hyperParams).toFloat
 
       
       clusterCounts :+= beta2 * countryModel.predict(countryId) 
@@ -50,20 +51,20 @@ case class CountryUserModelBuilder(testClicks: Seq[Click], hyperParams: Compound
 
 
 object CountryUserModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CountryUserModel = {
-
-    val timeDecayService = TimeDecayService(testClicks, hyperParams)
-
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
-    def onClick(click: Click) = {
-      countryModelBuilder.processCluster(click)
-      countryUserModelBuilder.processCluster(click)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-    val countryUserModel = countryUserModelBuilder.create(countryModel)
-    countryUserModel
-  }
+//  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CountryUserModel = {
+//
+//    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+//
+//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
+//    def onClick(click: Click) = {
+//      countryModelBuilder.processCluster(click)
+//      countryUserModelBuilder.processCluster(click)
+//    }
+//    trainDatasource.foreach { click => onClick(click) }
+//
+//    val countryModel = countryModelBuilder.create()
+//    val countryUserModel = countryUserModelBuilder.create(countryModel)
+//    countryUserModel
+//  }
 }

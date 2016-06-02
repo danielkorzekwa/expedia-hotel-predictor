@@ -31,7 +31,7 @@ object TrainModelParamsApp5 extends LazyLogging {
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
 
     //  val hyperParamsListFromDisk = loadObject[List[SimpleHyperParams]]("c:/perforce/daniel/ex/hyperparams/hyperParams_best_020616_test14.kryo")
-    val hyperParams = CompoundHyperParams.createHyperParamsByModel().map { case (model, params) => model -> CompoundHyperParams(testClicks, params) }
+    val hyperParams = CompoundHyperParams.createHyperParamsByModel()
 
     learnModelParams(trainDS, testClicks, hyperParams)
 

@@ -51,7 +51,7 @@ object AccuracySingleModelApp extends LazyLogging {
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
 
-    val hyperParamsMap = CompoundHyperParams.createHyperParamsByModel().map { case (model, params) => model -> CompoundHyperParams(testClicks, params) }
+    val hyperParamsMap = CompoundHyperParams.createHyperParamsByModel()
 
     //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
     //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)

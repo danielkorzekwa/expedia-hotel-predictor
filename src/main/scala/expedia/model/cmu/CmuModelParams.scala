@@ -1,10 +1,11 @@
 package expedia.model.cmu
 
 import expedia.SimpleHyperParams
+import expedia.CompoundHyperParams
 
 object CmuModelParams {
 
-  def getPrioritizedHyperParams(): Seq[SimpleHyperParams] = {
+  def getPrioritizedHyperParams(): CompoundHyperParams = {
     val prioritizedHyperParams = List(
       createParamsCont2Country198(),
       createParamsCont3(),
@@ -12,10 +13,10 @@ object CmuModelParams {
       createParamsCont6(),
       createParamsCMU3())
 
-    prioritizedHyperParams
+   CompoundHyperParams( prioritizedHyperParams)
   }
 
- private def createParamsCMU3(): SimpleHyperParams = {
+  private def createParamsCMU3(): SimpleHyperParams = {
     SimpleHyperParams(Map(
       "expedia.model.cmu.beta6" -> 0.882,
       "expedia.model.cmu.beta3" -> 0.8,
@@ -29,7 +30,7 @@ object CmuModelParams {
 
   }
 
- private def createParamsCont3(): SimpleHyperParams = {
+  private def createParamsCont3(): SimpleHyperParams = {
 
     SimpleHyperParams(Map(
       "expedia.model.cmu.beta6" -> 0.882,
@@ -40,11 +41,11 @@ object CmuModelParams {
       "expedia.model.cmu.beta7" -> 0.6,
       "expedia.model.cmu.beta2" -> 1.0,
       "expedia.model.cmu.beta5" -> 0.07999999821186066,
-      "expedia.model.cmu.beta1" -> 1.0), Some(3),None)
+      "expedia.model.cmu.beta1" -> 1.0), Some(3), None)
 
   }
 
- private def createParamsCont6(): SimpleHyperParams = {
+  private def createParamsCont6(): SimpleHyperParams = {
     SimpleHyperParams(Map(
       "expedia.model.cmu.beta6" -> 0.882,
       "expedia.model.cmu.beta3" -> 0.8,
@@ -54,10 +55,10 @@ object CmuModelParams {
       "expedia.model.cmu.beta7" -> 0.6,
       "expedia.model.cmu.beta2" -> 1.0,
       "expedia.model.cmu.beta5" -> 0.07999999821186066,
-      "expedia.model.cmu.beta1" -> 1.0), Some(6),None)
+      "expedia.model.cmu.beta1" -> 1.0), Some(6), None)
   }
 
- private def createParamsCont4(): SimpleHyperParams = {
+  private def createParamsCont4(): SimpleHyperParams = {
     SimpleHyperParams(Map(
       "expedia.model.cmu.beta6" -> 0.882,
       "expedia.model.cmu.beta3" -> 0.8,
@@ -67,10 +68,10 @@ object CmuModelParams {
       "expedia.model.cmu.beta7" -> 0.6,
       "expedia.model.cmu.beta2" -> 1.0,
       "expedia.model.cmu.beta5" -> 0.07999999821186066,
-      "expedia.model.cmu.beta1" -> 1.0), Some(4),None)
+      "expedia.model.cmu.beta1" -> 1.0), Some(4), None)
   }
 
-private  def createParamsCont2Country198(): SimpleHyperParams = {
+  private def createParamsCont2Country198(): SimpleHyperParams = {
     SimpleHyperParams(Map(
       "expedia.model.cmu.beta6" -> 0.882,
       "expedia.model.cmu.beta3" -> 0.8,
@@ -80,7 +81,7 @@ private  def createParamsCont2Country198(): SimpleHyperParams = {
       "expedia.model.cmu.beta7" -> 0.6,
       "expedia.model.cmu.beta2" -> 1.0,
       "expedia.model.cmu.beta5" -> 0.07999999821186066,
-      "expedia.model.cmu.beta1" -> 1.0),  None,Some(198))
+      "expedia.model.cmu.beta1" -> 1.0), None, Some(198))
   }
 
 }

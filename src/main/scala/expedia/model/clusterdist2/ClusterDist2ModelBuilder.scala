@@ -93,24 +93,24 @@ case class ClusterDist2ModelBuilder(testClicks: Seq[Click]) {
 }
 
 object ClusterDist2ModelBuilder {
-  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:CompoundHyperParams): ClusterDist2Model = {
-   
-    val timeDecayService = TimeDecayService(testClicks,hyperParams)
-    
-    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
-    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams,timeDecayService)
-    val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
-
-    def onClick(click: Click) = {
-      countryModelBuilder.processCluster(click)
-      marketModelBuilder.processCluster(click)
-      clusterDistModelBuilder.processCluster(click)
-    }
-    trainDS.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-    val marketModel = marketModelBuilder.create(countryModel)
-    val clusterDistModel = clusterDistModelBuilder.create(marketModel)
-    clusterDistModel
-  }
+//  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click],hyperParams:CompoundHyperParams): ClusterDist2Model = {
+//   
+//    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+//    
+//    val countryModelBuilder = CountryModelBuilder(testClicks,hyperParams,timeDecayService)
+//    val marketModelBuilder = MarketModelBuilder(testClicks,hyperParams,timeDecayService)
+//    val clusterDistModelBuilder = ClusterDist2ModelBuilder(testClicks)
+//
+//    def onClick(click: Click) = {
+//      countryModelBuilder.processCluster(click)
+//      marketModelBuilder.processCluster(click)
+//      clusterDistModelBuilder.processCluster(click)
+//    }
+//    trainDS.foreach { click => onClick(click) }
+//
+//    val countryModel = countryModelBuilder.create()
+//    val marketModel = marketModelBuilder.create(countryModel)
+//    val clusterDistModel = clusterDistModelBuilder.create(marketModel)
+//    clusterDistModel
+//  }
 }

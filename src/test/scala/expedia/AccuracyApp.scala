@@ -45,9 +45,9 @@ object AccuracyApp extends LazyLogging {
     //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
     //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click =>   click.marketId==1392)
 
-              val hyperParamsListFromDisk = loadObject[List[SimpleHyperParams]]( "c:/perforce/daniel/ex/hyperparams/hyperParams_best_020616_test14.kryo")
-     val hyperParams = CompoundHyperParams(testClicks,hyperParamsListFromDisk)
-    predictClustersAndSaveToFile(trainDS, testClicks, hyperParams)
+     val hyperParamsMap = CompoundHyperParams.createHyperParamsByModel()
+
+  //  predictClustersAndSaveToFile(trainDS, testClicks, hyperParams)
 
     // [c1,c2,c3,c4,c5,p1,p2,p3,p4,p5]
     val top5predictions = loadPredictions()

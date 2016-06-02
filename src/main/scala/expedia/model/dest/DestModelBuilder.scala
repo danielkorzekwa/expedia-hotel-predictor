@@ -17,8 +17,9 @@ import expedia.stats.CounterMap
 import expedia.model.destcluster.DestClusterModel
 import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 
-case class DestModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
+case class DestModelBuilder(testClicks: Seq[Click],  hyperParamsService: HyperParamsService,hyperParams:CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 
   private val clusterHistByDest = MulticlassHistByKey[Int](100)
   testClicks.foreach(click => clusterHistByDest.add(click.destId, click.cluster, value = 0))
@@ -35,8 +36,8 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperPa
     }
 
     if (clusterHistByDest.getMap.contains(click.destId)) {
-      val isBookingWeight = hyperParams.getParamValueForDestId("expedia.model.dest.isBookingWeight", click.destId).toFloat
-      val beta1 = hyperParams.getParamValueForDestId("expedia.model.dest.beta1", click.destId).toFloat
+      val isBookingWeight = hyperParamsService.getParamValueForDestId("expedia.model.dest.isBookingWeight", click.destId,hyperParams).toFloat
+      val beta1 = hyperParamsService.getParamValueForDestId("expedia.model.dest.beta1", click.destId,hyperParams).toFloat
 
       val w = timeDecayService.getDecayForDestId(click.dateTime, click.destId)
 
@@ -51,7 +52,7 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperPa
 
     clusterHistByDest.getMap.foreach {
       case (destId, clusterCounts) =>
-        val beta2 = hyperParams.getParamValueForDestId("expedia.model.dest.beta2", destId).toFloat
+        val beta2 = hyperParamsService.getParamValueForDestId("expedia.model.dest.beta2", destId,hyperParams).toFloat
 
         if (destClusterModel.predictionExists(destId) && destCounterMap.getOrElse(destId, -1) < 2 && destCounterMap.getOrElse(destId, 0) != -1) {
           clusterCounts :+= beta2 * destClusterModel.predict(destId)
@@ -68,25 +69,25 @@ case class DestModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperPa
 }
 
 object DestModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): DestModel = {
-
-    val timeDecayService = TimeDecayService(testClicks, hyperParams)
-
-    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    def onClick(click: Click) = {
-      destClusterModelBuilder.processCluster(click)
-      destModelBuilder.processCluster(click)
-      countryModelBuilder.processCluster(click)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
-    val destModel = destModelBuilder.create(countryModel, destClusterModel)
-
-    destModel
-  }
+//  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): DestModel = {
+//
+//    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+//
+//    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    def onClick(click: Click) = {
+//      destClusterModelBuilder.processCluster(click)
+//      destModelBuilder.processCluster(click)
+//      countryModelBuilder.processCluster(click)
+//    }
+//    trainDatasource.foreach { click => onClick(click) }
+//
+//    val countryModel = countryModelBuilder.create()
+//    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
+//    val destModel = destModelBuilder.create(countryModel, destClusterModel)
+//
+//    destModel
+//  }
 }

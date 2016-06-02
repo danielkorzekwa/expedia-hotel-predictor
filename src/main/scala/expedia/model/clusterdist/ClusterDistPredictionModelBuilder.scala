@@ -13,7 +13,8 @@ import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 import expedia.util.calcTopNClusters
 import expedia.CompoundHyperParams
-case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams) {
+import expedia.HyperParamsService
+case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParamsService:HyperParamsService,hyperParams: CompoundHyperParams) {
 
   private val clusterHistByKey = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
   testClicks.foreach { click =>
@@ -45,7 +46,7 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
   def create(marketModel: MarketModel): ClusterDistPredictionModel = {
     clusterHistByKey.getMap.foreach {
       case ((_, _, marketId), clusterCounts) =>
-          val beta1 = hyperParams.getParamValueForMarketId("expedia.model.clusterdist.beta1",marketId).toFloat
+          val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.clusterdist.beta1",marketId,hyperParams).toFloat
   
         
         val prior = marketModel.predict(marketId.toInt).copy
@@ -59,7 +60,7 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
 
     clusterHistByKey.normalise()
     clusterHistByKey2.getMap.foreach { case (key, clusterCounts) => 
-   val beta2 = hyperParams.getParamValueForMarketId("expedia.model.clusterdist.beta2",key._3).toFloat
+   val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.clusterdist.beta2",key._3,hyperParams).toFloat
       clusterCounts :+= beta2 * clusterHistByKey.getMap((key._1, key._2, key._3))
       }
 
@@ -71,25 +72,25 @@ case class ClusterDistPredictionModelBuilder(testClicks: Seq[Click], hyperParams
 }
 
 object ClusterDistPredictionModelBuilder {
-  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): ClusterDistPredictionModel = {
-  
-    val timeDecayService = TimeDecayService(testClicks,hyperParams)
-    
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams,timeDecayService)
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
-    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks, hyperParams)
-
-    def onClick(click: Click) = {
-      countryModelBuilder.processCluster(click)
-      marketModelBuilder.processCluster(click)
-      clusterDistModelBuilder.processCluster(click)
-    }
-
-    trainDS.foreach { click => onClick(click) }
-    val countryModel = countryModelBuilder.create()
-    val marketModel = marketModelBuilder.create(countryModel)
-    val clusterDistModel = clusterDistModelBuilder.create(marketModel)
-
-    clusterDistModel
-  }
+//  def buildFromTrainingSet(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): ClusterDistPredictionModel = {
+//  
+//    val timeDecayService = TimeDecayService(testClicks,hyperParams)
+//    
+//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams,timeDecayService)
+//    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams,timeDecayService)
+//    val clusterDistModelBuilder = ClusterDistPredictionModelBuilder(testClicks, hyperParams)
+//
+//    def onClick(click: Click) = {
+//      countryModelBuilder.processCluster(click)
+//      marketModelBuilder.processCluster(click)
+//      clusterDistModelBuilder.processCluster(click)
+//    }
+//
+//    trainDS.foreach { click => onClick(click) }
+//    val countryModel = countryModelBuilder.create()
+//    val marketModel = marketModelBuilder.create(countryModel)
+//    val clusterDistModel = clusterDistModelBuilder.create(marketModel)
+//
+//    clusterDistModel
+//  }
 }

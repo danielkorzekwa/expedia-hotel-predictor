@@ -12,11 +12,12 @@ import breeze.linalg._
 import expedia.stats.CounterMap
 import expedia.model.dest.DestModel
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 
 case class CmuModel( 
     clusterHistByMDPU: Map[Tuple4[Int,Int, Int, Int], DenseVector[Float]],
       userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-      destModel: DestModel,hyperParams:CompoundHyperParams) extends ClusterModel{
+      destModel: DestModel) extends ClusterModel{
   
     
   

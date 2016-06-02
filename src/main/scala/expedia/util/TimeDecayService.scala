@@ -1,12 +1,12 @@
 package expedia.util
 
 import java.util.Date
-
 import breeze.numerics.exp
 import expedia.CompoundHyperParams
 import expedia.data.Click
+import expedia.HyperParamsService
 
-case class TimeDecayService(testClicks: Seq[Click], hyperParams: CompoundHyperParams) {
+case class TimeDecayService(testClicks: Seq[Click], hyperParamsService: HyperParamsService,hyperParams:CompoundHyperParams) {
 
   private val testTime = testClicks.map(c => c.dateTime.getTime).min
 
@@ -24,17 +24,17 @@ case class TimeDecayService(testClicks: Seq[Click], hyperParams: CompoundHyperPa
   //  }
 
   def getDecayForCountryId(dateTime: Date, countryId: Int): Float = {
-    val timeDecay = hyperParams.getParamValueForCountryId("expedia.timeDecay", countryId).toFloat
+    val timeDecay = hyperParamsService.getParamValueForCountryId("expedia.timeDecay", countryId,hyperParams).toFloat
     getDecay(dateTime, timeDecay)
   }
   
    def getDecayForDestId(dateTime: Date, destId: Int): Float = {
-    val timeDecay = hyperParams.getParamValueForDestId("expedia.timeDecay", destId).toFloat
+    val timeDecay = hyperParamsService.getParamValueForDestId("expedia.timeDecay", destId,hyperParams).toFloat
     getDecay(dateTime, timeDecay)
   }
    
     def getDecayForMarketId(dateTime: Date, marketId: Int): Float = {
-    val timeDecay = hyperParams.getParamValueForMarketId("expedia.timeDecay", marketId).toFloat
+    val timeDecay = hyperParamsService.getParamValueForMarketId("expedia.timeDecay", marketId,hyperParams).toFloat
     getDecay(dateTime, timeDecay)
   }
 

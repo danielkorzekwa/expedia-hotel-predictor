@@ -38,8 +38,10 @@ import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder
 import expedia.CompoundHyperParams
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
+import expedia.HyperParamsService
 
-case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
+case class CmuModelBuilder(testClicks: Seq[Click], hyperParamsService: HyperParamsService, hyperParams:CompoundHyperParams,timeDecayService: TimeDecayService) {
 
   //key ((marketId,destId,isPackage,userId)
   private val clusterHistByMDPU = MulticlassHistByKey[Tuple4[Int, Int, Int, Int]](100)
@@ -70,14 +72,14 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperPar
       case ((marketId, destId, isPackage, userId), clusterStat) =>
         
          //cmu params
-   val cmuBeta1 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta1",marketId).toFloat
-   val cmuBeta2 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta2",marketId).toFloat
-   val cmuBeta3 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta3",marketId).toFloat
-   val cmuBeta4 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta4",marketId).toFloat
-   val cmuBeta5 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta5",marketId).toFloat
-   val cmuBeta6 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta6",marketId).toFloat
-   val cmuBeta7 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta7",marketId).toFloat
-   val cmuBeta8 = hyperParams.getParamValueForMarketId("expedia.model.cmu.beta8",marketId).toFloat
+   val cmuBeta1 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta1",marketId,hyperParams).toFloat
+   val cmuBeta2 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta2",marketId,hyperParams).toFloat
+   val cmuBeta3 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta3",marketId,hyperParams).toFloat
+   val cmuBeta4 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta4",marketId,hyperParams).toFloat
+   val cmuBeta5 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta5",marketId,hyperParams).toFloat
+   val cmuBeta6 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta6",marketId,hyperParams).toFloat
+   val cmuBeta7 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta7",marketId,hyperParams).toFloat
+   val cmuBeta8 = hyperParamsService.getParamValueForMarketId("expedia.model.cmu.beta8",marketId,hyperParams).toFloat
 
         
         val c = countryModel.predict(countryByMarket(marketId))
@@ -106,78 +108,81 @@ case class CmuModelBuilder(testClicks: Seq[Click], hyperParams: CompoundHyperPar
         (marketId, destId, isPackage, userId) -> predicted
 
     }
-    CmuModel(predictionMdpuMap, userCounterMap, destCounterMap, destMarketCounterMap, destModel, hyperParams)
+    CmuModel(predictionMdpuMap, userCounterMap, destCounterMap, destMarketCounterMap, destModel)
   }
 }
 
 object CmuModelBuilder {
 
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CmuModel = {
-    /**
-     * Create counters
-     */
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-    def onClickCounters(click: Click) = {
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-    }
-    trainDatasource.foreach { click => onClickCounters(click) }
-
-    val timeDecayService = TimeDecayService(testClicks, hyperParams)
-
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
-    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    val cmuModelBuilder = CmuModelBuilder(testClicks,  hyperParams, timeDecayService)
-
-    val marketDestUserModelBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
-    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
-
-    def onClick(click: Click) = {
-      marketModelBuilder.processCluster(click)
-      countryModelBuilder.processCluster(click)
-      destModelBuilder.processCluster(click)
-      cmuModelBuilder.processCluster(click)
-      destClusterModelBuilder.processCluster(click)
-      marketDestModelBuilder.processCluster(click)
-      marketDestClusterModelBuilder.processCluster(click)
-      marketDestUserModelBuilder.processCluster(click)
-      countryUserModelBuilder.processCluster(click)
-      marketUserModelBuilder.processCluster(click)
-      mdpModelBuilder.processCluster(click)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-    val marketModel = marketModelBuilder.create(countryModel)
-    val destClusterModel = destClusterModelBuilder.create(countryModel, marketModel)
-    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
-    val destModel = destModelBuilder.create(countryModel, destClusterModel)
-    val countryUserModel = countryUserModelBuilder.create(countryModel)
-    val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
-    val marketDestModel = marketDestModelBuilder.create(
-      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel, marketDestClusterModel)
-
-    val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketDestModel)
-
-    val marketDestUserModel = marketDestUserModelBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel, countryUserModel, marketDestModel, marketUserModel)
-    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel, marketDestModel, marketDestUserModel,
-      countryUserModel, marketUserModel, marketModel, mdpModel)
-    cmuModel
-  }
+//  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams:CompoundHyperParams): CmuModel = {
+//   
+//    val hyperParamsService = HyperParamsService(testClicks)
+//    
+//    /**
+//     * Create counters
+//     */
+//    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+//    val destCounterMap = CounterMap[Int]()
+//    val marketCounterMap = CounterMap[Int]()
+//    def onClickCounters(click: Click) = {
+//      if (click.isBooking == 1) {
+//        destMarketCounterMap.add((click.destId, click.marketId))
+//        destCounterMap.add(click.destId)
+//        marketCounterMap.add(click.marketId)
+//      }
+//    }
+//    trainDatasource.foreach { click => onClickCounters(click) }
+//
+//    val timeDecayService = TimeDecayService(testClicks, hyperParamsService,hyperParams)
+//
+//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
+//    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    val cmuModelBuilder = CmuModelBuilder(testClicks,  hyperParams, timeDecayService)
+//
+//    val marketDestUserModelBuilder = MarketDestUserPredictionModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    val countryUserModelBuilder = CountryUserModelBuilder(testClicks, hyperParams)
+//    val marketUserModelBuilder = MarketUserModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    val mdpModelBuilder = MdpModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
+//
+//    def onClick(click: Click) = {
+//      marketModelBuilder.processCluster(click)
+//      countryModelBuilder.processCluster(click)
+//      destModelBuilder.processCluster(click)
+//      cmuModelBuilder.processCluster(click)
+//      destClusterModelBuilder.processCluster(click)
+//      marketDestModelBuilder.processCluster(click)
+//      marketDestClusterModelBuilder.processCluster(click)
+//      marketDestUserModelBuilder.processCluster(click)
+//      countryUserModelBuilder.processCluster(click)
+//      marketUserModelBuilder.processCluster(click)
+//      mdpModelBuilder.processCluster(click)
+//    }
+//    trainDatasource.foreach { click => onClick(click) }
+//
+//    val countryModel = countryModelBuilder.create()
+//    val marketModel = marketModelBuilder.create(countryModel)
+//    val destClusterModel = destClusterModelBuilder.create(countryModel, marketModel)
+//    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
+//    val destModel = destModelBuilder.create(countryModel, destClusterModel)
+//    val countryUserModel = countryUserModelBuilder.create(countryModel)
+//    val marketUserModel = marketUserModelBuilder.create(countryUserModel, marketModel)
+//    val marketDestModel = marketDestModelBuilder.create(
+//      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel, marketDestClusterModel)
+//
+//    val mdpModel = mdpModelBuilder.create(destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketDestModel)
+//
+//    val marketDestUserModel = marketDestUserModelBuilder.create(countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, marketModel, countryUserModel, marketDestModel, marketUserModel)
+//    val cmuModel = cmuModelBuilder.create(countryModel, destCounterMap, destMarketCounterMap, destModel, marketDestModel, marketDestUserModel,
+//      countryUserModel, marketUserModel, marketModel, mdpModel)
+//    cmuModel
+//  }
 }

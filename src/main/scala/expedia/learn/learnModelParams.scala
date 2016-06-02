@@ -10,6 +10,7 @@ import breeze.linalg.DenseVector
 import scala.util.Random
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.stats._
+import dk.gp.util.saveObject
 
 object learnModelParams extends LazyLogging {
 
@@ -21,15 +22,19 @@ object learnModelParams extends LazyLogging {
 
       val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
 
-      if (params.continentIdMatcher.getOrElse(0).equals(3)) trainHyperParams(params, initialHyperParamsMap,trainDS, segmentTestClicks)
+      if (params.continentIdMatcher.getOrElse(0).equals(3)) trainHyperParams(params, initialHyperParamsMap, trainDS, segmentTestClicks)
       else params
     }
-    //  saveObject(bestHyperParamsList, "target/hyperParams_trained.kryo")
-    //  bestHyperParams.copy(prioritizedHyperParams = bestHyperParamsList)
+
+    val newModelHyperParams = CompoundHyperParams(bestModelHyperParamsList)
+    
+    val newHyperParamsMap = initialHyperParamsMap + "cmu" -> newModelHyperParams
+
+    saveObject(newHyperParamsMap, "target/hyperParamsMap_trained.kryo")
 
   }
 
-  private def trainHyperParams(initialHyperParams: SimpleHyperParams, modelHyperParamsMap: Map[String, CompoundHyperParams],trainDS: ExDataSource, testClicks: Seq[Click]): SimpleHyperParams = {
+  private def trainHyperParams(initialHyperParams: SimpleHyperParams, modelHyperParamsMap: Map[String, CompoundHyperParams], trainDS: ExDataSource, testClicks: Seq[Click]): SimpleHyperParams = {
     println("Train hyper params...")
     val modelBuilder = CmuModelBuilder2(trainDS, testClicks, modelHyperParamsMap)
 
@@ -52,10 +57,11 @@ object learnModelParams extends LazyLogging {
 
           if (currMapk > bestMapk) {
             logger.info("Best!!!, param=%s, curr=%.8f ,best=%.8f, initial=%.8f".format(param, currMapk, bestMapk, initialMapk))
+
             bestMapk = currMapk
             bestHyperParams = currHyperParams
-          }
-          else  logger.info(" param=%s, curr=%.8f ,best=%.8f, initial=%.8f".format(param, currMapk, bestMapk, initialMapk))
+            println(bestHyperParams)
+          } else logger.info(" param=%s, curr=%.8f ,best=%.8f, initial=%.8f".format(param, currMapk, bestMapk, initialMapk))
 
         }
     }
@@ -66,7 +72,7 @@ object learnModelParams extends LazyLogging {
   private def computeMapk(hyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click], cmuModelBuilder: CmuModelBuilder2): Double = {
     logger.info("ComputeMPK")
 
-    val segmentCompoundHyperParams = CompoundHyperParams(testClicks, List(hyperParams))
+    val segmentCompoundHyperParams = CompoundHyperParams(List(hyperParams))
 
     val top5predictions = cmuModelBuilder.create(trainDS, testClicks, segmentCompoundHyperParams).predictTop5(testClicks)
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)

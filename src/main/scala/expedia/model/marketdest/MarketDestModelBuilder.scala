@@ -2,7 +2,6 @@ package expedia.model.marketdest
 
 import scala.collection.Seq
 import scala.collection.mutable
-
 import breeze.linalg.InjectNumericOps
 import breeze.numerics.log
 import expedia.CompoundHyperParams
@@ -21,10 +20,11 @@ import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
+import expedia.HyperParamsService
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                   destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
-                                  hyperParams: CompoundHyperParams, timeDecayService: TimeDecayService) {
+                                   hyperParamsService: HyperParamsService,hyperParams:CompoundHyperParams, timeDecayService: TimeDecayService) {
 
   private val segmentSizeMap: Map[(Int, Int), Int] = testClicks.groupBy { c => (c.marketId, c.destId) }.map { x => x._1 -> x._2.size }
 
@@ -41,11 +41,11 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 
     if (clusterHistByMarketDest.getMap.contains((click.marketId, click.destId))) {
 
-      val destMarketCountsThreshold1 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThreshold1", click.marketId).toFloat
-      val destMarketCountsThresholdClickWeight1 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThresholdClickWeight1", click.marketId).toFloat
-      val destMarketCountsThreshold2 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThreshold2", click.marketId).toFloat
-      val destMarketCountsThresholdClickWeight2 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThresholdClickWeight2", click.marketId).toFloat
-      val destMarketCountsDefaultWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsDefaultWeight", click.marketId).toFloat
+      val destMarketCountsThreshold1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThreshold1", click.marketId,hyperParams).toFloat
+      val destMarketCountsThresholdClickWeight1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThresholdClickWeight1", click.marketId,hyperParams).toFloat
+      val destMarketCountsThreshold2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThreshold2", click.marketId,hyperParams).toFloat
+      val destMarketCountsThresholdClickWeight2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsThresholdClickWeight2", click.marketId,hyperParams).toFloat
+      val destMarketCountsDefaultWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.destMarketCountsDefaultWeight", click.marketId,hyperParams).toFloat
 
       val marketCounts = marketCounterMap.getOrElse(click.marketId, 0)
       val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
@@ -56,7 +56,7 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
         else destMarketCountsDefaultWeight
 
       val w = timeDecayService.getDecayForMarketId(click.dateTime, click.marketId)
-      val isBookingWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.isBookingWeight", click.marketId).toFloat
+      val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.isBookingWeight", click.marketId,hyperParams).toFloat
 
       if (click.isBooking == 1) clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * isBookingWeight)
       else clusterHistByMarketDest.add((click.marketId, click.destId), click.cluster, value = w * clickWeight)
@@ -71,11 +71,11 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
     clusterHistByMarketDest.getMap.foreach {
       case ((marketId, destId), clusterCounts) =>
 
-        val beta1 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta1", marketId).toFloat
-        val beta2 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta2", marketId).toFloat
-        val beta3 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta3", marketId).toFloat
-        val beta4 = hyperParams.getParamValueForMarketId("expedia.model.marketdest.beta4", marketId).toFloat
-        val segmentSizeWeight = hyperParams.getParamValueForMarketId("expedia.model.marketdest.segmentSizeWeight", marketId).toFloat
+        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.beta1", marketId,hyperParams).toFloat
+        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.beta2", marketId,hyperParams).toFloat
+        val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.beta3", marketId,hyperParams).toFloat
+        val beta4 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.beta4", marketId,hyperParams).toFloat
+        val segmentSizeWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketdest.segmentSizeWeight", marketId,hyperParams).toFloat
 
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
@@ -102,53 +102,53 @@ case class MarketDestModelBuilder(testClicks: Seq[Click],
 }
 
 object MarketDestModelBuilder {
-  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestModel = {
-
-    /**
-     * Create counters
-     */
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-    def onClickCounters(click: Click) = {
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-    }
-    trainDatasource.foreach { click => onClickCounters(click) }
-
-    val timeDecayService = TimeDecayService(testClicks, hyperParams)
-
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
-    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
-
-    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
-
-    def onClick(click: Click) = {
-      destModelBuilder.processCluster(click)
-      marketModelBuilder.processCluster(click)
-      countryModelBuilder.processCluster(click)
-      marketDestModelBuilder.processCluster(click)
-      destClusterModelBuilder.processCluster(click)
-      marketDestClusterModelBuilder.processCluster(click)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
-    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
-
-    val destModel = destModelBuilder.create(countryModel, destClusterModel)
-
-    val marketModel = marketModelBuilder.create(countryModel)
-    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
-    val marketDestModel = marketDestModelBuilder.create(
-      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel, marketDestClusterModel)
-
-    marketDestModel
-  }
+//  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestModel = {
+//
+//    /**
+//     * Create counters
+//     */
+//    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+//    val destCounterMap = CounterMap[Int]()
+//    val marketCounterMap = CounterMap[Int]()
+//    def onClickCounters(click: Click) = {
+//      if (click.isBooking == 1) {
+//        destMarketCounterMap.add((click.destId, click.marketId))
+//        destCounterMap.add(click.destId)
+//        marketCounterMap.add(click.marketId)
+//      }
+//    }
+//    trainDatasource.foreach { click => onClickCounters(click) }
+//
+//    val timeDecayService = TimeDecayService(testClicks, hyperParams)
+//
+//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val destModelBuilder = DestModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val marketDestModelBuilder = MarketDestModelBuilder(testClicks, destMarketCounterMap, destCounterMap, marketCounterMap, hyperParams, timeDecayService)
+//
+//    val destClusterModelBuilder = DestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+//    val marketDestClusterModelBuilder = MarketDestClusterModelBuilder(testClicks, hyperParams, timeDecayService)
+//
+//    def onClick(click: Click) = {
+//      destModelBuilder.processCluster(click)
+//      marketModelBuilder.processCluster(click)
+//      countryModelBuilder.processCluster(click)
+//      marketDestModelBuilder.processCluster(click)
+//      destClusterModelBuilder.processCluster(click)
+//      marketDestClusterModelBuilder.processCluster(click)
+//    }
+//    trainDatasource.foreach { click => onClick(click) }
+//
+//    val countryModel = countryModelBuilder.create()
+//    val destClusterModel = destClusterModelBuilder.create(countryModel, null)
+//
+//    val destModel = destModelBuilder.create(countryModel, destClusterModel)
+//
+//    val marketModel = marketModelBuilder.create(countryModel)
+//    val marketDestClusterModel = marketDestClusterModelBuilder.create(countryModel, marketModel)
+//    val marketDestModel = marketDestModelBuilder.create(
+//      destModel, marketModel, countryModel, destMarketCounterMap, destCounterMap, marketCounterMap, destClusterModel, marketDestClusterModel)
+//
+//    marketDestModel
+//  }
 }
