@@ -31,6 +31,7 @@ import expedia.model.marketmodel.MarketModelBuilder
 import dk.gp.util.saveObject
 import dk.gp.util.loadObject
 import expedia.model.marketuserloc.MarketUserLocModelBuilder
+import expedia.model.cmu.CmuModelBuilder2
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -58,8 +59,8 @@ object AccuracySingleModelApp extends LazyLogging {
     //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
     //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() .filter(click =>  click.continentId==3)
 
-    val model = MarketUserLocModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
-    // val model = DistGpModel.build()
+    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+  val model2 = CmuModelBuilder2(trainDS, testClicks, hyperParams).create(trainDS, testClicks, hyperParams)    
 
     val k = 5
     val top5predictions = model.predictTop5(testClicks)

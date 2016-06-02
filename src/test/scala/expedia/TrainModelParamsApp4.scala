@@ -41,7 +41,10 @@ object TrainModelParamsApp4 extends LazyLogging {
 
     (0 to 100).foldLeft(initialHyperParams) { (bestHyperParams, i) =>
       logger.info("Training iteration=%d".format(i))
-      val bestHyperParamsList = bestHyperParams.prioritizedHyperParams.map(params => trainHyperParams(params, trainDS, testClicks))
+      val bestHyperParamsList = bestHyperParams.prioritizedHyperParams.map { params =>
+        if (params.continentIdMatcher.getOrElse(0).equals(3)) trainHyperParams(params, trainDS, testClicks)
+        else params
+      }
       saveObject(bestHyperParamsList, "target/hyperParams_trained.kryo")
       bestHyperParams.copy(prioritizedHyperParams = bestHyperParamsList)
     }
@@ -82,6 +85,7 @@ object TrainModelParamsApp4 extends LazyLogging {
   }
 
   private def computeMapk(hyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click]): Double = {
+    logger.info("ComputeMPK")
     val segmentTestClicks = testClicks.filter { click => hyperParams.containsClick(click.continentId, click.countryId) }
     val segmentCompoundHyperParams = CompoundHyperParams(segmentTestClicks, List(hyperParams))
 
