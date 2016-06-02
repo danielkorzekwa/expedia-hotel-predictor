@@ -29,7 +29,7 @@ object LocMarketDistPredictAndSaveApp extends LazyLogging {
 
       val predOutputFile = "c:/perforce/daniel/ex/segments/loc_market/more_than_100/predictions/predicted_clusters_loc_%d_market_%d.csv".format(userLoc, marketId)
 
-      if (!(userLoc==36643 && marketId==12) && marketSize < 5000 && !(new File(predOutputFile).exists())) {
+      if (!(userLoc == 36643 && marketId == 12) && marketSize < 5000 && !(new File(predOutputFile).exists())) {
 
         val trainDS = ExCSVDataSource(dsName = "trainDS", "c:/perforce/daniel/ex/segments/loc_market/more_than_100/train_2013_loc_%d_market_%d.csv".format(userLoc, marketId))
         val trainClicks = trainDS.getAllClicks()
@@ -37,22 +37,24 @@ object LocMarketDistPredictAndSaveApp extends LazyLogging {
         val testDS = ExCSVDataSource(dsName = "testDS", "c:/perforce/daniel/ex/segments/loc_market/more_than_100/train_2014_booked_only_loc_%d_market_%d.csv".format(userLoc, marketId))
         val testClicks = testDS.getAllClicks()
 
-        val trainDataX = DenseVector(trainClicks.map(c => c.dist).toArray).toDenseMatrix.t
-        val trainDataY = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
+        if (testClicks.size > 0) {
+          val trainDataX = DenseVector(trainClicks.map(c => c.dist).toArray).toDenseMatrix.t
+          val trainDataY = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
 
-        val testDataX = DenseVector(testClicks.map(c => c.dist).toArray).toDenseMatrix.t
+          val testDataX = DenseVector(testClicks.map(c => c.dist).toArray).toDenseMatrix.t
 
-        val model = RankGprModel(trainDataX, trainDataY, covFunc, covFuncParams, noiseLogStdDev)
+          val model = RankGprModel(trainDataX, trainDataY, covFunc, covFuncParams, noiseLogStdDev)
 
-        val gpPredict = RankGprPredict(model)
+          val gpPredict = RankGprPredict(model)
 
-        val predictedClustersAll = gpPredict.predict(testDataX)
-        val predictedClusters = predictedClustersAll(::, 0 until 5.min(predictedClustersAll.cols))
+          val predictedClustersAll = gpPredict.predict(testDataX)
+          val predictedClusters = predictedClustersAll(::, 0 until 5.min(predictedClustersAll.cols))
 
-        val outputPrediction = DenseMatrix.horzcat(testDataX, predictedClusters)
-        csvwrite(predOutputFile, outputPrediction, header = "dist,r1,r2,r3,r4,r5")
+          val outputPrediction = DenseMatrix.horzcat(testDataX, predictedClusters)
+          csvwrite(predOutputFile, outputPrediction, header = "dist,r1,r2,r3,r4,r5")
 
-        outputPrediction
+          outputPrediction
+        }
       }
     }.toList
 

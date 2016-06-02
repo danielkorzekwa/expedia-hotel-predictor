@@ -21,6 +21,7 @@ object combineClusterPredictions extends LazyLogging {
             distSvmPred: DenseMatrix[Double], distGPPred: DenseMatrix[Double]): DenseMatrix[Double] = {
 
     val i = new AtomicInteger(0)
+    
     val top5ClustersSeq = (0 until clusterDistPred.rows).map { r =>
       val clusterDistPredVec = clusterDistPred(r, ::).t
       val marketDestPredVec = marketDestPred(r, ::).t
@@ -70,11 +71,11 @@ object combineClusterPredictions extends LazyLogging {
       }
 
       //distGP
+      val maxGPProb = max(distGPPredVec(0 to 4))
       (0 until 5).foreach { i =>
         val vote = distGPVotes(i)
         val worseVote = prioritizedVotes.find { otherVote =>
-          otherVote._1 == 2 && vote._2 > 0 && otherVote._2 < 0.7885
-
+         otherVote._1 == 2 && vote._2 > 0.02 && otherVote._2 < 0.7885
         }
 
         if (worseVote.isDefined) {

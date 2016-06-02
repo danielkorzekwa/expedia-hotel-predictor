@@ -22,36 +22,22 @@ import scala.collection._
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * @param rankedClustersByLocMarketDest  //key - (userLoc,market,destId), val Map[dist,rankedClusters]]
+ * @param clusterProbsByLocMarketDest  //key - (userLoc,market,destId), val Map[dist,clusterProbs]]
  */
-case class DistGpModel(distGPModelMap: Map[(Int, Int, Int), Option[RankGprPredict]],rankedClustersByLocMarketDest:Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Int]]]) extends ClusterModel {
+case class DistGpModel(clusterProbsByLocMarketDest: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Double]]]) extends ClusterModel {
 
- // logger.info("Number of GP models:" + distGPModelMap.values.filter(m => m.isDefined).size)
- val counter = new AtomicInteger(0)
+  // logger.info("Number of GP models:" + distGPModelMap.values.filter(m => m.isDefined).size)
+  val counter = new AtomicInteger(0)
   def predict(click: Click): DenseVector[Float] = {
     val key = (click.userLoc, click.marketId, click.destId)
-//    if (click.dist > -1 && distGPModelMap.contains(key) && distGPModelMap(key).isDefined) {
-//
-//      val rankGPPredict = distGPModelMap(key).get
-//      val predictedRanks = rankGPPredict.predict(DenseVector(click.dist))
-//
-//      val probVector = DenseVector.fill(100)(0f)
-//      predictedRanks.toArray.zipWithIndex.foreach { case (cluster, index) => probVector(cluster.toInt) = (100f - index) }
-//      normaliseMutable(probVector)
-//      probVector
-//    } else DenseVector.fill(100)(0f)
-    
-    
-     if (click.dist > -1 && rankedClustersByLocMarketDest.contains(key) && rankedClustersByLocMarketDest(key).contains(click.dist)) {
-  println("DistGpModel:" + counter.incrementAndGet())
-       
-      val rankedClusterByDistMap = rankedClustersByLocMarketDest(key)
-      val predictedRanks = rankedClusterByDistMap(click.dist)
 
-      val probVector = DenseVector.fill(100)(0f)
-      predictedRanks.toArray.zipWithIndex.foreach { case (cluster, index) => probVector(cluster.toInt) = (100f - index) }
-      normaliseMutable(probVector)
-      probVector
+    if (click.dist > -1 && clusterProbsByLocMarketDest.contains(key) && clusterProbsByLocMarketDest(key).contains(click.dist)) {
+      println("DistGpModel:" + counter.incrementAndGet())
+
+      val clusterProbsByDistMap = clusterProbsByLocMarketDest(key)
+      val predictedClusterProbs = clusterProbsByDistMap(click.dist).map(_.toFloat)
+
+      predictedClusterProbs
     } else DenseVector.fill(100)(0f)
   }
 }
@@ -62,27 +48,26 @@ object DistGpModel extends LazyLogging {
     val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_100/userLocMarketList.csv"), skipLines = 1)
 
     //key - (userLoc,market,destId), val Map[dist,rankedClusters]]
-    val rankedClustersByLocMarketDest: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Int]]] = (0 until userLocMarketList.rows).
+    val clusterProbsByLocMarketDest: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Double]]] = (0 until userLocMarketList.rows).
 
       map { row =>
         val userLoc = userLocMarketList(row, 0).toInt
         val marketId = userLocMarketList(row, 1).toInt
         val destId = userLocMarketList(row, 2).toInt
-        val modelFile =  new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_100/predictions/predicted_clusters_loc_%d_market_%d_dest_%d.csv.csv".format(userLoc, marketId, destId))
-        
-        if(modelFile.exists()) {
-        val rankedClustersByDistData = csvread(
-        modelFile, skipLines = 1)
+        val modelFile = new File("c:/perforce/daniel/ex/segments/loc_market_dest/more_than_100/predictions/predicted_clusters_loc_%d_market_%d_dest_%d.csv.csv".format(userLoc, marketId, destId))
 
-        val distPredictionMap = createRankedClustersByDistMap(rankedClustersByDistData)
+        if (modelFile.exists()) {
+          val clusterProbsByDistData = csvread(
+            modelFile, skipLines = 1)
 
-        (userLoc, marketId, destId) -> distPredictionMap
-        } else (userLoc, marketId, destId) -> Map[Double,DenseVector[Int]]()
-        
+          val distPredictionMap = createClusterProbsByDistMap(clusterProbsByDistData)
+
+          (userLoc, marketId, destId) -> distPredictionMap
+        } else (userLoc, marketId, destId) -> Map[Double, DenseVector[Double]]()
+
       }.toMap
 
-    DistGpModel(null,rankedClustersByLocMarketDest)
+    DistGpModel(clusterProbsByLocMarketDest)
   }
 
- 
 }

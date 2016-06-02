@@ -5,7 +5,7 @@ import scala.collection.mutable
 
 import expedia.data.Click
 
-case class CompoundHyperParams(testClicks: Seq[Click]) {
+case class CompoundHyperParams(testClicks: Seq[Click], prioritizedHyperParams: Seq[SimpleHyperParams]) {
 
   private val defaultHyperParams = SimpleHyperParams.createParamsCMU3()
   private val cont3Params = SimpleHyperParams.createParamsCont3()
@@ -30,27 +30,45 @@ case class CompoundHyperParams(testClicks: Seq[Click]) {
   testClicks.foreach(click => continentByDestId += click.destId -> click.continentId)
 
   def getParamValueForCountryId(param: String, countryId: Int): Double = {
-    if (countryId == 198) country198.getParamValue(param)
-    else if (continentByCountry(countryId) == 3) cont3Params.getParamValue(param)
-    else if (continentByCountry(countryId) == 4) cont4Params.getParamValue(param)
-    else if (continentByCountry(countryId) == 6) cont6Params.getParamValue(param)
-    else defaultHyperParams.getParamValue(param)
+    val continentId = continentByCountry(countryId)
+    val hyperParams = prioritizedHyperParams.find { params => params.containsClick(continentId, countryId) }
+    hyperParams.get.getParamValue(param)
+
   }
 
   def getParamValueForMarketId(param: String, marketId: Int): Double = {
-    if (countryByMarket(marketId) == 198) country198.getParamValue(param)
-    else if (continentByMarket(marketId) == 3) cont3Params.getParamValue(param)
-    else if (continentByMarket(marketId) == 4) cont4Params.getParamValue(param)
-    else if (continentByMarket(marketId) == 6) cont6Params.getParamValue(param)
-    else defaultHyperParams.getParamValue(param)
+
+    val countryId = countryByMarket(marketId)
+    val continentId = continentByCountry(countryId)
+
+    val hyperParams = prioritizedHyperParams.find { params => params.containsClick(continentId, countryId) }
+    hyperParams.get.getParamValue(param)
+
   }
 
   def getParamValueForDestId(param: String, destId: Int): Double = {
-    if (countryByDest(destId) == 198) country198.getParamValue(param)
-    else if (continentByDestId(destId) == 3) cont3Params.getParamValue(param)
-    else if (continentByDestId(destId) == 4) cont4Params.getParamValue(param)
-    else if (continentByDestId(destId) == 6) cont6Params.getParamValue(param)
-    else defaultHyperParams.getParamValue(param)
+
+    val countryId = countryByDest(destId)
+    val continentId = continentByCountry(countryId)
+
+    val hyperParams = prioritizedHyperParams.find { params => params.containsClick(continentId, countryId) }
+    hyperParams.get.getParamValue(param)
+
   }
+
+}
+
+object CompoundHyperParams {
+
+//  def getPrioritizedHyperParams(): Seq[SimpleHyperParams] = {
+//    val prioritizedHyperParams = List(
+//      SimpleHyperParams.createParamsCont2Country198(),
+//      SimpleHyperParams.createParamsCont3(),
+//      SimpleHyperParams.createParamsCont4(),
+//      SimpleHyperParams.createParamsCont6(),
+//      SimpleHyperParams.createParamsCMU3())
+//
+//    prioritizedHyperParams
+//  }
 
 }

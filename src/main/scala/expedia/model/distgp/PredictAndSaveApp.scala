@@ -37,27 +37,29 @@ object PredictAndSaveApp extends LazyLogging {
         val testDS = ExCSVDataSource(dsName = "testDS", "c:/perforce/daniel/ex/segments/loc_market_dest/more_than_100/train_2014_booked_only_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId))
         val testClicks = testDS.getAllClicks()
 
-        val trainDataX = DenseVector(trainClicks.map(c => c.dist).toArray).toDenseMatrix.t
-        val trainDataY = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
+        if (testClicks.size > 0) {
 
-        val testDataX = DenseVector(testClicks.map(c => c.dist).toArray).toDenseMatrix.t
+          val trainDataX = DenseVector(trainClicks.map(c => c.dist).toArray).toDenseMatrix.t
+          val trainDataY = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
 
-        val model = RankGprModel(trainDataX, trainDataY, covFunc, covFuncParams, noiseLogStdDev)
+          val testDataX = DenseVector(testClicks.map(c => c.dist).toArray).toDenseMatrix.t
 
-        val gpPredict = RankGprPredict(model)
+          val model = RankGprModel(trainDataX, trainDataY, covFunc, covFuncParams, noiseLogStdDev)
 
-        val predictedProbs = gpPredict.predict(testDataX)
+          val gpPredict = RankGprPredict(model)
 
-        val probVector = predictedProbs(*, ::).map { predictedProbs =>
-          val probsVec = DenseVector.fill(100)(0f)
-          model.classes.zipWithIndex.foreach { case (c, i) => probsVec(c.toInt) = predictedProbs(i).toFloat }
-          probsVec
+          val predictedProbs = gpPredict.predict(testDataX)
+          val probVector = predictedProbs(*, ::).map { predictedProbs =>
+            val probsVec = DenseVector.fill(100)(0d)
+            model.classes.zipWithIndex.foreach { case (c, i) => probsVec(c.toInt) = predictedProbs(i) }
+            probsVec
+          }
+
+          val outputPrediction = DenseMatrix.horzcat(testDataX, probVector)
+          csvwrite(predOutputFile, outputPrediction, header = "dist,p0,p1,...,p99")
+
+          outputPrediction
         }
-
-        val outputPrediction = DenseMatrix.horzcat(testDataX, predictedProbs)
-        csvwrite(predOutputFile, outputPrediction, header = "dist,p0,p1,...,p99")
-
-        outputPrediction
       }
     }.toList
 

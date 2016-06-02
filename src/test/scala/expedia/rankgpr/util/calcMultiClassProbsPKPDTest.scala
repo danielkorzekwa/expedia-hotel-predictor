@@ -1,7 +1,7 @@
 package expedia.rankgpr.util
 
 import org.junit._
-import Assert._
+import org.junit.Assert._
 import breeze.linalg.DenseMatrix
 import dk.bayes.math.linear.isIdentical
 import breeze.linalg.DenseVector

@@ -15,7 +15,7 @@ object createRankedClustersByDistMap {
     (0 until rankedClustersByDistData.rows).foreach { i =>
       val row = rankedClustersByDistData(i, ::).t
       val dist = row(0)
-      val rankedClusters = row(1 until row.size).map(x => x.toInt)
+      val rankedClusters = row(1 to 5.min(row.size)).map(x => x.toInt)
 
       rankedClustersByDisMap.update(dist, rankedClusters)
     }
