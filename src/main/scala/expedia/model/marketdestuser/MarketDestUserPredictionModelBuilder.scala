@@ -2,29 +2,23 @@ package expedia.model.marketdestuser
 
 import scala.collection.Seq
 import scala.collection.mutable
+
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg.InjectNumericOps
-import expedia.data.Click
-import expedia.data.ExDataSource
-import expedia.model.country.CountryModel
-import expedia.model.country.CountryModelBuilder
-import expedia.model.countryuser.CountryUserModel
-import expedia.model.countryuser.CountryUserModelBuilder
-import expedia.model.dest.DestModelBuilder
-import expedia.model.marketdest.MarketDestModel
-import expedia.model.marketdest.MarketDestModelBuilder
-import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
-import expedia.model.marketuser.MarketUserModel
-import expedia.model.marketuser.MarketUserModelBuilder
-import expedia.stats.CounterMap
-import expedia.stats.MulticlassHistByKey
-import expedia.util.TimeDecayService
-import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
-import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.CompoundHyperParams
 import expedia.CompoundHyperParams
 import expedia.HyperParamsService
+import expedia.data.Click
+import expedia.data.ExDataSource
+import expedia.model.country.CountryModel
+import expedia.model.countryuser.CountryUserModel
+import expedia.model.marketdest.MarketDestModel
+import expedia.model.marketmodel.MarketModel
+import expedia.model.marketuser.MarketUserModel
+import expedia.stats.CounterMap
+import expedia.stats.MulticlassHistByKey
+import expedia.util.TimeDecayService
 /**
  * @param trainData mat[userId,dest,cluster]
  */

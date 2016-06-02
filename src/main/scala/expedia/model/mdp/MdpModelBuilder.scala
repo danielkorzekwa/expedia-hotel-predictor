@@ -3,20 +3,16 @@ package expedia.model.mdp
 import breeze.linalg.InjectNumericOps
 import breeze.numerics.log
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
-import expedia.model.country.CountryModelBuilder
 import expedia.model.dest.DestModel
-import expedia.model.dest.DestModelBuilder
 import expedia.model.marketdest.MarketDestModel
-import expedia.model.marketdest.MarketDestModelBuilder
 import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
-import expedia.HyperParamsService
 
 case class MdpModelBuilder(testClicks: Seq[Click],
                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],

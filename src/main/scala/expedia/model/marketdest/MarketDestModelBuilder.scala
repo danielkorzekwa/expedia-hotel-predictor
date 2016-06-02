@@ -2,25 +2,21 @@ package expedia.model.marketdest
 
 import scala.collection.Seq
 import scala.collection.mutable
+
 import breeze.linalg.InjectNumericOps
 import breeze.numerics.log
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
-import expedia.model.country.CountryModelBuilder
 import expedia.model.dest.DestModel
-import expedia.model.dest.DestModelBuilder
 import expedia.model.destcluster.DestClusterModel
-import expedia.model.destcluster.DestClusterModelBuilder
 import expedia.model.marketdestcluster.MarketDestClusterModel
-import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
 import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
-import expedia.HyperParamsService
 case class MarketDestModelBuilder(testClicks: Seq[Click],
                                   destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                                   destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],

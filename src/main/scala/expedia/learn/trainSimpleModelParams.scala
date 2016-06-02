@@ -30,7 +30,7 @@ object trainSimpleModelParams extends LazyLogging {
         case (param, paramIndex) =>
 
           val bestParamValue = bestHyperParams.getParamValue(param)
-          (-1 to 1).filter(x => x != 0).foreach { i =>
+          (-3 to 3).filter(x => x != 0).foreach { i =>
             val currParamValue = bestParamValue + i * bestParamValue * 0.05
             val currHyperParams = bestHyperParams.withParamValue(param, currParamValue)
             val currMapk = computeMapk(currHyperParams, trainDS, testClicks, modelBuilder)

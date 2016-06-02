@@ -38,7 +38,7 @@ case class TimeDecayService(testClicks: Seq[Click], hyperParamsService: HyperPar
     getDecay(dateTime, timeDecay)
   }
 
-  private def getDecay(dateTime: Date, timeDecay: Float): Float = {
+  def getDecay(dateTime: Date, timeDecay: Float): Float = {
     val clickAge = (testTime - dateTime.getTime) / MONTH
     val w = exp(timeDecay * clickAge).toFloat
     w

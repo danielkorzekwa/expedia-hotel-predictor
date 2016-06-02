@@ -1,22 +1,23 @@
 package expedia.model.marketdestcluster
 
 import java.io.File
+
 import scala.collection.Seq
 import scala.collection.mutable
+
 import com.typesafe.scalalogging.slf4j.LazyLogging
+
 import breeze.linalg.InjectNumericOps
 import breeze.linalg.csvread
 import expedia.CompoundHyperParams
+import expedia.HyperParamsService
 import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.country.CountryModel
-import expedia.model.country.CountryModelBuilder
 import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
-import expedia.HyperParamsService
 
 case class MarketDestClusterModelBuilder(testClicks: Seq[Click],  hyperParamsService: HyperParamsService,hyperParams:CompoundHyperParams, timeDecayService: TimeDecayService) extends LazyLogging {
 

@@ -8,11 +8,8 @@ import expedia.CompoundHyperParams
 import expedia.HyperParamsService
 import expedia.data.Click
 import expedia.data.ExDataSource
-import expedia.model.country.CountryModelBuilder
 import expedia.model.countryuser.CountryUserModel
-import expedia.model.countryuser.CountryUserModelBuilder
 import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
 
