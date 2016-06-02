@@ -24,14 +24,14 @@ object trainSimpleModelParams extends LazyLogging {
     var bestHyperParams = initialHyperParams
 
     val params = initialHyperParams.getParams() //.filter(p => p.startsWith("expedia.model.marketuser.beta3") || p.startsWith("expedia.model.cmu."))
-
+    val rand = new Random()
     for (i <- 1 to 2) {
       Random.shuffle(params).zipWithIndex.foreach {
         case (param, paramIndex) =>
 
           val bestParamValue = bestHyperParams.getParamValue(param)
           (-3 to 3).filter(x => x != 0).foreach { i =>
-            val currParamValue = bestParamValue + i * bestParamValue * 0.05
+            val currParamValue = bestParamValue + i * bestParamValue * 0.05 * (1 + rand.nextInt(10))
             val currHyperParams = bestHyperParams.withParamValue(param, currParamValue)
             val currMapk = computeMapk(currHyperParams, trainDS, testClicks, modelBuilder)
 
@@ -39,7 +39,7 @@ object trainSimpleModelParams extends LazyLogging {
               logger.info("Best!!!, param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex + 1, params.size, currMapk, bestMapk, initialMapk))
               bestMapk = currMapk
               bestHyperParams = currHyperParams
-            } else logger.info(" param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex+1, params.size, currMapk, bestMapk, initialMapk))
+            } else logger.info(" param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex + 1, params.size, currMapk, bestMapk, initialMapk))
 
           }
       }

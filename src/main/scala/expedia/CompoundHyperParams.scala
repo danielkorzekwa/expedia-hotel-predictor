@@ -24,6 +24,9 @@ case class CompoundHyperParams(prioritizedHyperParams: Seq[SimpleHyperParams]) {
 
   def getParamValueForContAndCountry(param: String, continentId:Int,countryId: Int): Double = {
     val hyperParams = prioritizedHyperParams.find { params => params.containsClick(continentId, countryId) }
+   if(hyperParams.isEmpty) {
+     println("error")
+   }
     hyperParams.get.getParamValue(param)
 
   }

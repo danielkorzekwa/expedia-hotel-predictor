@@ -48,9 +48,10 @@ object learnModelParams extends LazyLogging {
 
     val newModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
 
-      if (params.continentIdMatcher.getOrElse(0).equals(3)) {
+      if (true || params.continentIdMatcher.getOrElse(0).equals(3)) {
         val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
-        val modelBuilder = modelBuilderFactory.build(trainDS, testClicks, hyperParamsMap)
+      
+        val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)
         trainSimpleModelParams(modelBuilder, params, trainDS, segmentTestClicks)
       } else params
     }

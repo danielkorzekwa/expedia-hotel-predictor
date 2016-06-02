@@ -11,7 +11,7 @@ object predictClustersCMU extends LazyLogging {
   /**
    * @return Top 5 predictions for four models[clusterDist,marketDest,clusterDistProx]. ClusterDist: [p1,p2,p3,p4,p5,c1,c2,c3,c4,c5]
    */
-  def apply(trainDS: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): 
+  def apply(trainDS: ExDataSource, testClicks: Seq[Click],  hyperParamsMap: CompoundHyperParamsMap): 
   Tuple5[DenseMatrix[Double], DenseMatrix[Double], DenseMatrix[Double],DenseMatrix[Double],DenseMatrix[Double]] = {
 
 //    /**
