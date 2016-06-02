@@ -16,26 +16,26 @@ object learnModelParams extends LazyLogging {
 
   def apply(trainDS: ExDataSource, testClicks: Seq[Click], initialHyperParamsMap: Map[String, CompoundHyperParams]) = {
 
-    val modelHyperParams: CompoundHyperParams = initialHyperParamsMap("cmu")
+    (0 until 100).foldLeft(initialHyperParamsMap) { (bestHyperParams, i) =>
+      logger.info("Learning iter=%d".format(i))
+      val modelHyperParams: CompoundHyperParams = bestHyperParams("cmu")
 
-    val bestModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
+      val bestModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
+        val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
+        if (params.continentIdMatcher.getOrElse(0).equals(3)) trainHyperParams(params, initialHyperParamsMap, trainDS, segmentTestClicks)
+        else params
+      }
 
-      val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
+      val newModelHyperParams = modelHyperParams.copy(prioritizedHyperParams=bestModelHyperParamsList)
+      val newHyperParamsMap = bestHyperParams + ("cmu" -> newModelHyperParams)
 
-      if (params.continentIdMatcher.getOrElse(0).equals(3)) trainHyperParams(params, initialHyperParamsMap, trainDS, segmentTestClicks)
-      else params
+      saveObject(newHyperParamsMap, "target/hyperParamsMap_trained.kryo")
+      newHyperParamsMap
     }
-
-    val newModelHyperParams = CompoundHyperParams(bestModelHyperParamsList)
-    
-    val newHyperParamsMap = initialHyperParamsMap + "cmu" -> newModelHyperParams
-
-    saveObject(newHyperParamsMap, "target/hyperParamsMap_trained.kryo")
 
   }
 
   private def trainHyperParams(initialHyperParams: SimpleHyperParams, modelHyperParamsMap: Map[String, CompoundHyperParams], trainDS: ExDataSource, testClicks: Seq[Click]): SimpleHyperParams = {
-    println("Train hyper params...")
     val modelBuilder = CmuModelBuilder2(trainDS, testClicks, modelHyperParamsMap)
 
     val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks, modelBuilder)
@@ -51,17 +51,17 @@ object learnModelParams extends LazyLogging {
         (-3 to 3).filter(x => x != 0).foreach { i =>
           val currParamValue = bestParamValue + i * bestParamValue * 0.05
           //  logger.info("Learning param=%s %d/%d, bestValue/currValue=%.4f/%.4f".format(param, paramIndex, params.size, bestParamValue, currParamValue))
-          val currHyperParams = bestHyperParams.copy(param, currParamValue)
+          val currHyperParams = bestHyperParams.withParamValue(param, currParamValue)
 
           val currMapk = computeMapk(currHyperParams, trainDS, testClicks, modelBuilder)
 
           if (currMapk > bestMapk) {
-            logger.info("Best!!!, param=%s, curr=%.8f ,best=%.8f, initial=%.8f".format(param, currMapk, bestMapk, initialMapk))
+            logger.info("Best!!!, param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param,paramIndex+1, params.size, currMapk, bestMapk, initialMapk))
 
             bestMapk = currMapk
             bestHyperParams = currHyperParams
             println(bestHyperParams)
-          } else logger.info(" param=%s, curr=%.8f ,best=%.8f, initial=%.8f".format(param, currMapk, bestMapk, initialMapk))
+          } else logger.info(" param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex, params.size,currMapk, bestMapk, initialMapk))
 
         }
     }

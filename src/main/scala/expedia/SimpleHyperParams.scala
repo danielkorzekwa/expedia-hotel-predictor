@@ -6,9 +6,9 @@ case class SimpleHyperParams(paramsMap: Map[String, Double], continentIdMatcher:
 
   def getParamValue(param: String): Double = paramsMap(param)
 
-  def copy(param: String, newValue: Double): SimpleHyperParams = {
+  def withParamValue(param: String, newValue: Double): SimpleHyperParams = {
     val newParamMap = paramsMap + (param -> newValue)
-    SimpleHyperParams(newParamMap)
+   this.copy(paramsMap=newParamMap)
   }
 
   def containsClick(contId: Int, countryId: Int): Boolean = {

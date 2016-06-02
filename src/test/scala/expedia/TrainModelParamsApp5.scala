@@ -30,16 +30,11 @@ object TrainModelParamsApp5 extends LazyLogging {
     val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
 
-    //  val hyperParamsListFromDisk = loadObject[List[SimpleHyperParams]]("c:/perforce/daniel/ex/hyperparams/hyperParams_best_020616_test14.kryo")
-    val hyperParams = CompoundHyperParams.createHyperParamsByModel()
+    val hyperParams = loadObject[Map[String, CompoundHyperParams]]("target/hyperParamsMap_trained.kryo")
 
     learnModelParams(trainDS, testClicks, hyperParams)
 
     logger.info("Learning hyper params...done:" + (System.currentTimeMillis() - now) / 1000 + " sec.")
   }
-
- 
-
- 
 
 }
