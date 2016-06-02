@@ -21,10 +21,14 @@ object TrainModelParamsApp4 extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/all/train_2013.kryo"
+//    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/all/train_2013.kryo"
+//    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+//    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
+//    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+    
+      val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
 
     val hyperParamsListFromDisk = loadObject[List[SimpleHyperParams]]("c:/perforce/daniel/ex/hyperparams/hyperParams_best_020616_test14.kryo")

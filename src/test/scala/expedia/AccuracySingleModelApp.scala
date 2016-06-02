@@ -43,24 +43,25 @@ object AccuracySingleModelApp extends LazyLogging {
     // val marketIds = Set(675)
 
     def filterTrain(click: Click) = {
-    true//  (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086)
+      true //  (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086)
     }
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
 
-    val hyperParamsListFromDisk = loadObject[List[SimpleHyperParams]]("c:/perforce/daniel/ex/hyperparams/hyperParams_best_020616_test14.kryo")
-    val hyperParams = CompoundHyperParams(testClicks, hyperParamsListFromDisk)
+    val hyperParamsMap = CompoundHyperParams.createHyperParamsByModel().map { case (model, params) => model -> CompoundHyperParams(testClicks, params) }
 
     //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
     //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
     //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
     //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() .filter(click =>  click.continentId==3)
 
-    val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
-  val model2 = CmuModelBuilder2(trainDS, testClicks, hyperParams).create(trainDS, testClicks, hyperParams)    
+    // val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
+    val modelBuilder = CmuModelBuilder2(trainDS, testClicks, hyperParamsMap)
+    val modelParams = hyperParamsMap("cmu")
+    val model = modelBuilder.create(trainDS, testClicks, modelParams)
 
     val k = 5
     val top5predictions = model.predictTop5(testClicks)

@@ -117,7 +117,9 @@ case class CmuModelBuilder2(countryModel: CountryModel, destCounterMap: CounterM
 
 object CmuModelBuilder2 {
 
-  def apply(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CmuModelBuilder2 = {
+  def apply(trainDatasource: ExDataSource, testClicks: Seq[Click], modelHyperParamsMap: Map[String, CompoundHyperParams]): CmuModelBuilder2 = {
+   
+    val hyperParams = modelHyperParamsMap("default")
     /**
      * Create counters
      */
