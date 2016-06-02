@@ -51,25 +51,3 @@ case class MarketModelBuilder(testClicks: Seq[Click],  hyperParamsService: Hyper
   }
 }
 
-object MarketModelBuilder {
-//  def buildFromTrainingSet(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketModel = {
-//
-//    val timeDecayService = TimeDecayService(testClicks, hyperParams)
-//
-//    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParams, timeDecayService)
-//    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParams, timeDecayService)
-//
-//    def onClick(click: Click) = {
-//
-//      marketModelBuilder.processCluster(click)
-//      countryModelBuilder.processCluster(click)
-//    }
-//    trainDatasource.foreach { click => onClick(click) }
-//
-//    val countryModel = countryModelBuilder.create()
-//
-//    val model = marketModelBuilder.create(countryModel)
-//
-//    model
-//  }
-}

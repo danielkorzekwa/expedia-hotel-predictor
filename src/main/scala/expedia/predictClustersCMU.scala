@@ -5,23 +5,6 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.linalg.DenseMatrix
 import expedia.data.Click
 import expedia.data.ExDataSource
-import expedia.model.clusterdist.ClusterDistPredictionModelBuilder
-import expedia.model.clusterdistprox.ClusterDistProxModelBuilder
-import expedia.model.cmu.CmuModelBuilder
-import expedia.model.country.CountryModelBuilder
-import expedia.model.countryuser.CountryUserModelBuilder
-import expedia.model.dest.DestModelBuilder
-import expedia.model.destcluster.DestClusterModelBuilder
-import expedia.model.distgp.DistGpModel
-import expedia.model.distsvm.DistSvmModel
-import expedia.model.marketdest.MarketDestModelBuilder
-import expedia.model.marketdestcluster.MarketDestClusterModelBuilder
-import expedia.model.marketdestuser.MarketDestUserPredictionModelBuilder
-import expedia.model.marketmodel.MarketModelBuilder
-import expedia.model.marketuser.MarketUserModelBuilder
-import expedia.model.mdp.MdpModelBuilder
-import expedia.stats.CounterMap
-import expedia.util.TimeDecayService
 
 object predictClustersCMU extends LazyLogging {
 

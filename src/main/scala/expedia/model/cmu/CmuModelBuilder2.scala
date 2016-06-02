@@ -1,7 +1,6 @@
 package expedia.model.cmu
 
 import scala.collection._
-
 import breeze.linalg._
 import breeze.linalg.DenseVector
 import expedia.CompoundHyperParams
@@ -38,11 +37,15 @@ import expedia.model.mdp.MdpModelBuilder
 import expedia.stats.CounterMap
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
+import expedia.model.ClusterModelBuilder
+import expedia.model.ClusterModel
+import expedia.model.ClusterModelBuilderFactory
+import expedia.CompoundHyperParamsMap
 
 case class CmuModelBuilder2(countryModel: CountryModel, destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
                             destModel: DestModel, marketDestModel: MarketDestModel, marketDestUserModel: MarketDestUserPredictionModel,
                             countryUserModel: CountryUserModel, marketUserModel: MarketUserModel,
-                            marketModel: MarketModel, mdpModel: MdpModel,hyperParamsService:HyperParamsService) {
+                            marketModel: MarketModel, mdpModel: MdpModel,hyperParamsService:HyperParamsService) extends ClusterModelBuilder{
 
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CmuModel = {
 
@@ -115,11 +118,11 @@ case class CmuModelBuilder2(countryModel: CountryModel, destCounterMap: CounterM
   }
 }
 
-object CmuModelBuilder2 {
+object CmuModelBuilder2 extends ClusterModelBuilderFactory{
 
-  def apply(trainDatasource: ExDataSource, testClicks: Seq[Click], modelHyperParamsMap: Map[String, CompoundHyperParams]): CmuModelBuilder2 = {
+  def build(trainDatasource: ExDataSource, testClicks: Seq[Click], modelHyperParamsMap: CompoundHyperParamsMap): CmuModelBuilder2 = {
    
-    val hyperParams = modelHyperParamsMap("default")
+    val hyperParams = modelHyperParamsMap.getModel("default")
     val hyperParamsService = HyperParamsService(testClicks)
     /**
      * Create counters
@@ -140,7 +143,7 @@ object CmuModelBuilder2 {
 
     val countryModelBuilder = CountryModelBuilder(testClicks, hyperParamsService, hyperParams,timeDecayService)
 
-    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParamsService, hyperParams,timeDecayService)
+    val marketModelBuilder = MarketModelBuilder(testClicks, hyperParamsService,  modelHyperParamsMap.getModel("market"),timeDecayService)
     val destModelBuilder = DestModelBuilder(testClicks,  hyperParamsService,hyperParams, timeDecayService)
 
     val destClusterModelBuilder = DestClusterModelBuilder(testClicks,  hyperParamsService,hyperParams, timeDecayService)

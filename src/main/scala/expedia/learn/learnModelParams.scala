@@ -11,72 +11,53 @@ import scala.util.Random
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import breeze.stats._
 import dk.gp.util.saveObject
+import expedia.model.ClusterModelBuilder
+import expedia.model.ClusterModelBuilder
+import expedia.model.ClusterModelBuilderFactory
+import expedia.model.ClusterModelBuilder
+import expedia.model.marketmodel.MarketModelBuilder2
+import expedia.CompoundHyperParamsMap
 
 object learnModelParams extends LazyLogging {
 
-  def apply(trainDS: ExDataSource, testClicks: Seq[Click], initialHyperParamsMap: Map[String, CompoundHyperParams]) = {
+  private val modelBuilderFactoryMap: Map[String, ClusterModelBuilderFactory] = Map(
+    "cmu" -> CmuModelBuilder2,
+    "market" -> MarketModelBuilder2)
 
-    (0 until 100).foldLeft(initialHyperParamsMap) { (bestHyperParams, i) =>
-      logger.info("Learning iter=%d".format(i))
-      val modelHyperParams: CompoundHyperParams = bestHyperParams("cmu")
+  def apply(trainDS: ExDataSource, testClicks: Seq[Click], initialHyperParamsMap: CompoundHyperParamsMap,
+            modelsToLearn: Seq[String]): CompoundHyperParamsMap = {
 
-      val bestModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
-        val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
-        if (params.continentIdMatcher.getOrElse(0).equals(3)) trainHyperParams(params, initialHyperParamsMap, trainDS, segmentTestClicks)
-        else params
-      }
+    val newHyperParamsMap = modelsToLearn.foldLeft(initialHyperParamsMap) { (bestHyperParamsMap, model) =>
+      logger.info("Learning model=%s".format(model))
 
-      val newModelHyperParams = modelHyperParams.copy(prioritizedHyperParams=bestModelHyperParamsList)
-      val newHyperParamsMap = bestHyperParams + ("cmu" -> newModelHyperParams)
+      val modelBuilderFactory = modelBuilderFactoryMap(model)
+      val modelHyperParams: CompoundHyperParams = bestHyperParamsMap.getModel(model)
 
-      saveObject(newHyperParamsMap, "target/hyperParamsMap_trained.kryo")
+      val newModelHyperParams = learnModelHyperParams(modelHyperParams, bestHyperParamsMap, trainDS, testClicks, modelBuilderFactory)
+
+      val newHyperParamsMap = bestHyperParamsMap.addModel(model,newModelHyperParams)
       newHyperParamsMap
     }
 
+    newHyperParamsMap
+
   }
 
-  private def trainHyperParams(initialHyperParams: SimpleHyperParams, modelHyperParamsMap: Map[String, CompoundHyperParams], trainDS: ExDataSource, testClicks: Seq[Click]): SimpleHyperParams = {
-    val modelBuilder = CmuModelBuilder2(trainDS, testClicks, modelHyperParamsMap)
+  private def learnModelHyperParams(modelHyperParams: CompoundHyperParams, hyperParamsMap: CompoundHyperParamsMap,
+                                    trainDS: ExDataSource, testClicks: Seq[Click], modelBuilderFactory: ClusterModelBuilderFactory): CompoundHyperParams = {
 
-    val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks, modelBuilder)
-    var bestMapk = initialMapk
-    var bestHyperParams = initialHyperParams
+    val newModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
 
-    val params = initialHyperParams.getParams() //.filter(p => p.startsWith("expedia.model.marketuser.beta3") || p.startsWith("expedia.model.cmu."))
-
-    Random.shuffle(params).zipWithIndex.foreach {
-      case (param, paramIndex) =>
-
-        val bestParamValue = bestHyperParams.getParamValue(param)
-        (-3 to 3).filter(x => x != 0).foreach { i =>
-          val currParamValue = bestParamValue + i * bestParamValue * 0.05
-          //  logger.info("Learning param=%s %d/%d, bestValue/currValue=%.4f/%.4f".format(param, paramIndex, params.size, bestParamValue, currParamValue))
-          val currHyperParams = bestHyperParams.withParamValue(param, currParamValue)
-
-          val currMapk = computeMapk(currHyperParams, trainDS, testClicks, modelBuilder)
-
-          if (currMapk > bestMapk) {
-            logger.info("Best!!!, param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param,paramIndex+1, params.size, currMapk, bestMapk, initialMapk))
-
-            bestMapk = currMapk
-            bestHyperParams = currHyperParams
-            println(bestHyperParams)
-          } else logger.info(" param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex, params.size,currMapk, bestMapk, initialMapk))
-
-        }
+      if (params.continentIdMatcher.getOrElse(0).equals(3)) {
+        val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
+        val modelBuilder = modelBuilderFactory.build(trainDS, testClicks, hyperParamsMap)
+        trainSimpleModelParams(modelBuilder, params, trainDS, segmentTestClicks)
+      } else params
     }
 
-    bestHyperParams
+    val newModelHyperParams = modelHyperParams.copy(prioritizedHyperParams = newModelHyperParamsList)
+    newModelHyperParams
   }
 
-  private def computeMapk(hyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click], cmuModelBuilder: CmuModelBuilder2): Double = {
-    logger.info("ComputeMPK")
-
-    val segmentCompoundHyperParams = CompoundHyperParams(List(hyperParams))
-
-    val top5predictions = cmuModelBuilder.create(trainDS, testClicks, segmentCompoundHyperParams).predictTop5(testClicks)
-    val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
-    val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))
-    mapk
-  }
+ 
 }
