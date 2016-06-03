@@ -80,8 +80,9 @@ case class MdpuModelBuilder2(marketDestUserModel: MarketDestUserPredictionModel,
       case ((marketId, destId, isPackage, userId), userClusterProbs) =>
 
         val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.mdpu.beta2", marketId, hyperParams).toFloat
+          val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.mdpu.beta3", marketId, hyperParams).toFloat
 
-        userClusterProbs :+= 150f * (beta2 * mdpModel.predict(marketId, destId, isPackage) + (1 - beta2) * marketDestUserModel.predict(marketId, destId, userId))
+        userClusterProbs :+= beta3 * (beta2 * mdpModel.predict(marketId, destId, isPackage) + (1 - beta2) * marketDestUserModel.predict(marketId, destId, userId))
 
     }
     clusterHistByMDPU.normalise()

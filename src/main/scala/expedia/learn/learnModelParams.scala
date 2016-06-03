@@ -31,6 +31,7 @@ import expedia.model.mdpu.MdpuModel
 import expedia.model.mdpu.MdpuModelBuilder2
 import expedia.model.dest.DestModelBuilder2
 import expedia.model.mdpu.MdpuModelBuilder2
+import expedia.model.marketdestuser2.MarketDestUserModelBuilder2
 
 object learnModelParams extends LazyLogging {
 
@@ -45,6 +46,7 @@ object learnModelParams extends LazyLogging {
     "marketdest" -> MarketDestModelBuilder2,
     "mdp" -> MdpModelBuilder2,
     "marketdestuser" -> MarketDestUserModelBuilder,
+    "marketdestuser2" -> MarketDestUserModelBuilder2,
     "mdpu" -> MdpuModelBuilder2,
     "cmu" -> CmuModelBuilder2)
 
@@ -60,7 +62,7 @@ object learnModelParams extends LazyLogging {
       val newModelHyperParams = learnModelHyperParams(modelHyperParams, bestHyperParamsMap, trainDS, testClicks, modelBuilderFactory)
 
       val newHyperParamsMap = bestHyperParamsMap.addModel(model, newModelHyperParams)
-    //  saveObject(newHyperParamsMap, hyperParamsMapFile)
+      saveObject(newHyperParamsMap, hyperParamsMapFile)
       newHyperParamsMap
     }
 
@@ -73,9 +75,8 @@ object learnModelParams extends LazyLogging {
 
     val newModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
 
-      if (params.continentIdMatcher.getOrElse(0).equals(3)) {
-
-        //      if (params.countryIdMatcher.getOrElse(0).equals(50)) {
+      //if (params.continentIdMatcher.getOrElse(0).equals(3)) {
+      if (params.countryIdMatcher.getOrElse(0).equals(198)) {
         val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
 
         val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)

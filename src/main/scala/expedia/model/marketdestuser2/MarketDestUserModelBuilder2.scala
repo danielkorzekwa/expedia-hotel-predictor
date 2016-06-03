@@ -30,6 +30,13 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, country
     testClicks.foreach { click =>
       clusterHistByDestMarketUser.add((click.destId, click.marketId, click.userId), click.cluster, value = 0)
     }
+    
+     //key ((destId, marketId,userId)
+    val clusterHistByDestMarketUserPrior = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
+    testClicks.foreach { click =>
+      clusterHistByDestMarketUserPrior.add((click.destId, click.marketId, click.userId), click.cluster, value = 0)
+    }
+    
 
     val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
     testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
@@ -118,10 +125,49 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, country
         userClusterProbs :+= factor * prior
 
     }
+    
+    
+     clusterHistByDestMarketUserPrior.getMap.foreach {
+
+      case ((destId, marketId, userId), userClusterProbs) =>
+
+        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta1", marketId, hyperParams).toFloat
+        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta2", marketId, hyperParams).toFloat
+        val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta3", marketId, hyperParams).toFloat
+        val beta4 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta4", marketId, hyperParams).toFloat
+        val beta5 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta5", marketId, hyperParams).toFloat
+
+        val marketCounts = marketCounterMap.getOrElse(marketId, 0)
+        val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
+        val destCounts = destCounterMap.getOrElse(destId, 0)
+
+        // val (prior, factor) = (marketDestModel.predict(marketId, destId), beta5)
+
+        val (prior, factor) = if (destMarketCounts < beta3) {
+          val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+          val factor = beta4
+          (prior, beta4)
+        } else {
+          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
+          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+            val prior = beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
+            val factor = 1f
+            (prior, factor)
+          } else {
+            val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+            val factor = beta5
+            (prior, factor)
+          }
+
+        }
+
+        userClusterProbs :+=  prior
+
+    }
     clusterHistByDestMarketUser.normalise()
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
-    MarketDestUserPredictionModel2(clusterHistByDestMarketUser.getMap)
+    MarketDestUserPredictionModel2(clusterHistByDestMarketUser.getMap,clusterHistByDestMarketUserPrior.getMap)
   }
 }
 object MarketDestUserModelBuilder2 extends ClusterModelBuilderFactory {

@@ -125,10 +125,12 @@ case class CmuModelBuilder2(countryModel: CountryModel,
         val mduPred = marketDestUserModel.predict(marketId, destId, userId)
         val mdu = mduPred - mdPred
 
-        val mduPred2 = marketDestUserModel2.predict(marketId, destId, userId)
-        val mdu2 = mduPred2 - mdPred
+     //   val mduPred2 = marketDestUserModel2.predict(marketId, destId, userId)
+     //   val mdu2 = marketDestUserModel2.predictDelta(marketId, destId, userId)
+    //    val mdu2 = mduPred2 - mdPred
 
         val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp
+      //   val predicted = cmuBeta6 * mduPred2 + cmuBeta7 * mdpPred
         (marketId, destId, isPackage, userId) -> predicted
 
     }

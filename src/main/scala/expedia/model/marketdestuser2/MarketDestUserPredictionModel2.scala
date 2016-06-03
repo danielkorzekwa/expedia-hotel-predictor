@@ -10,10 +10,15 @@ import expedia.model.ClusterModel
 import expedia.stats.MulticlassHist
 import expedia.model.marketdest.MarketDestModel
 
-case class MarketDestUserPredictionModel2(clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]]) extends ClusterModel with LazyLogging {
+case class MarketDestUserPredictionModel2(clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
+    clusterHistByDestMarketUserPrior: Map[Tuple3[Int, Int, Int], DenseVector[Float]]) extends ClusterModel with LazyLogging {
 
   def predict(marketId:Int,destId:Int,userId:Int): DenseVector[Float] = {
        clusterHistByDestMarketUser((destId, marketId, userId))
+    }
+  
+  def predictDelta(marketId:Int,destId:Int,userId:Int): DenseVector[Float] = {
+       clusterHistByDestMarketUser((destId, marketId, userId)) -   clusterHistByDestMarketUserPrior((destId, marketId, userId))
     }
   
   def predict(click: Click): DenseVector[Float] =  predict(click.marketId,click.destId,click.userId)

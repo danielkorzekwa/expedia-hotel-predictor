@@ -149,6 +149,7 @@ case class CompoundHyperParamsMap(hyperParamsMap: Map[String, CompoundHyperParam
           "expedia.model.mdpu.beta1" -> 0.1,
           "expedia.model.mdpu.isBookingWeight" -> 1,
           "expedia.model.mdpu.beta2" -> 0.1,
+            "expedia.model.mdpu.beta3" -> 1,
           "expedia.model.mdpu.decayFactor" -> -0.07)
       }
       case "market" => {
