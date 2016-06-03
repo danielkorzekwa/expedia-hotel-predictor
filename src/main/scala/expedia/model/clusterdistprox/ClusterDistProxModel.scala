@@ -9,9 +9,10 @@ import expedia.util.calcTopNClusters
 import breeze.linalg.DenseMatrix
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.slf4j.LazyLogging
+import expedia.model.ClusterModel
 
 //key - (userLoc,market),value - map[dist,clusterProbs]
-case class ClusterDistProxModel(clusterHistByKey: mutable.Map[Tuple2[Int, Int], mutable.Map[Double, DenseVector[Float]]]) extends LazyLogging{
+case class ClusterDistProxModel(clusterHistByKey: mutable.Map[Tuple2[Int, Int], mutable.Map[Double, DenseVector[Float]]]) extends ClusterModel with LazyLogging{
 
   def predict(click: Click): DenseVector[Float] = {
 
@@ -25,26 +26,7 @@ case class ClusterDistProxModel(clusterHistByKey: mutable.Map[Tuple2[Int, Int], 
     clusterProbs
   }
 
-  def predictTop5(clicks: Seq[Click]): DenseMatrix[Double] = {
-    val i = new AtomicInteger(0)
-    val predictionRecordsClusterDistProx = clicks.par.map { click =>
-      val predicted = predict(click)
-
-      val predictedProbTuples = predicted.toArray.toList.zipWithIndex.sortWith((a, b) => a._1 > b._1).take(5).toArray
-
-      val predictionProbs = predictedProbTuples.map(_._1.toDouble)
-      val predictionRanks = predictedProbTuples.map(_._2.toDouble)
-
-      if (i.incrementAndGet() % 100000 == 0) logger.info("Predicting clusters: %d".format(i.get))
-
-      val record = DenseVector.vertcat(DenseVector(predictionProbs), DenseVector(predictionRanks))
-      record
-    }.toList
-
-    val predictionMatrixClusterDistProx = DenseVector.horzcat(predictionRecordsClusterDistProx: _*).t
-    predictionMatrixClusterDistProx
-
-  }
+ 
 }
 
 object ClusterDistProxModel {

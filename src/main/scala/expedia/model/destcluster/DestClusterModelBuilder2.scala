@@ -52,7 +52,7 @@ case class DestClusterModelBuilder2(countryModel:CountryModel,timeDecayService: 
         if (destClusterHistByDestCluster.getMap.contains(destCluster)) {
           val isBookingWeight = hyperParamsService.getParamValueForDestId("expedia.model.destcluster.isBookingWeight", click.destId,hyperParams).toFloat
           val beta1 = hyperParamsService.getParamValueForDestId("expedia.model.destcluster.beta1", click.destId,hyperParams).toFloat
-          val decayFactor = hyperParamsService.getParamValueForMarketId("expedia.model.destcluster.decayFactor", click.marketId, hyperParams).toFloat
+          val decayFactor = hyperParamsService.getParamValueForDestId("expedia.model.destcluster.decayFactor", click.destId, hyperParams).toFloat
         val w = timeDecayService.getDecay(click.dateTime, decayFactor)
 
           if (click.isBooking == 1) destClusterHistByDestCluster.add(destCluster, click.cluster, value = w * isBookingWeight)

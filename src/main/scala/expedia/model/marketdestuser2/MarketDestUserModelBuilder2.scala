@@ -1,4 +1,4 @@
-package expedia.model.marketdestuser
+package expedia.model.marketdestuser2
 
 import expedia.CompoundHyperParams
 import expedia.CompoundHyperParamsMap
@@ -14,11 +14,16 @@ import expedia.stats.MulticlassHistByKey
 import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.model.marketdest.MarketDestModel
 import expedia.model.marketdest.MarketDestModelBuilder2
+import expedia.model.marketdest.MarketDestModelBuilder2
+import expedia.model.countryuser.CountryUserModel
+import expedia.model.marketuser.MarketUserModel
+import expedia.model.countryuser.CountryUserModelBuilder2
+import expedia.model.marketuser.MarketUserModelBuilder2
 
-case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService)
+case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, countryUserModel: CountryUserModel, marketUserModel: MarketUserModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService)
     extends ClusterModelBuilder with LazyLogging {
 
-  def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestUserPredictionModel = {
+  def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestUserPredictionModel2 = {
 
     //key ((destId, marketId,userId)
     val clusterHistByDestMarketUser = MulticlassHistByKey[Tuple3[Int, Int, Int]](100)
@@ -80,35 +85,35 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, timeDec
 
       case ((destId, marketId, userId), userClusterProbs) =>
 
-        //    private val beta1 = hyperParams.getParamValue("expedia.model.marketdestuser.beta1").toFloat
-        //private val beta2 = hyperParams.getParamValue("expedia.model.marketdestuser.beta2").toFloat
-        //private val beta3 = hyperParams.getParamValue("expedia.model.marketdestuser.beta3").toFloat
-        //private val beta4 = hyperParams.getParamValue("expedia.model.marketdestuser.beta4").toFloat
+        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta1", marketId, hyperParams).toFloat
+        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta2", marketId, hyperParams).toFloat
+        val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta3", marketId, hyperParams).toFloat
+        val beta4 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta4", marketId, hyperParams).toFloat
         val beta5 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta5", marketId, hyperParams).toFloat
 
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
         val destCounts = destCounterMap.getOrElse(destId, 0)
 
-        val (prior, factor) = (marketDestModel.predict(marketId, destId), beta5)
+        // val (prior, factor) = (marketDestModel.predict(marketId, destId), beta5)
 
-        //        val (prior, factor) = if (destMarketCounts < beta3) {
-        //          val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
-        //          val factor = beta4
-        //          (prior, beta4)
-        //        } else {
-        //          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
-        //          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
-        //            val prior =  beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
-        //            val factor=1f
-        //            (prior,factor)
-        //          } else {
-        //            val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
-        //            val factor = beta5
-        //            (prior,factor)
-        //          }
-        //
-        //        }
+        val (prior, factor) = if (destMarketCounts < beta3) {
+          val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+          val factor = beta4
+          (prior, beta4)
+        } else {
+          val marketUserCounts = marketUserCounterMap.getOrElse((marketId, userId), 0)
+          if (marketUserCounts == 0 && countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
+            val prior = beta1 * marketDestModel.predict(marketId, destId) + (1 - beta1) * countryUserModel.predict(countryByMarket(marketId), userId)
+            val factor = 1f
+            (prior, factor)
+          } else {
+            val prior = (beta2 * marketDestModel.predict(marketId, destId) + (1 - beta2) * marketUserModel.predict(marketId, userId))
+            val factor = beta5
+            (prior, factor)
+          }
+
+        }
 
         userClusterProbs :+= factor * prior
 
@@ -116,7 +121,7 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, timeDec
     clusterHistByDestMarketUser.normalise()
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
-    MarketDestUserPredictionModel(clusterHistByDestMarketUser.getMap,marketDestModel)
+    MarketDestUserPredictionModel2(clusterHistByDestMarketUser.getMap, marketDestModel)
   }
 }
 object MarketDestUserModelBuilder2 extends ClusterModelBuilderFactory {
@@ -129,6 +134,12 @@ object MarketDestUserModelBuilder2 extends ClusterModelBuilderFactory {
     val marketDestModel = MarketDestModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdest"))
 
-    MarketDestUserModelBuilder2(marketDestModel, timeDecayService, hyperParamsService)
+    val marketUserModel = MarketUserModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+      create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketuser"))
+
+    val countryUserModel = CountryUserModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+      create(trainDatasource, testClicks, modelHyperParamsMap.getModel("countryuser"))
+
+    MarketDestUserModelBuilder2(marketDestModel, countryUserModel, marketUserModel, timeDecayService, hyperParamsService)
   }
 }

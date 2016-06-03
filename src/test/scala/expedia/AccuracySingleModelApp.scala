@@ -6,16 +6,15 @@ import breeze.linalg._
 import breeze.stats._
 import dk.gp.util.averagePrecision
 import dk.gp.util.csvwrite
-import dk.gp.util.saveObject
+import dk.gp.util.loadObject
 import expedia.data.Click
 import expedia.data.ExKryoDataSource
 import expedia.data.ExKryoDataSource
 import expedia.data.ExKryoDataSource
-import expedia.model.cmu.CmuModelBuilder2
-import dk.bayes.math.accuracy.loglik
 import expedia.data.ExKryoDataSource
-import dk.gp.util.loadObject
-import expedia.data.ExCSVDataSource
+import expedia.model.marketdestuser2.MarketDestUserModelBuilder2
+import dk.bayes.math.accuracy.loglik
+import expedia.model.marketdestuser2.MarketDestUserModelBuilder2
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -30,21 +29,20 @@ object AccuracySingleModelApp extends LazyLogging {
 //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
 //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
 //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+//
+            val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+           val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+           val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+           val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
 
-        val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
-        val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-        val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
-        val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
-
-    val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMap_trained.kryo")
     //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
     //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
     //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
     //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() .filter(click =>  click.continentId==3)
 
-    // val model = CmuModelBuilder.buildFromTrainingSet(trainDS, testClicks, hyperParams)
-    val modelBuilder = CmuModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
-    val modelParams = hyperParamsMap.getModel("cmu")
+    val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMap_trained.kryo")
+    val modelBuilder = MarketDestUserModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
+    val modelParams = hyperParamsMap.getModel("marketdestuser2")
     val model = modelBuilder.create(trainDS, testClicks, modelParams)
 
     val k = 5

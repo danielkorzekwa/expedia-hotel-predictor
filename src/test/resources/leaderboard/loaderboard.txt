@@ -1,4 +1,4 @@
-not tested:
+not tested - submission generated submission02062016.csv:
 learned by continent:
 mapk=0.46789025, test size=1976304
 analysis time=539555

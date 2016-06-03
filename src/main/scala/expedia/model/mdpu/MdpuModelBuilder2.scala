@@ -13,13 +13,13 @@ import com.typesafe.scalalogging.slf4j.LazyLogging
 import expedia.stats.CounterMap
 import expedia.model.mdp.MdpModel
 import expedia.model.mdp.MdpModelBuilder2
-import expedia.model.marketdestuser.MarketDestUserModelBuilder2
 import expedia.model.marketdestuser.MarketDestUserPredictionModel
 import expedia.model.dest.DestModel
 import expedia.model.marketdest.MarketDestModelBuilder2
 import expedia.model.dest.DestModelBuilder2
 import expedia.model.dest.DestModelBuilder2
 import expedia.model.mdp.MdpModelBuilder2
+import expedia.model.marketdestuser.MarketDestUserModelBuilder
 
 case class MdpuModelBuilder2(marketDestUserModel: MarketDestUserPredictionModel, mdpModel: MdpModel, destModel: DestModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder with LazyLogging {
 
@@ -97,7 +97,7 @@ object MdpuModelBuilder2 extends ClusterModelBuilderFactory {
     val timeDecayService = TimeDecayService(testClicks)
     val hyperParamsService = HyperParamsService(testClicks)
 
-    val marketDestUserModel = MarketDestUserModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap)
+    val marketDestUserModel = MarketDestUserModelBuilder.build(trainDatasource, testClicks, modelHyperParamsMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser"))
 
     val mdpModel = MdpModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap)

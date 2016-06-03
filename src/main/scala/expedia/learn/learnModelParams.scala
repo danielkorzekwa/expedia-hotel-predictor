@@ -26,7 +26,7 @@ import expedia.model.destcluster.DestClusterModelBuilder2
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder2
 import expedia.model.marketdest.MarketDestModelBuilder2
 import expedia.model.mdp.MdpModelBuilder2
-import expedia.model.marketdestuser.MarketDestUserModelBuilder2
+import expedia.model.marketdestuser.MarketDestUserModelBuilder
 import expedia.model.mdpu.MdpuModel
 import expedia.model.mdpu.MdpuModelBuilder2
 import expedia.model.dest.DestModelBuilder2
@@ -44,7 +44,7 @@ object learnModelParams extends LazyLogging {
     "marketdestcluster" -> MarketDestClusterModelBuilder2,
     "marketdest" -> MarketDestModelBuilder2,
     "mdp" -> MdpModelBuilder2,
-    "marketdestuser" -> MarketDestUserModelBuilder2,
+    "marketdestuser" -> MarketDestUserModelBuilder,
     "mdpu" -> MdpuModelBuilder2,
     "cmu" -> CmuModelBuilder2)
 
@@ -73,7 +73,7 @@ object learnModelParams extends LazyLogging {
 
     val newModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
 
-      if (params.continentIdMatcher.getOrElse(0).equals(3)) {
+      if (params.countryIdMatcher.getOrElse(0).equals(50)) {
         val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
 
         val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)

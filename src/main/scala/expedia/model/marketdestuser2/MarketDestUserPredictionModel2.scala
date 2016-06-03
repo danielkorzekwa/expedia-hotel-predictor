@@ -1,4 +1,4 @@
-package expedia.model.marketdestuser
+package expedia.model.marketdestuser2
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection._
@@ -10,7 +10,7 @@ import expedia.model.ClusterModel
 import expedia.stats.MulticlassHist
 import expedia.model.marketdest.MarketDestModel
 
-case class MarketDestUserPredictionModel(clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
+case class MarketDestUserPredictionModel2(clusterHistByDestMarketUser: Map[Tuple3[Int, Int, Int], DenseVector[Float]],
     marketDestModel: MarketDestModel) extends ClusterModel with LazyLogging {
 
   def predict(marketId:Int,destId:Int,userId:Int): DenseVector[Float] = {
