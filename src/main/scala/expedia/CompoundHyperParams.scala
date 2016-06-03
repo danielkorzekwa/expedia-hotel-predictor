@@ -35,20 +35,20 @@ case class CompoundHyperParams(prioritizedHyperParams: Seq[SimpleHyperParams]) {
 
 object CompoundHyperParams {
 
-    def getPrioritizedHyperParams(): CompoundHyperParams = {
-    val prioritizedHyperParams = List(
-      SimpleHyperParams.createParamsCont2Country198(),
-      SimpleHyperParams.createParamsCont3(),
-      SimpleHyperParams.createParamsCont4(),
-     SimpleHyperParams.createParamsCont6(),
-      SimpleHyperParams.createParamsCMU3())
-   CompoundHyperParams( prioritizedHyperParams)
-  }
+//    def getPrioritizedHyperParams(): CompoundHyperParams = {
+//    val prioritizedHyperParams = List(
+//      SimpleHyperParams.createParamsCont2Country198(),
+//      SimpleHyperParams.createParamsCont3(),
+//      SimpleHyperParams.createParamsCont4(),
+//     SimpleHyperParams.createParamsCont6(),
+//      SimpleHyperParams.createParamsCMU3())
+//   CompoundHyperParams( prioritizedHyperParams)
+//  }
   
-  def createHyperParamsByModel(): Map[String, CompoundHyperParams] = {
-    Map(
-      "cmu" -> CmuModelParams.getPrioritizedHyperParams(),
-      "default" -> CompoundHyperParams.getPrioritizedHyperParams())
-  }
+//  def createHyperParamsByModel(): Map[String, CompoundHyperParams] = {
+//    Map(
+//      "cmu" -> CmuModelParams.getPrioritizedHyperParams(),
+//      "default" -> CompoundHyperParams.getPrioritizedHyperParams())
+//  }
 
 }

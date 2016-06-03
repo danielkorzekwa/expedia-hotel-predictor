@@ -20,7 +20,8 @@ object SubmissionApp extends LazyLogging {
     val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestFile).getAllClicks()
 
    val hyperParamsListFromDisk = loadObject[List[SimpleHyperParams]]( "c:/perforce/daniel/ex/hyperparams/hyperParams_best_020616_test14.kryo")
-     val hyperParamsMap = CompoundHyperParams.createHyperParamsByModel()
+   
+    val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMap_trained.kryo")
 
 
 //    val (clusterDistPred, marketDestPred, clusterDistProxPred, distSvmPred, distGPPred) = predictClustersCMU(trainDataSource, testClicks, hyperParams)

@@ -63,7 +63,7 @@ case class MarketUserModelBuilder2(marketModel:MarketModel,timeDecayService: Tim
     }
     clusterHistByMarketUser.normalise()
 
-    MarketUserModel(clusterHistByMarketUser)
+    MarketUserModel(clusterHistByMarketUser,marketModel)
   }
 }
 object MarketUserModelBuilder2 extends ClusterModelBuilderFactory {

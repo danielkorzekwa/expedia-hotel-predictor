@@ -116,7 +116,7 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, timeDec
     clusterHistByDestMarketUser.normalise()
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
-    MarketDestUserPredictionModel(clusterHistByDestMarketUser.getMap)
+    MarketDestUserPredictionModel(clusterHistByDestMarketUser.getMap,marketDestModel)
   }
 }
 object MarketDestUserModelBuilder2 extends ClusterModelBuilderFactory {

@@ -14,45 +14,44 @@ import scala.collection._
 case class CountryModelBuilder2(timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
 
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CountryModel = {
-  
-      val clusterHistByContinent = MulticlassHistByKey[Int](100)
-  testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
 
-   val clusterHistByCountry = MulticlassHistByKey[Int](100)
-  testClicks.foreach(click => clusterHistByCountry.add(click.countryId, click.cluster, value = 0))
+    val clusterHistByContinent = MulticlassHistByKey[Int](100)
+    testClicks.foreach(click => clusterHistByContinent.add(click.continentId, click.cluster, value = 0))
 
-   val continentByCountry: mutable.Map[Int, Int] = mutable.Map()
-  testClicks.foreach(click => continentByCountry += click.countryId -> click.continentId)
-    
+    val clusterHistByCountry = MulticlassHistByKey[Int](100)
+    testClicks.foreach(click => clusterHistByCountry.add(click.countryId, click.cluster, value = 0))
+
+    val continentByCountry: mutable.Map[Int, Int] = mutable.Map()
+    testClicks.foreach(click => continentByCountry += click.countryId -> click.continentId)
+
     /**
      * Process training set
      */
     def onClick(click: Click) = {
 
-      
-    clusterHistByContinent.add(click.continentId, click.cluster)
+      clusterHistByContinent.add(click.continentId, click.cluster)
 
-    if (clusterHistByCountry.getMap.contains(click.countryId)) {
-      val isBookingWeight = hyperParamsService.getParamValueForCountryId("expedia.model.country.isBookingWeight", click.countryId,hyperParams).toFloat
-      val beta1 = hyperParamsService.getParamValueForCountryId("expedia.model.country.beta1", click.countryId,hyperParams).toFloat
-        val decayFactor = hyperParamsService.getParamValueForMarketId("expedia.model.country.decayFactor", click.marketId, hyperParams).toFloat
+      if (clusterHistByCountry.getMap.contains(click.countryId)) {
+        val isBookingWeight = hyperParamsService.getParamValueForCountryId("expedia.model.country.isBookingWeight", click.countryId, hyperParams).toFloat
+        val beta1 = hyperParamsService.getParamValueForCountryId("expedia.model.country.beta1", click.countryId, hyperParams).toFloat
+        val decayFactor = hyperParamsService.getParamValueForCountryId("expedia.model.country.decayFactor", click.countryId, hyperParams).toFloat
         val w = timeDecayService.getDecay(click.dateTime, decayFactor)
-      if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster, value = w * isBookingWeight)
-      else clusterHistByCountry.add(click.countryId, click.cluster, value = w * beta1)
-    }
-    continentByCountry += click.countryId -> click.continentId
-      
+        if (click.isBooking == 1) clusterHistByCountry.add(click.countryId, click.cluster, value = w * isBookingWeight)
+        else clusterHistByCountry.add(click.countryId, click.cluster, value = w * beta1)
+      }
+      continentByCountry += click.countryId -> click.continentId
+
     }
     trainDatasource.foreach { click => onClick(click) }
 
     /**
      * Build model
      */
-     clusterHistByContinent.normalise()
+    clusterHistByContinent.normalise()
 
     clusterHistByCountry.getMap.foreach {
       case (countryId, clusterCounts) =>
-        val beta2 = hyperParamsService.getParamValueForCountryId("expedia.model.country.beta2", countryId,hyperParams).toFloat
+        val beta2 = hyperParamsService.getParamValueForCountryId("expedia.model.country.beta2", countryId, hyperParams).toFloat
         clusterCounts :+= beta2 * clusterHistByContinent.getMap(continentByCountry(countryId))
     }
     clusterHistByCountry.normalise()
@@ -67,6 +66,6 @@ object CountryModelBuilder2 extends ClusterModelBuilderFactory {
     val timeDecayService = TimeDecayService(testClicks)
     val hyperParamsService = HyperParamsService(testClicks)
 
-    CountryModelBuilder2(timeDecayService,hyperParamsService)
+    CountryModelBuilder2(timeDecayService, hyperParamsService)
   }
 }

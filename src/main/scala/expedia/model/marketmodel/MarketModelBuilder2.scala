@@ -60,7 +60,7 @@ case class MarketModelBuilder2(countryModel: CountryModel, timeDecayService: Tim
     }
     clusterHistByMarket.normalise()
 
-    MarketModel(clusterHistByMarket)
+    MarketModel(clusterHistByMarket,countryModel)
   }
 }
 
