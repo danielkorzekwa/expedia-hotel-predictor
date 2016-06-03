@@ -59,10 +59,10 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, country
       val key = (click.destId, click.marketId, click.userId)
       if (clusterHistByDestMarketUser.getMap.contains(key)) {
 
-        val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.isBookingWeight", click.marketId, hyperParams).toFloat
-        val beta6 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta6", click.marketId, hyperParams).toFloat
+        val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.isBookingWeight", click.marketId, hyperParams).toFloat
+        val beta6 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta6", click.marketId, hyperParams).toFloat
 
-        val decayFactor = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.decayFactor", click.marketId, hyperParams).toFloat
+        val decayFactor = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.decayFactor", click.marketId, hyperParams).toFloat
         val w = timeDecayService.getDecay(click.dateTime, decayFactor)
 
         if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w * isBookingWeight)
@@ -85,11 +85,11 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, country
 
       case ((destId, marketId, userId), userClusterProbs) =>
 
-        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta1", marketId, hyperParams).toFloat
-        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta2", marketId, hyperParams).toFloat
-        val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta3", marketId, hyperParams).toFloat
-        val beta4 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta4", marketId, hyperParams).toFloat
-        val beta5 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser.beta5", marketId, hyperParams).toFloat
+        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta1", marketId, hyperParams).toFloat
+        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta2", marketId, hyperParams).toFloat
+        val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta3", marketId, hyperParams).toFloat
+        val beta4 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta4", marketId, hyperParams).toFloat
+        val beta5 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestuser2.beta5", marketId, hyperParams).toFloat
 
         val marketCounts = marketCounterMap.getOrElse(marketId, 0)
         val destMarketCounts = destMarketCounterMap.getOrElse((destId, marketId), 0)
@@ -121,7 +121,7 @@ case class MarketDestUserModelBuilder2(marketDestModel: MarketDestModel, country
     clusterHistByDestMarketUser.normalise()
     logger.info("Add prior stats to clusterHistByDestMarketUser...done")
 
-    MarketDestUserPredictionModel2(clusterHistByDestMarketUser.getMap, marketDestModel)
+    MarketDestUserPredictionModel2(clusterHistByDestMarketUser.getMap)
   }
 }
 object MarketDestUserModelBuilder2 extends ClusterModelBuilderFactory {

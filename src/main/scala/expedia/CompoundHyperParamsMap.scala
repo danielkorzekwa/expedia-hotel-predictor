@@ -170,14 +170,14 @@ case class CompoundHyperParamsMap(hyperParamsMap: Map[String, CompoundHyperParam
       }
         case "marketdestuser2" => {
         Map(
-            "expedia.model.marketdestuser.beta1" -> 0.949999988079071,
-            "expedia.model.marketdestuser.beta2" -> 0.8,
-            "expedia.model.marketdestuser.beta3" -> 400.0,
-            "expedia.model.marketdestuser.beta4"-> 4.0,
-          "expedia.model.marketdestuser.isBookingWeight" -> 1,
-          "expedia.model.marketdestuser.beta6" -> 0.45,
-          "expedia.model.marketdestuser.beta5" -> 8.0,
-          "expedia.model.marketdestuser.decayFactor" -> -0.07)
+            "expedia.model.marketdestuser2.beta1" -> 0.949999988079071,
+            "expedia.model.marketdestuser2.beta2" -> 0.8,
+            "expedia.model.marketdestuser2.beta3" -> 400.0,
+            "expedia.model.marketdestuser2.beta4"-> 4.0,
+          "expedia.model.marketdestuser2.isBookingWeight" -> 1,
+          "expedia.model.marketdestuser2.beta6" -> 0.45,
+          "expedia.model.marketdestuser2.beta5" -> 8.0,
+          "expedia.model.marketdestuser2.decayFactor" -> -0.07)
       }
     }
   }

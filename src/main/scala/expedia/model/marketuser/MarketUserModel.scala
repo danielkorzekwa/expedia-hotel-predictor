@@ -6,7 +6,7 @@ import expedia.stats.MulticlassHistByKey
 import expedia.data.Click
 import expedia.model.marketmodel.MarketModel
 
-case class MarketUserModel(clusterHistByMarketUser: MulticlassHistByKey[Tuple2[Int, Int]],marketModel:MarketModel) extends ClusterModel{
+case class MarketUserModel(clusterHistByMarketUser: MulticlassHistByKey[Tuple2[Int, Int]]) extends ClusterModel{
   
    def predict(marketId: Int, userId: Int): DenseVector[Float] = {
 

@@ -116,7 +116,7 @@ case class MarketDestModelBuilder2(marketModel: MarketModel, destModel: DestMode
     }
     clusterHistByMarketDest.normalise()
 
-    MarketDestModel(clusterHistByMarketDest,destModel)
+    MarketDestModel(clusterHistByMarketDest)
   }
 }
 object MarketDestModelBuilder2 extends ClusterModelBuilderFactory {

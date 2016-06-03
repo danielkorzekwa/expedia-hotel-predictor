@@ -10,6 +10,9 @@ import expedia.HyperParamsService
 import expedia.util.TimeDecayService
 import expedia.stats.MulticlassHistByKey
 import scala.collection._
+import sun.misc.PerformanceLogger.TimeData
+import expedia.util.TimeDecayService
+import expedia.HyperParamsService
 
 case class CountryModelBuilder2(timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
 
@@ -66,6 +69,8 @@ object CountryModelBuilder2 extends ClusterModelBuilderFactory {
     val timeDecayService = TimeDecayService(testClicks)
     val hyperParamsService = HyperParamsService(testClicks)
 
-    CountryModelBuilder2(timeDecayService, hyperParamsService)
+    apply(timeDecayService, hyperParamsService)
   }
+
+ 
 }

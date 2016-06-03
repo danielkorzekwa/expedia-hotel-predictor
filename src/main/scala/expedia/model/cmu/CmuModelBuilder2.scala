@@ -38,9 +38,12 @@ import expedia.model.dest.DestModelBuilder2
 import expedia.model.marketdestcluster.MarketDestClusterModelBuilder2
 import expedia.model.dest.DestModelBuilder2
 import expedia.model.dest.DestModelBuilder2
+import expedia.model.marketdestuser2.MarketDestUserModelBuilder2
+import expedia.model.marketdestuser2.MarketDestUserPredictionModel2
 
 case class CmuModelBuilder2(countryModel: CountryModel,
                             destModel: DestModel, marketDestModel: MarketDestModel, marketDestUserModel: MarketDestUserPredictionModel,
+                            marketDestUserModel2: MarketDestUserPredictionModel2,
                             countryUserModel: CountryUserModel, marketUserModel: MarketUserModel,
                             marketModel: MarketModel, mdpModel: MdpModel, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
 
@@ -120,8 +123,12 @@ case class CmuModelBuilder2(countryModel: CountryModel,
         val mdp = mdpPred - mdPred
 
         val mduPred = marketDestUserModel.predict(marketId, destId, userId)
-        val mdu2 = mduPred - mdPred
-        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu2 + cmuBeta7 * mdp
+        val mdu = mduPred - mdPred
+
+        val mduPred2 = marketDestUserModel2.predict(marketId, destId, userId)
+        val mdu2 = mduPred2 - mdPred
+
+        val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp
         (marketId, destId, isPackage, userId) -> predicted
 
     }
@@ -132,34 +139,43 @@ case class CmuModelBuilder2(countryModel: CountryModel,
 object CmuModelBuilder2 extends ClusterModelBuilderFactory {
 
   def build(trainDatasource: ExDataSource, testClicks: Seq[Click], modelHyperParamsMap: CompoundHyperParamsMap): CmuModelBuilder2 = {
-
-    val hyperParamsService = HyperParamsService(testClicks)
     val timeDecayService = TimeDecayService(testClicks)
+    val hyperParamsService = HyperParamsService(testClicks)
 
-    val destClusterModel = DestClusterModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+    val countryModel = CountryModelBuilder2(timeDecayService, hyperParamsService).
+      create(trainDatasource, testClicks, modelHyperParamsMap.getModel("country"))
+
+    val destClusterModel = DestClusterModelBuilder2(countryModel, timeDecayService, hyperParamsService).
       create(trainDatasource, testClicks, modelHyperParamsMap.getModel("destcluster"))
 
-    val marketDestClusterModel = MarketDestClusterModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+    val marketModel = MarketModelBuilder2(countryModel, timeDecayService, hyperParamsService)
+      .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("market"))
+
+    val marketDestClusterModel = MarketDestClusterModelBuilder2(countryModel, marketModel, timeDecayService, hyperParamsService).
       create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestcluster"))
 
-    val countryUserModel = CountryUserModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+    val countryUserModel = CountryUserModelBuilder2(countryModel, timeDecayService, hyperParamsService).
       create(trainDatasource, testClicks, modelHyperParamsMap.getModel("countryuser"))
 
-    val marketUserModel = MarketUserModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+    val marketUserModel = MarketUserModelBuilder2(marketModel, timeDecayService, hyperParamsService).
       create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketuser"))
 
-    val mdpModel = MdpModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap)
+    val destModel = DestModelBuilder2(countryModel, destClusterModel, timeDecayService, hyperParamsService)
+      .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("dest"))
+
+    val marketDestModel = MarketDestModelBuilder2(marketModel, destModel, marketDestClusterModel, timeDecayService, hyperParamsService)
+      .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdest"))
+
+    val mdpModel = MdpModelBuilder2(marketDestModel, timeDecayService, hyperParamsService)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("mdp"))
 
-    val marketDestUserModel = MarketDestUserModelBuilder.build(trainDatasource, testClicks, modelHyperParamsMap)
+    val marketDestUserModel = MarketDestUserModelBuilder(marketDestModel, timeDecayService, hyperParamsService)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser"))
 
-    val marketModel = marketUserModel.marketModel
-    val countryModel = marketModel.countryModel
-    val marketDestModel = marketDestUserModel.marketDestModel
-    val destModel = marketDestModel.destModel
+    val marketDestUserModel2 = MarketDestUserModelBuilder2(marketDestModel, countryUserModel, marketUserModel, timeDecayService, hyperParamsService)
+      .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser2"))
 
-    val cmuModelBuilder = CmuModelBuilder2(countryModel, destModel, marketDestModel, marketDestUserModel,
+    val cmuModelBuilder = CmuModelBuilder2(countryModel, destModel, marketDestModel, marketDestUserModel, marketDestUserModel2,
       countryUserModel, marketUserModel, marketModel, mdpModel, hyperParamsService)
     cmuModelBuilder
   }

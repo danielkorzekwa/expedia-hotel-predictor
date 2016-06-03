@@ -23,7 +23,7 @@ object trainSimpleModelParams extends LazyLogging {
     var bestMapk = initialMapk
     var bestHyperParams = initialHyperParams
 
-    val params = initialHyperParams.getParams() //.filter(p => p.startsWith("expedia.model.marketuser.beta3") || p.startsWith("expedia.model.cmu."))
+    val params = initialHyperParams.getParams()//.filter(p => p.startsWith("expedia.model.cmu.beta6"))
     val rand = new Random()
     for (i <- 1 to 2) {
       Random.shuffle(params).zipWithIndex.foreach {

@@ -7,7 +7,7 @@ import expedia.model.ClusterModel
 import expedia.data.Click
 import expedia.model.dest.DestModel
 
-case class MarketDestModel(clusterHistByMarketDest: MulticlassHistByKey[Tuple2[Int, Int]],destModel:DestModel)  extends ClusterModel with LazyLogging{
+case class MarketDestModel(clusterHistByMarketDest: MulticlassHistByKey[Tuple2[Int, Int]])  extends ClusterModel with LazyLogging{
 
   def predict(marketId: Int, destId: Int): DenseVector[Float] = {
     clusterHistByMarketDest.getMap((marketId, destId))
