@@ -25,43 +25,8 @@ case class MdpuModelBuilder(testClicks: Seq[Click], hyperParamsService:HyperPara
 
   private val userCounterMap = CounterMap[Int]()
 
-  def processCluster(click: Click) = {
-   
-    val key = (click.marketId, click.destId, click.isPackage, click.userId)
-    if (clusterHistByMDPU.getMap.contains(key)) {
-      
-       val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.mdpu.beta1", click.marketId,hyperParams).toFloat
-    val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.mdpu.isBookingWeight", click.marketId,hyperParams).toFloat
-
-    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
-
-      
-      if (click.isBooking == 1) clusterHistByMDPU.add(key, click.cluster, value = w * isBookingWeight)
-      else clusterHistByMDPU.add(key, click.cluster, value = w * beta1)
-    }
-
-    userCounterMap.add(click.userId)
-  }
-
-  def create(marketDestUserModel: MarketDestUserPredictionModel, marketDestModel: MarketDestModel, mdpModel: MdpModel,
-             destCounterMap: CounterMap[Int], destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
-             destModel: DestModel): MdpuModel = {
-
-    logger.info("Add prior stats to clusterHistByMDPU...")
-    clusterHistByMDPU.getMap.foreach {
-
-      case ((marketId, destId, isPackage, userId), userClusterProbs) =>
-
-        val beta2 = hyperParamsService.getParamValueForMarketId("expedia.model.mdpu.beta2", marketId,hyperParams).toFloat
-
-        userClusterProbs :+= 150f * (beta2 * mdpModel.predict(marketId, destId, isPackage) + (1 - beta2) * marketDestUserModel.predict(marketId, destId, userId))
-
-    }
-    clusterHistByMDPU.normalise()
-    logger.info("Add prior stats to clusterHistByMDPU...done")
-
-    MdpuModel(clusterHistByMDPU, userCounterMap, destCounterMap, destMarketCounterMap, destModel)
-  }
+  
+  
 
 }
 

@@ -11,10 +11,7 @@ import breeze.linalg._
 import expedia.util.calcTopNClusters
 import expedia.util.getTop5Clusters
 import expedia.model.dest.DestModel
-import expedia.model.dest.DestModelBuilder
-import expedia.model.country.CountryModelBuilder
 import expedia.model.marketmodel.MarketModel
-import expedia.model.marketmodel.MarketModelBuilder
 import scala.util.Random
 import expedia.util.TimeDecayService
 import expedia.CompoundHyperParams

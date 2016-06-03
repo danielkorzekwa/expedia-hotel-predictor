@@ -6,6 +6,7 @@ import breeze.linalg.DenseVector
 import expedia.model.ClusterModel
 import expedia.stats.MulticlassHistByKey
 import expedia.model.country.CountryModel
+import scala.collection._
 
 case class DestClusterModel(clusterHistByDestCluster: MulticlassHistByKey[Int], destClusterByDestMap: Map[Int, Int],countryModel:CountryModel) extends ClusterModel with LazyLogging {
 

@@ -1,19 +1,20 @@
 package expedia.model.marketmodel
 
+import scala.collection._
+
+import breeze.numerics._
 import expedia.CompoundHyperParams
+import expedia.CompoundHyperParamsMap
 import expedia.HyperParamsService
 import expedia.data.Click
 import expedia.data.ExDataSource
+import expedia.model.ClusterModelBuilder
 import expedia.model.ClusterModelBuilderFactory
 import expedia.model.country.CountryModel
-import expedia.model.country.CountryModelBuilder
-import expedia.util.TimeDecayService
-import expedia.model.ClusterModelBuilder
-import scala.collection._
+import expedia.model.country.CountryModelBuilder2
 import expedia.stats.MulticlassHistByKey
 import expedia.util.TimeDecayService
-import breeze.numerics._
-import expedia.CompoundHyperParamsMap
+import expedia.util.TimeDecayService
 
 case class MarketModelBuilder2(countryModel: CountryModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
 
@@ -67,19 +68,11 @@ object MarketModelBuilder2 extends ClusterModelBuilderFactory {
 
   def build(trainDatasource: ExDataSource, testClicks: Seq[Click], modelHyperParamsMap: CompoundHyperParamsMap): MarketModelBuilder2 = {
 
-    val hyperParams = modelHyperParamsMap.getModel("default")
+    val timeDecayService = TimeDecayService(testClicks)
     val hyperParamsService = HyperParamsService(testClicks)
 
-    val timeDecayService = TimeDecayService(testClicks, hyperParamsService, hyperParams)
-
-    val countryModelBuilder = CountryModelBuilder(testClicks, hyperParamsService, hyperParams, timeDecayService)
-
-    def onClick(click: Click) = {
-      countryModelBuilder.processCluster(click)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    val countryModel = countryModelBuilder.create()
+    val countryModel = CountryModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap).
+      create(trainDatasource, testClicks, modelHyperParamsMap.getModel("country"))
 
     MarketModelBuilder2(countryModel, timeDecayService, hyperParamsService)
   }

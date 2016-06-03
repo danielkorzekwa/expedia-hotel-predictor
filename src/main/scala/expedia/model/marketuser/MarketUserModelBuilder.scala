@@ -23,39 +23,7 @@ case class MarketUserModelBuilder(testClicks: Seq[Click],  hyperParamsService: H
 
   private val beta2 = 0.95f //hyperParams.getParamValue("expedia.model.marketuser.beta2").toFloat
 
-  def processCluster(click: Click) = {
-
   
-
-    val marketUserKey = (click.marketId, click.userId)
-    if (clusterHistByMarketUser.getMap.contains(marketUserKey)) {
-      
-        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.beta1", click.marketId,hyperParams).toFloat
-    val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.isBookingWeight", click.marketId,hyperParams).toFloat
-
-    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
-      if (click.isBooking == 1) clusterHistByMarketUser.add(marketUserKey, click.cluster, value = w * isBookingWeight)
-      else clusterHistByMarketUser.add(marketUserKey, click.cluster, value = w * beta1)
-    }
-
-  }
-
-  def create(countryUserModel: CountryUserModel, marketModel: MarketModel): MarketUserModel = {
-
-    clusterHistByMarketUser.getMap.foreach {
-      case ((marketId, userId), clusterCounts) =>
-        val beta3 = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.beta3", marketId,hyperParams).toFloat
-
-        //        if (countryUserModel.predictionExists(countryByMarket(marketId), userId)) {
-        //          clusterCounts :+= beta3 * (beta2 * marketModel.predict(marketId) + (1 - beta2) * countryUserModel.predict(countryByMarket(marketId), userId)) 
-        //        } else clusterCounts :+= beta3* marketModel.predict(marketId) 
-
-        clusterCounts :+= beta3 * marketModel.predict(marketId)
-    }
-    clusterHistByMarketUser.normalise()
-
-    MarketUserModel(clusterHistByMarketUser)
-  }
 
 }
 

@@ -25,19 +25,19 @@ case class MarketUserLocModelBuilder(testClicks: Seq[Click], hyperParamsService:
 
   def processCluster(click: Click) = {
 
-  
-
-    val marketUserLocKey = (click.marketId, click.userLoc)
-    if (clusterHistByMarketUserLoc.getMap.contains(marketUserLocKey)) {
-      
-        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.beta1", click.marketId,hyperParams).toFloat
-    val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.isBookingWeight", click.marketId,hyperParams).toFloat
-
-    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
-      if (click.isBooking == 1) clusterHistByMarketUserLoc.add(marketUserLocKey, click.cluster, value = w * isBookingWeight)
-      else clusterHistByMarketUserLoc.add(marketUserLocKey, click.cluster, value = w * beta1)
-    }
-
+//  
+//
+//    val marketUserLocKey = (click.marketId, click.userLoc)
+//    if (clusterHistByMarketUserLoc.getMap.contains(marketUserLocKey)) {
+//      
+//        val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.beta1", click.marketId,hyperParams).toFloat
+//    val isBookingWeight = hyperParamsService.getParamValueForMarketId("expedia.model.marketuser.isBookingWeight", click.marketId,hyperParams).toFloat
+//
+//    val w = timeDecayService.getDecayForMarketId(click.dateTime,click.marketId)
+//      if (click.isBooking == 1) clusterHistByMarketUserLoc.add(marketUserLocKey, click.cluster, value = w * isBookingWeight)
+//      else clusterHistByMarketUserLoc.add(marketUserLocKey, click.cluster, value = w * beta1)
+//    }
+???
   }
 
   def create(countryUserModel: CountryUserModel, marketModel: MarketModel): MarketUserLocModel = {

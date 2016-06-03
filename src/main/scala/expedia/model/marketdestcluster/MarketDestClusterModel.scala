@@ -6,6 +6,7 @@ import breeze.linalg.DenseVector
 import expedia.model.ClusterModel
 import expedia.stats.MulticlassHistByKey
 import expedia.model.country.CountryModel
+import scala.collection._
 
 case class MarketDestClusterModel(
     destClusterHistByMarketDestCluster: MulticlassHistByKey[Tuple2[Int,Int]], 

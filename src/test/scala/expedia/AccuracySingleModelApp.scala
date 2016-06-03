@@ -26,15 +26,15 @@ object AccuracySingleModelApp extends LazyLogging {
     val marketIds = Set(628, 675, 365, 1230, 637, 701)
     // val marketIds = Set(675)
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/all/train_2013.kryo"
-    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+//    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/all/train_2013.kryo"
+//    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+//    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
+//    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
 
-    //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
-    //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo, filterTrain)
-    //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
-    //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
+        val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+        val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+        val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+        val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() //.filter(click => (click.marketId == 628 && click.userLoc == 24103) || (click.marketId == 628 && click.userLoc == 36086))
 
     val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMap_trained.kryo")
     //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
