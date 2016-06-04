@@ -1,37 +1,32 @@
 package expedia.learn
 
+import com.typesafe.scalalogging.slf4j.LazyLogging
+import dk.gp.util.saveObject
+import expedia.CompoundHyperParams
+import expedia.CompoundHyperParamsMap
+import expedia.SimpleHyperParams
 import expedia.data.Click
 import expedia.data.ExDataSource
-import expedia.CompoundHyperParams
-import expedia.SimpleHyperParams
-import dk.gp.util.averagePrecision
-import expedia.model.cmu.CmuModelBuilder2
-import breeze.linalg.DenseVector
-import scala.util.Random
-import com.typesafe.scalalogging.slf4j.LazyLogging
-import breeze.stats._
-import dk.gp.util.saveObject
+import expedia.model.ClusterModelBuilder
 import expedia.model.ClusterModelBuilder
 import expedia.model.ClusterModelBuilder
 import expedia.model.ClusterModelBuilderFactory
-import expedia.model.ClusterModelBuilder
-import expedia.model.marketmodel.MarketModelBuilder2
-import expedia.CompoundHyperParamsMap
+import expedia.model.cmu.CmuModelBuilder2
 import expedia.model.country.CountryModelBuilder2
 import expedia.model.countryuser.CountryUserModelBuilder2
-import expedia.model.marketuser.MarketUserModelBuilder2
 import expedia.model.dest.DestModelBuilder2
-import expedia.model.destcluster.DestClusterModel
+import expedia.model.dest.DestModelBuilder2
 import expedia.model.destcluster.DestClusterModelBuilder2
-import expedia.model.marketdestcluster.MarketDestClusterModelBuilder2
 import expedia.model.marketdest.MarketDestModelBuilder2
-import expedia.model.mdp.MdpModelBuilder2
+import expedia.model.marketdestcluster.MarketDestClusterModelBuilder2
 import expedia.model.marketdestuser.MarketDestUserModelBuilder
-import expedia.model.mdpu.MdpuModel
-import expedia.model.mdpu.MdpuModelBuilder2
-import expedia.model.dest.DestModelBuilder2
-import expedia.model.mdpu.MdpuModelBuilder2
 import expedia.model.marketdestuser2.MarketDestUserModelBuilder2
+import expedia.model.marketmodel.MarketModelBuilder2
+import expedia.model.marketuser.MarketUserModelBuilder2
+import expedia.model.mdp.MdpModelBuilder2
+import expedia.model.mdpu.MdpuModelBuilder2
+import expedia.model.mdpu.MdpuModelBuilder2
+import java.util.concurrent.atomic.AtomicInteger
 
 object learnModelParams extends LazyLogging {
 
@@ -73,18 +68,33 @@ object learnModelParams extends LazyLogging {
   private def learnModelHyperParams(modelHyperParams: CompoundHyperParams, hyperParamsMap: CompoundHyperParamsMap,
                                     trainDS: ExDataSource, testClicks: Seq[Click], modelBuilderFactory: ClusterModelBuilderFactory): CompoundHyperParams = {
 
-    val newModelHyperParamsList = modelHyperParams.prioritizedHyperParams.map { params =>
+    logger.info("Markets to learn:" + modelHyperParams.hyperParamsByMarket.size)
+    val i = new AtomicInteger(0)
+    val newHyperParamsByMarket = modelHyperParams.hyperParamsByMarket.map {
+      case (marketId, params) =>
 
-      //if (params.continentIdMatcher.getOrElse(0).equals(3)) {
-      if (params.countryIdMatcher.getOrElse(0).equals(198)) {
-        val segmentTestClicks = testClicks.filter { click => params.containsClick(click.continentId, click.countryId) }
+        logger.info("Learning market %d/%d".format(i.getAndIncrement, modelHyperParams.hyperParamsByMarket.size))
+        val segmentTestClicks = testClicks.filter { click => click.marketId == marketId }
 
         val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)
-        trainSimpleModelParams(modelBuilder, params, trainDS, segmentTestClicks)
-      } else params
+        val newParams = trainSimpleModelParamsForMarket(modelBuilder, params, trainDS, segmentTestClicks, modelHyperParams, marketId)
+        marketId -> newParams
     }
 
-    val newModelHyperParams = modelHyperParams.copy(prioritizedHyperParams = newModelHyperParamsList)
+    logger.info("Countries to learn to learn:" + modelHyperParams.hyperParamsByCountry.size)
+    val i2 = new AtomicInteger(0)
+
+    val newHyperParamsByCountry = modelHyperParams.hyperParamsByCountry.map {
+      case (countryId, params) =>
+        logger.info("Learning country %d/%d".format(i2.getAndIncrement, modelHyperParams.hyperParamsByMarket.size))
+        val segmentTestClicks = testClicks.filter { click => click.countryId == countryId }
+
+        val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)
+        val newParams = trainSimpleModelParamsForCountry(modelBuilder, params, trainDS, segmentTestClicks, modelHyperParams, countryId)
+        countryId -> newParams
+    }
+
+    val newModelHyperParams = modelHyperParams.copy(hyperParamsByMarket = newHyperParamsByMarket, hyperParamsByCountry = newHyperParamsByCountry)
     newModelHyperParams
   }
 

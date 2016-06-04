@@ -20,21 +20,26 @@ object TrainModelParamsApp5 extends LazyLogging {
 
     val now = System.currentTimeMillis()
 
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/all/train_2013.kryo"
-    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+    //    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/all/train_2013.kryo"
+    //    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+    //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
+    //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
 
-//        val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
-//        val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-//        val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
-//        val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+            val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+            val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+            val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+            val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+
+//    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
+//    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+//    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
+//    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()//.filter(click => click.continentId == 3)
 
     // val modelsToLearn = List("market")
-   val modelsToLearn = List("country", "countryuser", "marketuser", "market", "dest", "destcluster", "marketdestcluster", "marketdest", "mdp", "marketdestuser",  "cmu")
- //  val modelsToLearn = List("cmu")
-    
-    val hyperParamsMapFile = "target/hyperParamsMap_trained.kryo"
+  //  val modelsToLearn = List("country", "countryuser", "marketuser", "market", "dest", "destcluster", "marketdestcluster", "marketdest", "mdp", "marketdestuser", "cmu")
+      val modelsToLearn = List("cmu")
+
+    val hyperParamsMapFile = "target/hyperParamsMapByMarket_trained.kryo"
 
     for (i <- 1 to 100) {
       val hyperParams = loadObject[CompoundHyperParamsMap](hyperParamsMapFile)

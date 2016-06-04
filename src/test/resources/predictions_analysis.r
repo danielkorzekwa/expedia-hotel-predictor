@@ -14,3 +14,5 @@ train_13 <- merge(train_13,clusters,by=c('srch_destination_id'),sort=F)
 
 sqldf('select hotel_market,avg(mapk),count(*) from pp_3 group by hotel_market having count(*)>100 order by avg(mapk) limit 20')
 
+
+pp[ hotel_market==116 & srch_destination_id==22114][order(date_time)][,c('date_time','orig_destination_distance','srch_destination_id','hotel_cluster','mapk'),with=F][1:100]

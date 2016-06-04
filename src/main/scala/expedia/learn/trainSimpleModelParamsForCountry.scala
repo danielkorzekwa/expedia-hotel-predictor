@@ -15,11 +15,12 @@ import expedia.data.Click
 import expedia.data.ExDataSource
 import expedia.model.ClusterModelBuilder
 
-object trainSimpleModelParams extends LazyLogging {
+object trainSimpleModelParamsForCountry extends LazyLogging {
 
-  def apply(modelBuilder: ClusterModelBuilder, initialHyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click]): SimpleHyperParams = {
+  def apply(modelBuilder: ClusterModelBuilder, initialHyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click], 
+      modelHyperParams: CompoundHyperParams, countryId: Int): SimpleHyperParams = {
 
-    val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks, modelBuilder)
+    val initialMapk = computeMapk(initialHyperParams, trainDS, testClicks, modelBuilder,modelHyperParams,countryId)
     var bestMapk = initialMapk
     var bestHyperParams = initialHyperParams
 
@@ -33,13 +34,13 @@ object trainSimpleModelParams extends LazyLogging {
           (-3 to 3).filter(x => x != 0).foreach { i =>
             val currParamValue = bestParamValue + i * bestParamValue * 0.05 * (1 + rand.nextInt(10))
             val currHyperParams = bestHyperParams.withParamValue(param, currParamValue)
-            val currMapk = computeMapk(currHyperParams, trainDS, testClicks, modelBuilder)
+            val currMapk = computeMapk(currHyperParams, trainDS, testClicks, modelBuilder,modelHyperParams,countryId)
 
             if (currMapk > bestMapk) {
               logger.info("Best!!!, param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex + 1, params.size, currMapk, bestMapk, initialMapk))
               bestMapk = currMapk
               bestHyperParams = currHyperParams
-            } else logger.info(" param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex + 1, params.size, currMapk, bestMapk, initialMapk))
+            } //else logger.info(" param=%s %d/%d, curr=%.8f ,best=%.8f, initial=%.8f".format(param, paramIndex + 1, params.size, currMapk, bestMapk, initialMapk))
 
           }
       }
@@ -47,11 +48,14 @@ object trainSimpleModelParams extends LazyLogging {
     bestHyperParams
   }
 
-  private def computeMapk(hyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click], modelBuilder: ClusterModelBuilder): Double = {
+  private def computeMapk(hyperParams: SimpleHyperParams, trainDS: ExDataSource, testClicks: Seq[Click], modelBuilder: ClusterModelBuilder,
+       modelHyperParams: CompoundHyperParams, countryId: Int): Double = {
 
-    val segmentCompoundHyperParams = CompoundHyperParams(List(hyperParams))
+     val modelHyperParamsCopy = modelHyperParams.copy()
+    modelHyperParamsCopy.hyperParamsByCountry += (countryId -> hyperParams)
 
-    val top5predictions = modelBuilder.create(trainDS, testClicks, segmentCompoundHyperParams).predictTop5(testClicks)
+
+    val top5predictions = modelBuilder.create(trainDS, testClicks, modelHyperParamsCopy).predictTop5(testClicks)
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
     val mapk = mean(averagePrecision(top5predictions(::, 5 to 9), actual, k = 5))
     mapk

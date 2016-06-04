@@ -45,10 +45,11 @@ case class CmuModelBuilder2(countryModel: CountryModel,
                             destModel: DestModel, marketDestModel: MarketDestModel, marketDestUserModel: MarketDestUserPredictionModel,
                             marketDestUserModel2: MarketDestUserPredictionModel2,
                             countryUserModel: CountryUserModel, marketUserModel: MarketUserModel,
-                            marketModel: MarketModel, mdpModel: MdpModel, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
+                            marketModel: MarketModel, mdpModel: MdpModel, hyperParamsService: HyperParamsService,
+                            userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int],
+                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]]) extends ClusterModelBuilder {
 
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): CmuModel = {
-
     /**
      * Process training set
      */
@@ -62,29 +63,6 @@ case class CmuModelBuilder2(countryModel: CountryModel,
 
     val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
     testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
-
-    val userCounterMap = CounterMap[Int]()
-
-    def onClick(click: Click) = {
-      userCounterMap.add(click.userId)
-    }
-    trainDatasource.foreach { click => onClick(click) }
-
-    /**
-     * Create counters
-     */
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-    def onClickCounters(click: Click) = {
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-    }
-    trainDatasource.foreach { click => onClickCounters(click) }
-
     /**
      * Build model
      */
@@ -125,16 +103,17 @@ case class CmuModelBuilder2(countryModel: CountryModel,
         val mduPred = marketDestUserModel.predict(marketId, destId, userId)
         val mdu = mduPred - mdPred
 
-     //   val mduPred2 = marketDestUserModel2.predict(marketId, destId, userId)
-     //   val mdu2 = marketDestUserModel2.predictDelta(marketId, destId, userId)
-    //    val mdu2 = mduPred2 - mdPred
+        //   val mduPred2 = marketDestUserModel2.predict(marketId, destId, userId)
+        //   val mdu2 = marketDestUserModel2.predictDelta(marketId, destId, userId)
+        //    val mdu2 = mduPred2 - mdPred
 
         val predicted = cmuBeta1 * c + cmuBeta2 * cm + cmuBeta3 * md + cmuBeta4 * mu + cmuBeta5 * cu + cmuBeta6 * mdu + cmuBeta7 * mdp
-      //   val predicted = cmuBeta6 * mduPred2 + cmuBeta7 * mdpPred
+        //   val predicted = cmuBeta6 * mduPred2 + cmuBeta7 * mdpPred
         (marketId, destId, isPackage, userId) -> predicted
 
     }
-    CmuModel(predictionMdpuMap, userCounterMap, destCounterMap, destMarketCounterMap, destModel)
+    val model = CmuModel(predictionMdpuMap, userCounterMap, destCounterMap, destMarketCounterMap, destModel)
+    model
   }
 }
 
@@ -177,8 +156,24 @@ object CmuModelBuilder2 extends ClusterModelBuilderFactory {
     val marketDestUserModel2 = MarketDestUserModelBuilder2(marketDestModel, countryUserModel, marketUserModel, timeDecayService, hyperParamsService)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser2"))
 
+    /**
+     * Create counters
+     */
+    val userCounterMap = CounterMap[Int]()
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
+    def onClickCounters(click: Click) = {
+      if (click.isBooking == 1) {
+        userCounterMap.add(click.userId)
+        destMarketCounterMap.add((click.destId, click.marketId))
+        destCounterMap.add(click.destId)
+
+      }
+    }
+    trainDatasource.foreach { click => onClickCounters(click) }
+
     val cmuModelBuilder = CmuModelBuilder2(countryModel, destModel, marketDestModel, marketDestUserModel, marketDestUserModel2,
-      countryUserModel, marketUserModel, marketModel, mdpModel, hyperParamsService)
+      countryUserModel, marketUserModel, marketModel, mdpModel, hyperParamsService, userCounterMap, destCounterMap, destMarketCounterMap)
     cmuModelBuilder
   }
 }

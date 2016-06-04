@@ -1,6 +1,6 @@
 package expedia
 
-case class SimpleHyperParams(paramsMap: Map[String, Double], continentIdMatcher: Option[Int] = None, countryIdMatcher: Option[Int] = None) {
+case class SimpleHyperParams(paramsMap: Map[String, Double]) {
 
   def getParams(): Seq[String] = paramsMap.keys.toList
 
@@ -11,15 +11,6 @@ case class SimpleHyperParams(paramsMap: Map[String, Double], continentIdMatcher:
     this.copy(paramsMap = newParamMap)
   }
 
-  def containsClick(contId: Int, countryId: Int): Boolean = {
-    if (continentIdMatcher.isEmpty && countryIdMatcher.isEmpty) false
-    else {
-      val continentMatched = continentIdMatcher.isEmpty || continentIdMatcher.get == contId
-      val countryMatched = countryIdMatcher.isEmpty || countryIdMatcher.get == countryId
-
-      continentMatched && countryMatched
-    }
-  }
 }
 
 object SimpleHyperParams {

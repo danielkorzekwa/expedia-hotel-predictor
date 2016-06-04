@@ -20,36 +20,7 @@ case class CmuModel(
       destModel: DestModel) extends ClusterModel{
   
     
-  
-  val userLocMarketList = csvread(new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/userLocMarketList.csv"), skipLines = 1)
 
-  //key - (userLoc,market,destId), val Map[dist,clusterProbs]]
-  val svmDistPredictionsByLocMarketDist: Map[Tuple3[Int, Int, Int], Map[Double, DenseVector[Float]]] = (0 until userLocMarketList.rows).
-    filter { row =>
-      val userLoc = userLocMarketList(row, 0).toInt
-      val marketId = userLocMarketList(row, 1).toInt
-      val destId = userLocMarketList(row, 2).toInt
-      val count = userLocMarketList(row, 3).toInt
-      new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)).exists()
-    }.
-    map { row =>
-      val userLoc = userLocMarketList(row, 0).toInt
-      val marketId = userLocMarketList(row, 1).toInt
-      val destId = userLocMarketList(row, 2).toInt
-      val svmPredictionsByDistData = csvread(new File("c:/perforce/daniel/ex/svm/svm_dest_dist1000/svm_predictions_loc_%d_market_%d_dest_%d.csv".format(userLoc, marketId, destId)), skipLines = 1)
-
-      val svmMap = try {
-        loadClusterProbsByKeyMap2[Double](svmPredictionsByDistData)
-      } catch {
-        case e: Exception => {
-          Map[Double, DenseVector[Float]]()
-        }
-      }
-
-      (userLoc, marketId, destId) -> svmMap
-    }.filter(_._2.size > 0).toMap
-
-  
   
     def predict(click:Click): DenseVector[Float] = {
 // return  clusterHistByMDPU((click.marketId,click.destId, click.isPackage,click.userId))
