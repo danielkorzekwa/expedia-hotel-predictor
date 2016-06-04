@@ -23,24 +23,18 @@ import expedia.model.marketmodel.MarketModelBuilder2
 case class MarketDestClusterModelBuilder2(countryModel:CountryModel,marketModel:MarketModel,timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestClusterModel = {
 
-    val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
-    val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
-      val destId = destClusterByDestMat(i, 0).toInt
-      val clusterId = destClusterByDestMat(i, 1).toInt
-      destId -> clusterId
-    }.toMap
 
     val destCounterMap = CounterMap[Int]()
 
     val countryByDestCluster: mutable.Map[Int, Int] = mutable.Map()
     testClicks.foreach { click =>
-      if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
+      if (MarketDestClusterModelBuilder2.destClusterByDestMap.contains(click.destId)) countryByDestCluster += MarketDestClusterModelBuilder2.destClusterByDestMap(click.destId) -> click.countryId
     }
 
     val destClusterHistByMarketDestCluster = MulticlassHistByKey[Tuple2[Int, Int]](100)
     testClicks.foreach { click =>
-      if (destClusterByDestMap.contains(click.destId)) {
-        val key = (click.marketId, destClusterByDestMap(click.destId))
+      if (MarketDestClusterModelBuilder2.destClusterByDestMap.contains(click.destId)) {
+        val key = (click.marketId, MarketDestClusterModelBuilder2.destClusterByDestMap(click.destId))
         destClusterHistByMarketDestCluster.add(key, click.cluster, value = 0)
       }
     }
@@ -50,15 +44,15 @@ case class MarketDestClusterModelBuilder2(countryModel:CountryModel,marketModel:
      */
     def onClick(click: Click) = {
 
-      if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
+      if (MarketDestClusterModelBuilder2.destClusterByDestMap.contains(click.destId)) countryByDestCluster += MarketDestClusterModelBuilder2.destClusterByDestMap(click.destId) -> click.countryId
 
       if (click.isBooking == 1) {
         destCounterMap.add(click.destId)
       }
 
-      destClusterByDestMap.get(click.destId) match {
+      MarketDestClusterModelBuilder2.destClusterByDestMap.get(click.destId) match {
         case Some(destCluster) => {
-          val key = (click.marketId, destClusterByDestMap(click.destId))
+          val key = (click.marketId, MarketDestClusterModelBuilder2.destClusterByDestMap(click.destId))
           if (destClusterHistByMarketDestCluster.getMap.contains(key)) {
 
             val beta1 = hyperParamsService.getParamValueForMarketId("expedia.model.marketdestcluster.beta1", click.marketId, hyperParams).toFloat
@@ -89,7 +83,7 @@ case class MarketDestClusterModelBuilder2(countryModel:CountryModel,marketModel:
     }
     destClusterHistByMarketDestCluster.normalise()
 
-    MarketDestClusterModel(destClusterHistByMarketDestCluster, destClusterByDestMap, countryModel)
+    MarketDestClusterModel(destClusterHistByMarketDestCluster, MarketDestClusterModelBuilder2.destClusterByDestMap, countryModel)
   }
 }
 
@@ -109,4 +103,12 @@ object MarketDestClusterModelBuilder2
       
     MarketDestClusterModelBuilder2(countryModel,marketModel,timeDecayService, hyperParamsService)
   }
+  
+  
+    val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
+    val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
+      val destId = destClusterByDestMat(i, 0).toInt
+      val clusterId = destClusterByDestMat(i, 1).toInt
+      destId -> clusterId
+    }.toMap
 }

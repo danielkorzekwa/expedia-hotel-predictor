@@ -21,18 +21,13 @@ import expedia.HyperParamsService
 case class DestClusterModelBuilder2(countryModel: CountryModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
 
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): DestClusterModel = {
-    val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
-    val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
-      val destId = destClusterByDestMat(i, 0).toInt
-      val clusterId = destClusterByDestMat(i, 1).toInt
-      destId -> clusterId
-    }.toMap
+   
 
     val destCounterMap = CounterMap[Int]()
 
     val countryByDestCluster: mutable.Map[Int, Int] = mutable.Map()
     testClicks.foreach { click =>
-      if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
+      if (DestClusterModelBuilder2.destClusterByDestMap.contains(click.destId)) countryByDestCluster += DestClusterModelBuilder2.destClusterByDestMap(click.destId) -> click.countryId
     }
 
     val destClusterHistByDestCluster = MulticlassHistByKey[Int](100)
@@ -42,13 +37,13 @@ case class DestClusterModelBuilder2(countryModel: CountryModel, timeDecayService
      */
     def onClick(click: Click) = {
 
-      if (destClusterByDestMap.contains(click.destId)) countryByDestCluster += destClusterByDestMap(click.destId) -> click.countryId
+      if (DestClusterModelBuilder2.destClusterByDestMap.contains(click.destId)) countryByDestCluster += DestClusterModelBuilder2.destClusterByDestMap(click.destId) -> click.countryId
 
       if (click.isBooking == 1) {
         destCounterMap.add(click.destId)
       }
 
-      destClusterByDestMap.get(click.destId) match {
+      DestClusterModelBuilder2.destClusterByDestMap.get(click.destId) match {
         case Some(destCluster) => {
 
           if (destClusterHistByDestCluster.getMap.contains(destCluster)) {
@@ -80,7 +75,7 @@ case class DestClusterModelBuilder2(countryModel: CountryModel, timeDecayService
     }
     destClusterHistByDestCluster.normalise()
 
-    DestClusterModel(destClusterHistByDestCluster, destClusterByDestMap, countryModel)
+    DestClusterModel(destClusterHistByDestCluster, DestClusterModelBuilder2.destClusterByDestMap, countryModel)
   }
 }
 
@@ -97,5 +92,10 @@ object DestClusterModelBuilder2 extends ClusterModelBuilderFactory {
       DestClusterModelBuilder2(countryModel, timeDecayService, hyperParamsService)
   }
 
- 
+  val destClusterByDestMat = csvread(new File("c:/perforce/daniel/ex/statistics/clusterByDest_30K.csv"), skipLines = 1)
+    val destClusterByDestMap: Map[Int, Int] = (0 until destClusterByDestMat.rows).map { i =>
+      val destId = destClusterByDestMat(i, 0).toInt
+      val clusterId = destClusterByDestMat(i, 1).toInt
+      destId -> clusterId
+    }.toMap
 }

@@ -28,7 +28,7 @@ case class CmuModel(
     val destMarketCounts = destMarketCounterMap.getOrElse((click.destId, click.marketId), 0)
 
     var clusterProb =
-      if (!userCounterMap.contains(click.userId) && destModel.svmDestIds.contains(click.destId) && click.stayDays < 3
+      if (!userCounterMap.contains(click.userId) && DestModel.svmDestIds.contains(click.destId) && click.stayDays < 3
         && !(destMarketCounts < 300 || destCounts / destMarketCounts > 1.5)) {
         destModel.predict(click.destId, click.continentId, click.stayDays)
       } else {
