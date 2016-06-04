@@ -14,7 +14,10 @@ import breeze.numerics._
 import expedia.model.marketdest.MarketDestModel
 import expedia.model.marketdest.MarketDestModelBuilder2
 
-case class MdpModelBuilder2(marketDestModel: MarketDestModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService) extends ClusterModelBuilder {
+case class MdpModelBuilder2(marketDestModel: MarketDestModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService,
+                            destMarketCounterMap: CounterMap[Tuple2[Int, Int]],
+                            destCounterMap: CounterMap[Int],
+                            marketCounterMap: CounterMap[Int]) extends ClusterModelBuilder {
 
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MdpModel = {
 
@@ -25,21 +28,6 @@ case class MdpModelBuilder2(marketDestModel: MarketDestModel, timeDecayService: 
     testClicks.foreach { click =>
       clusterHistByMDP.add((click.marketId, click.destId, click.isPackage), click.cluster, value = 0)
     }
-
-    /**
-     * Create counters
-     */
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-    def onClickCounters(click: Click) = {
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-    }
-    trainDatasource.foreach { click => onClickCounters(click) }
 
     /**
      * Process training set
@@ -116,9 +104,25 @@ object MdpModelBuilder2 extends ClusterModelBuilderFactory {
     val timeDecayService = TimeDecayService(testClicks)
     val hyperParamsService = HyperParamsService(testClicks)
 
+    /**
+     * Create counters
+     */
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
+    val marketCounterMap = CounterMap[Int]()
+    def onClickCounters(click: Click) = {
+      if (click.isBooking == 1) {
+        destMarketCounterMap.add((click.destId, click.marketId))
+        destCounterMap.add(click.destId)
+        marketCounterMap.add(click.marketId)
+      }
+    }
+    trainDatasource.foreach { click => onClickCounters(click) }
+
     val marketDestModel = MarketDestModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdest"))
 
-    MdpModelBuilder2(marketDestModel,timeDecayService, hyperParamsService)
+    MdpModelBuilder2(marketDestModel, timeDecayService, hyperParamsService,
+      destMarketCounterMap, destCounterMap, marketCounterMap)
   }
 }

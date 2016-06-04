@@ -76,9 +76,12 @@ object learnModelParams extends LazyLogging {
         logger.info("Learning market %d/%d".format(i.getAndIncrement, modelHyperParams.hyperParamsByMarket.size))
         val segmentTestClicks = testClicks.filter { click => click.marketId == marketId }
 
+        if(segmentTestClicks.size>0) {
         val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)
         val newParams = trainSimpleModelParamsForMarket(modelBuilder, params, trainDS, segmentTestClicks, modelHyperParams, marketId)
         marketId -> newParams
+        }
+        else marketId -> params
     }
 
     logger.info("Countries to learn to learn:" + modelHyperParams.hyperParamsByCountry.size)
@@ -86,12 +89,13 @@ object learnModelParams extends LazyLogging {
 
     val newHyperParamsByCountry = modelHyperParams.hyperParamsByCountry.map {
       case (countryId, params) =>
-        logger.info("Learning country %d/%d".format(i2.getAndIncrement, modelHyperParams.hyperParamsByMarket.size))
+        logger.info("Learning country %d/%d".format(i2.getAndIncrement, modelHyperParams.hyperParamsByCountry.size))
         val segmentTestClicks = testClicks.filter { click => click.countryId == countryId }
-
-        val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)
-        val newParams = trainSimpleModelParamsForCountry(modelBuilder, params, trainDS, segmentTestClicks, modelHyperParams, countryId)
-        countryId -> newParams
+        if (segmentTestClicks.size > 0) {
+          val modelBuilder = modelBuilderFactory.build(trainDS, segmentTestClicks, hyperParamsMap)
+          val newParams = trainSimpleModelParamsForCountry(modelBuilder, params, trainDS, segmentTestClicks, modelHyperParams, countryId)
+          countryId -> newParams
+        } else countryId -> params
     }
 
     val newModelHyperParams = modelHyperParams.copy(hyperParamsByMarket = newHyperParamsByMarket, hyperParamsByCountry = newHyperParamsByCountry)

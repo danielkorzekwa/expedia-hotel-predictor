@@ -30,9 +30,9 @@ object AccuracySingleModelApp extends LazyLogging {
     //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
     //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
     //
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2013_continent3.kryo"
+    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
     val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_3/train_2014_continent3_booked_only.kryo"
+    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
     val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
 
     //        val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
@@ -41,11 +41,12 @@ object AccuracySingleModelApp extends LazyLogging {
     //        val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() .filter(click =>  click.continentId==3)
 
     val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMapByMarket_trained.kryo")
+    
     //val hyperParamsMap = CompoundHyperParamsMap(mutable.Map())
     val modelBuilder = CmuModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
     val modelParams = hyperParamsMap.getModel("cmu")
     val model = modelBuilder.create(trainDS, testClicks, modelParams)
-
+//saveObject(hyperParamsMap,"target/hyperParamsMapByMarket_trained.kryo")
     val k = 5
     val top5predictions = model.predictTop5(testClicks)
     val predictedMat = model.predict(testClicks) + 1e-10f

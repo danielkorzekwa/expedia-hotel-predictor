@@ -20,14 +20,14 @@ case class ExKryoDataSource(dsName: String, expediaFile: String, filter: (Click)
 
   def foreach(onClick: (Click) => Unit) = {
 
-    logger.info("Processing %s...".format(dsName))
+  //  logger.info("Processing %s...".format(dsName))
 
     var i = 0
     clicks.foreach { click =>
 
       if (filter(click)) onClick(click)
       i += 1
-      if (i % 1000000 == 0) logger.info("Processed expedia rows(%s): %d".format(dsName, i))
+    //  if (i % 1000000 == 0) logger.info("Processed expedia rows(%s): %d".format(dsName, i))
     }
 
   }

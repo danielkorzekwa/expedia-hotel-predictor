@@ -123,6 +123,28 @@ object CmuModelBuilder2 extends ClusterModelBuilderFactory {
     val timeDecayService = TimeDecayService(testClicks)
     val hyperParamsService = HyperParamsService(testClicks)
 
+    /**
+     * Create counters
+     */
+    val marketCounterMap = CounterMap[Int]()
+
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
+
+    val marketUserCounterMap = CounterMap[Tuple2[Int, Int]]()
+    val userCounterMap = CounterMap[Int]()
+    def onClickCounters(click: Click) = {
+      if (click.isBooking == 1) {
+        destMarketCounterMap.add((click.destId, click.marketId))
+        destCounterMap.add(click.destId)
+        marketCounterMap
+      }
+
+      userCounterMap.add(click.userId)
+      marketUserCounterMap.add((click.marketId, click.userId))
+    }
+    trainDatasource.foreach { click => onClickCounters(click) }
+
     val countryModel = CountryModelBuilder2(timeDecayService, hyperParamsService).
       create(trainDatasource, testClicks, modelHyperParamsMap.getModel("country"))
 
@@ -144,33 +166,21 @@ object CmuModelBuilder2 extends ClusterModelBuilderFactory {
     val destModel = DestModelBuilder2(countryModel, destClusterModel, timeDecayService, hyperParamsService)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("dest"))
 
-    val marketDestModel = MarketDestModelBuilder2(marketModel, destModel, marketDestClusterModel, timeDecayService, hyperParamsService)
+    val marketDestModel = MarketDestModelBuilder2(marketModel, destModel, marketDestClusterModel, timeDecayService, hyperParamsService,
+        destMarketCounterMap,destCounterMap,marketCounterMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdest"))
 
-    val mdpModel = MdpModelBuilder2(marketDestModel, timeDecayService, hyperParamsService)
+    val mdpModel = MdpModelBuilder2(marketDestModel, timeDecayService, hyperParamsService,
+        destMarketCounterMap,destCounterMap,marketCounterMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("mdp"))
 
-    val marketDestUserModel = MarketDestUserModelBuilder(marketDestModel, timeDecayService, hyperParamsService)
+    val marketDestUserModel = MarketDestUserModelBuilder(marketDestModel, timeDecayService, hyperParamsService,
+      destMarketCounterMap, destCounterMap, marketCounterMap,
+      marketUserCounterMap, userCounterMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser"))
 
     val marketDestUserModel2 = MarketDestUserModelBuilder2(marketDestModel, countryUserModel, marketUserModel, timeDecayService, hyperParamsService)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser2"))
-
-    /**
-     * Create counters
-     */
-    val userCounterMap = CounterMap[Int]()
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    def onClickCounters(click: Click) = {
-      if (click.isBooking == 1) {
-        userCounterMap.add(click.userId)
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-
-      }
-    }
-    trainDatasource.foreach { click => onClickCounters(click) }
 
     val cmuModelBuilder = CmuModelBuilder2(countryModel, destModel, marketDestModel, marketDestUserModel, marketDestUserModel2,
       countryUserModel, marketUserModel, marketModel, mdpModel, hyperParamsService, userCounterMap, destCounterMap, destMarketCounterMap)

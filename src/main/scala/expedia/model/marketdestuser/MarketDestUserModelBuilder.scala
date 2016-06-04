@@ -16,7 +16,9 @@ import expedia.model.marketdest.MarketDestModel
 import expedia.model.marketdest.MarketDestModelBuilder2
 import expedia.model.marketdest.MarketDestModelBuilder2
 
-case class MarketDestUserModelBuilder(marketDestModel: MarketDestModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService)
+case class MarketDestUserModelBuilder(marketDestModel: MarketDestModel, timeDecayService: TimeDecayService, hyperParamsService: HyperParamsService,
+                                      destMarketCounterMap: CounterMap[Tuple2[Int, Int]], destCounterMap: CounterMap[Int], marketCounterMap: CounterMap[Int],
+                                      marketUserCounterMap: CounterMap[Tuple2[Int, Int]], userCounterMap: CounterMap[Int])
     extends ClusterModelBuilder with LazyLogging {
 
   def create(trainDatasource: ExDataSource, testClicks: Seq[Click], hyperParams: CompoundHyperParams): MarketDestUserPredictionModel = {
@@ -29,24 +31,6 @@ case class MarketDestUserModelBuilder(marketDestModel: MarketDestModel, timeDeca
 
     val countryByMarket: mutable.Map[Int, Int] = mutable.Map()
     testClicks.foreach(click => countryByMarket += click.marketId -> click.countryId)
-
-    val marketUserCounterMap = CounterMap[Tuple2[Int, Int]]()
-    val userCounterMap = CounterMap[Int]()
-
-    /**
-     * Create counters
-     */
-    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
-    val destCounterMap = CounterMap[Int]()
-    val marketCounterMap = CounterMap[Int]()
-    def onClickCounters(click: Click) = {
-      if (click.isBooking == 1) {
-        destMarketCounterMap.add((click.destId, click.marketId))
-        destCounterMap.add(click.destId)
-        marketCounterMap.add(click.marketId)
-      }
-    }
-    trainDatasource.foreach { click => onClickCounters(click) }
 
     /**
      * Process training set
@@ -64,9 +48,6 @@ case class MarketDestUserModelBuilder(marketDestModel: MarketDestModel, timeDeca
         if (click.isBooking == 1) clusterHistByDestMarketUser.add(key, click.cluster, value = w * isBookingWeight)
         else clusterHistByDestMarketUser.add(key, click.cluster, value = w * beta6)
       }
-
-      userCounterMap.add(click.userId)
-      marketUserCounterMap.add((click.marketId, click.userId))
 
     }
     trainDatasource.foreach { click => onClick(click) }
@@ -130,6 +111,29 @@ object MarketDestUserModelBuilder extends ClusterModelBuilderFactory {
     val marketDestModel = MarketDestModelBuilder2.build(trainDatasource, testClicks, modelHyperParamsMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdest"))
 
-    MarketDestUserModelBuilder(marketDestModel, timeDecayService, hyperParamsService)
+    /**
+     * Create counters
+     */
+    val destMarketCounterMap = CounterMap[Tuple2[Int, Int]]
+    val destCounterMap = CounterMap[Int]()
+    val marketCounterMap = CounterMap[Int]()
+
+    val marketUserCounterMap = CounterMap[Tuple2[Int, Int]]()
+    val userCounterMap = CounterMap[Int]()
+
+    def onClickCounters(click: Click) = {
+      if (click.isBooking == 1) {
+        destMarketCounterMap.add((click.destId, click.marketId))
+        destCounterMap.add(click.destId)
+        marketCounterMap.add(click.marketId)
+      }
+
+      userCounterMap.add(click.userId)
+      marketUserCounterMap.add((click.marketId, click.userId))
+    }
+    trainDatasource.foreach { click => onClickCounters(click) }
+
+    MarketDestUserModelBuilder(marketDestModel, timeDecayService, hyperParamsService, destMarketCounterMap, destCounterMap, marketCounterMap,
+      marketUserCounterMap, userCounterMap)
   }
 }
