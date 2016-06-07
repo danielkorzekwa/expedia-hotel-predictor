@@ -46,7 +46,7 @@ case class RankGprPredict(model: RankGprModel) {
       case List(c1, c2) =>
    
         val gprModel = gpModelsByoneToOnePair(List(c1, c2))
-        val probC1 = dk.gp.gpr.predict(t.toDenseMatrix.t, gprModel)(0, 0)
+        val probC1 = dk.gp.gpr.predict(t.toDenseMatrix, gprModel)(0, 0)
        
         val c1Index = classIndexByClass(c1)
         val c2Index = classIndexByClass(c2)
