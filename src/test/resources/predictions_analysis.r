@@ -12,7 +12,6 @@ clusters <- fread('c:/perforce/daniel/ex/statistics/clusterByDest_30k.csv')
 pp <- merge(pp,clusters,by=c('srch_destination_id'),sort=F)
 train_13 <- merge(train_13,clusters,by=c('srch_destination_id'),sort=F)
 
-sqldf('select hotel_market,avg(mapk),count(*) from pp_3 group by hotel_market having count(*)>100 order by avg(mapk) limit 20')
+a <- sqldf('select hotel_cluster,avg(mapk),count(*) from pp group by hotel_cluster order by hotel_cluster limit 100')
 
-
-pp[ hotel_market==116 & srch_destination_id==22114][order(date_time)][,c('date_time','orig_destination_distance','srch_destination_id','hotel_cluster','mapk'),with=F][1:100]
+dest <- fread('c:/perforce/daniel/ex/orig_data/destinations.csv')

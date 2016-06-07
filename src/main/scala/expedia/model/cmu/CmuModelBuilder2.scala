@@ -43,7 +43,7 @@ import expedia.model.marketdestuser2.MarketDestUserPredictionModel2
 
 case class CmuModelBuilder2(countryModel: CountryModel,
                             destModel: DestModel, marketDestModel: MarketDestModel, marketDestUserModel: MarketDestUserPredictionModel,
-                            marketDestUserModel2: MarketDestUserPredictionModel2,
+                           
                             countryUserModel: CountryUserModel, marketUserModel: MarketUserModel,
                             marketModel: MarketModel, mdpModel: MdpModel, hyperParamsService: HyperParamsService,
                             userCounterMap: CounterMap[Int], destCounterMap: CounterMap[Int],
@@ -179,10 +179,8 @@ object CmuModelBuilder2 extends ClusterModelBuilderFactory {
       marketUserCounterMap, userCounterMap)
       .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser"))
 
-    val marketDestUserModel2 = MarketDestUserModelBuilder2(marketDestModel, countryUserModel, marketUserModel, timeDecayService, hyperParamsService)
-      .create(trainDatasource, testClicks, modelHyperParamsMap.getModel("marketdestuser2"))
 
-    val cmuModelBuilder = CmuModelBuilder2(countryModel, destModel, marketDestModel, marketDestUserModel, marketDestUserModel2,
+    val cmuModelBuilder = CmuModelBuilder2(countryModel, destModel, marketDestModel, marketDestUserModel, 
       countryUserModel, marketUserModel, marketModel, mdpModel, hyperParamsService, userCounterMap, destCounterMap, destMarketCounterMap)
     cmuModelBuilder
   }

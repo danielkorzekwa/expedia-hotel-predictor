@@ -18,6 +18,9 @@ import expedia.model.marketdestuser2.MarketDestUserModelBuilder2
 import expedia.model.cmu.CmuModelBuilder2
 import scala.collection._
 import dk.gp.util.saveObject
+import expedia.data.ExCSVDataSource
+import expedia.model.country.CountryModelBuilder2
+import expedia.model.countryuser.CountryUserModelBuilder2
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -30,23 +33,23 @@ object AccuracySingleModelApp extends LazyLogging {
     //    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/all/train_2014_booked_only.kryo"
     //    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
     //
-    val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
-    val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-    val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
-    val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+        val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2013_continent2.kryo"
+        val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
+        val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/continent_2/train_2014_continent2_booked_only.kryo"
+        val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks()
+    //    
+//    val expediaTrainGP14 = "c:/perforce/daniel/ex/segments/cont_3_14smallest_countries/train_2013_booked_only.csv"
+//    val trainDS = ExCSVDataSource(dsName = "trainDS", expediaTrainGP14)
+//    val expediaTestGP14 = "c:/perforce/daniel/ex/segments/cont_3_14smallest_countries/train_2014_booked_only.csv"
+//    val testClicks = ExCSVDataSource(dsName = "testDS", expediaTestGP14).getAllClicks()
 
-    //        val expediaTrainFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_until_140701.kryo"
-    //        val trainDS = ExKryoDataSource(dsName = "trainDS", expediaTrainFileKryo)
-    //        val expediaTestFileKryo = "c:/perforce/daniel/ex/segments/by6months/train_140701_150101_booked_only.kryo"
-    //        val testClicks = ExKryoDataSource(dsName = "testDS", expediaTestFileKryo).getAllClicks() .filter(click =>  click.continentId==3)
+      val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMapByMarket_trained.kryo")
 
-    val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMapByMarket_trained.kryo")
-    
     //val hyperParamsMap = CompoundHyperParamsMap(mutable.Map())
     val modelBuilder = CmuModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
     val modelParams = hyperParamsMap.getModel("cmu")
     val model = modelBuilder.create(trainDS, testClicks, modelParams)
-//saveObject(hyperParamsMap,"target/hyperParamsMapByMarket_trained.kryo")
+    //saveObject(hyperParamsMap,"target/hyperParamsMapByMarket_trained.kryo")
     val k = 5
     val top5predictions = model.predictTop5(testClicks)
     val predictedMat = model.predict(testClicks) + 1e-10f
