@@ -20,7 +20,7 @@ object CountryUserGPModelTrain {
     val x = DenseVector.horzcat(xSeq :_*).t
     val y = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
 
-    val covFuncParams = DenseVector(log(1), log(1))
+    val covFuncParams = DenseVector(log(1), log(1),log(1), log(1))
     val noiseLogStdDev = log(1)
     
     val covFunc = CountryUserCovFunc()

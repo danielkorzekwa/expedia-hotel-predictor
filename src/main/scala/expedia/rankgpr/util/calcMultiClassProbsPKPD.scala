@@ -2,6 +2,7 @@ package expedia.rankgpr.util
 
 import breeze.linalg._
 import breeze.linalg.DenseVector
+import breeze.numerics._
 
 /**
  *
@@ -18,13 +19,21 @@ object calcMultiClassProbsPKPD {
    */
   def apply(pairWiseProbsMat: DenseMatrix[Double]): DenseVector[Double] = {
 
-    val r_ij_sum = sum(pairWiseProbsMat.map(x => if(x>0) 1d / x else 0), Axis._1)
+    val r_ij_sum = sum(pairWiseProbsMat.map(x => if (x > 0) 1d / x else 0), Axis._1)
     val classNum = r_ij_sum.size
 
-    val probs = DenseVector.tabulate(classNum)(i => 1d / (r_ij_sum(i) - (classNum - 2)))
+    val probs = DenseVector.tabulate(classNum) { i =>
+
+      val prob = 1d / (r_ij_sum(i) - (classNum - 2))
+      if (prob < 0) {
+        println("prob=" + prob)
+      }
+      prob
+    }
 
     val Z = sum(probs)
 
-    probs / Z
+    val normProbs = probs / Z
+    normProbs
   }
 }

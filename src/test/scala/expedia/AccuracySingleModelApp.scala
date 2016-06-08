@@ -23,6 +23,8 @@ import expedia.model.country.CountryModelBuilder2
 import expedia.model.countryuser.CountryUserModelBuilder2
 import expedia.modelgp.country.CountryGPModel
 import expedia.modelgp.countryuser.CountryUserGPModel
+import expedia.modelgp.country.CountryGPModel
+import expedia.modelgp.country.CountryGPModel
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -48,10 +50,10 @@ object AccuracySingleModelApp extends LazyLogging {
    //   val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMapByMarket_trained.kryo")
 
     val hyperParamsMap = CompoundHyperParamsMap(mutable.Map())
-    val modelBuilder = CountryModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
-    val modelParams = hyperParamsMap.getModel("country")
- //   val model = modelBuilder.create(trainDS, testClicks, modelParams)
-    val model = CountryUserGPModel(trainDS)
+    val modelBuilder = CountryUserModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
+    val modelParams = hyperParamsMap.getModel("countryuser")
+  //  val model = modelBuilder.create(trainDS, testClicks, modelParams)
+    val model = CountryGPModel(trainDS)
     val k = 5
     val top5predictions = model.predictTop5(testClicks)
     val predictedMat = model.predict(testClicks) + 1e-10f

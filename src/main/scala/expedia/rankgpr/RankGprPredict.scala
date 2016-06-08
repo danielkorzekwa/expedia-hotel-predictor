@@ -47,11 +47,12 @@ case class RankGprPredict(model: RankGprModel) {
    
         val gprModel = gpModelsByoneToOnePair(List(c1, c2))
         val probC1 = dk.gp.gpr.predict(t.toDenseMatrix, gprModel)(0, 0)
-       
+       val squeezedProbC1 = 1d/(1d + exp(-5.0*(probC1-0.5)))
+      // println(probC1 + ":" + squeezedProbC1)
         val c1Index = classIndexByClass(c1)
         val c2Index = classIndexByClass(c2)
-        probsMat(c1Index,c2Index) = probC1
-        probsMat(c2Index,c1Index) = 1 - probC1
+        probsMat(c1Index,c2Index) = squeezedProbC1
+        probsMat(c2Index,c1Index) = 1 - squeezedProbC1
     }
       val probsVector = calcMultiClassProbsPKPD(probsMat)
 
