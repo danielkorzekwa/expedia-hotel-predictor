@@ -1,3 +1,8 @@
+
+train_13 <- fread('c:/perforce/daniel/ex/segments/all/train_2013.csv')
+train_13b <- train_13[is_booking==1]
+test_all <- fread('c:/perforce/daniel/ex/segments/all/train_2014_booked_only.csv')
+
 n <- 14
 train_countries <- train_13b[hotel_continent==3,.N,by=hotel_country][order(+N)][1:n]
 test_countries <- test_all[hotel_continent==3,.N,by=hotel_country][order(+N)][1:n]
