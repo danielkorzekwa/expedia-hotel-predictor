@@ -47,7 +47,7 @@ case class RankGprPredict(model: RankGprModel) {
    
         val gprModel = gpModelsByoneToOnePair(List(c1, c2))
         val probC1 = dk.gp.gpr.predict(t.toDenseMatrix, gprModel)(0, 0)
-       val squeezedProbC1 = 1d/(1d + exp(-5.0*(probC1-0.5)))
+       val squeezedProbC1 = 1d/(1d + exp(-5.0*(probC1-0.5))) //@TODO -5 coefficient should be tuned (fitted with data)
       // println(probC1 + ":" + squeezedProbC1)
         val c1Index = classIndexByClass(c1)
         val c2Index = classIndexByClass(c2)
@@ -63,7 +63,7 @@ case class RankGprPredict(model: RankGprModel) {
   /**
    * @param tMat Matrix of N test points [NxD], D - dimensionality of prediction vector
    *
-   * @return matrix of row vectors [classes sorted by probability of class]
+   * @return Matrix of row vectors [vector of probabilities for sorted classes]
    */
   def predict(tMat: DenseMatrix[Double]): DenseMatrix[Double] = {
     val predictedRankedClasses = tMat(*, ::).map { t => predict(t) }

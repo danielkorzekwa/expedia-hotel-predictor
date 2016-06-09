@@ -32,9 +32,6 @@ object CountryGPModel {
     val x = DenseVector(trainClicks.map(c => c.countryId.toDouble).toArray).toDenseMatrix.t
     val y = DenseVector(trainClicks.map(c => c.cluster.toDouble).toArray)
 
-    //val covFuncParams = DenseVector(log(1),log(0.00001))
-    // val noiseLogStdDev = log(1)
-
     val covFuncParams = DenseVector(-1.0780525412946214, -1.0136412651304236)
     val noiseLogStdDev = -1.3174576979091912
     val covFunc = CountryCovFunc()

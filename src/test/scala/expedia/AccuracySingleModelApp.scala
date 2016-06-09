@@ -25,6 +25,7 @@ import expedia.modelgp.country.CountryGPModel
 import expedia.modelgp.countryuser.CountryUserGPModel
 import expedia.modelgp.country.CountryGPModel
 import expedia.modelgp.country.CountryGPModel
+import expedia.modelgp.countryh.CountryHGPModel
 
 object AccuracySingleModelApp extends LazyLogging {
 
@@ -50,19 +51,20 @@ object AccuracySingleModelApp extends LazyLogging {
    //   val hyperParamsMap = loadObject[CompoundHyperParamsMap]("target/hyperParamsMapByMarket_trained.kryo")
 
     val hyperParamsMap = CompoundHyperParamsMap(mutable.Map())
-    val modelBuilder = CountryUserModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
-    val modelParams = hyperParamsMap.getModel("countryuser")
+    val modelBuilder = CountryModelBuilder2.build(trainDS, testClicks, hyperParamsMap)
+    val modelParams = hyperParamsMap.getModel("country")
   //  val model = modelBuilder.create(trainDS, testClicks, modelParams)
-    val model = CountryGPModel(trainDS)
-    val k = 5
+    val model = CountryHGPModel(trainDS)
+   
     val top5predictions = model.predictTop5(testClicks)
     val predictedMat = model.predict(testClicks) + 1e-10f
     logger.info("Compute mapk..")
 
     val actual = DenseVector(testClicks.map(c => c.cluster.toDouble).toArray)
-    println(DenseMatrix.horzcat(actual.toDenseMatrix.t, top5predictions).toString(20, 320))
+    val countryVec = DenseVector(testClicks.map(c => c.countryId.toDouble).toArray)
+    println(DenseMatrix.horzcat(countryVec.toDenseMatrix.t,actual.toDenseMatrix.t, top5predictions).toString(20, 320))
 
-    val apkVector = averagePrecision(top5predictions(::, top5predictions.cols / 2 until top5predictions.cols), actual, k)
+    val apkVector = averagePrecision(top5predictions(::, top5predictions.cols / 2 until top5predictions.cols), actual, k=5)
     val mapk = mean(apkVector)
 
     val loglikValue = loglik(predictedMat.map(x => x.toDouble), actual)
